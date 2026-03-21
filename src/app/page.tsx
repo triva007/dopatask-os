@@ -35,21 +35,34 @@ export default function Home() {
       {/* Fil d'Ariane — flottant en haut de page */}
       <BreadcrumbBanner />
 
-      {/* Layout immersif 3 colonnes — h-screen, overflow-hidden */}
+      {/* Layout immersif 3 colonnes — optimisé desktop */}
       <div className="flex h-screen overflow-hidden bg-[#09090b] select-none">
 
-        {/* ── Colonne GAUCHE — Timeline (25%) ── */}
-        <aside className="w-[25%] min-w-[200px] h-full border-r border-zinc-900 overflow-hidden">
+        {/* ── Colonne GAUCHE — Timeline (22%) ── */}
+        <aside
+          className="h-full overflow-hidden"
+          style={{
+            width: "22%",
+            minWidth: 220,
+            borderRight: "1px solid rgba(255,255,255,0.04)",
+          }}
+        >
           <TimelineColumn />
         </aside>
 
         {/* ── Colonne CENTRALE — Focus Area (50%) ── */}
-        <main className="flex-1 h-full border-r border-zinc-900 overflow-hidden">
+        <main
+          className="flex-1 h-full overflow-hidden"
+          style={{ borderRight: "1px solid rgba(255,255,255,0.04)" }}
+        >
           <FocusColumn />
         </main>
 
-        {/* ── Colonne DROITE — Dopamine Zone (25%) ── */}
-        <aside className="w-[25%] min-w-[220px] h-full overflow-hidden">
+        {/* ── Colonne DROITE — Dopamine Zone (28%) ── */}
+        <aside
+          className="h-full overflow-hidden"
+          style={{ width: "28%", minWidth: 260 }}
+        >
           <DopamineColumn />
         </aside>
       </div>
