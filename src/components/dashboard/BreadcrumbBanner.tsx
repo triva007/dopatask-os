@@ -5,41 +5,23 @@ import { AnimatePresence, motion } from "framer-motion";
 import { RotateCcw, X } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
-const INACTIVITY_THRESHOLD_MS = 3 * 60 * 1000; // 3 minutes
+const INACTIVITY_THRESHOLD_MS = 3 * 60 * 1000;
 
 export default function BreadcrumbBanner() {
   const { tasks, lastActiveAt, lastActiveTaskId, setLastActive } = useAppStore();
   const [visible, setVisible] = useState(false);
 
-  const lastTask = tasks.find(
-    (t) => t.id === lastActiveTaskId && t.status === "today"
-  );
+  const lastTask = tasks.find((t) => t.id === lastActiveTaskId && t.status === "today");
 
   useEffect(() => {
     const check = () => {
-      const elapsed = Date.now() - lastActiveAt;
-      if (elapsed >= INACTIVITY_THRESHOLD_MS && lastTask) {
-        setVisible(true);
-      }
+      if (Date.now() - lastActiveAt >= INACTIVITY_THRESHOLD_MS && lastTask) setVisible(true);
     };
-
-    const handleVisibility = () => {
-      if (document.visibilityState === "visible") check();
-    };
-
-    document.addEventListener("visibilitychange", handleVisibility);
+    const handleVis = () => { if (document.visibilityState === "visible") check(); };
+    document.addEventListener("visibilitychange", handleVis);
     const interval = setInterval(check, 30_000);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibility);
-      clearInterval(interval);
-    };
+    return () => { document.removeEventListener("visibilitychange", handleVis); clearInterval(interval); };
   }, [lastActiveAt, lastTask]);
-
-  const handleResume = () => {
-    setLastActive(lastTask?.id);
-    setVisible(false);
-  };
 
   if (!lastTask) return null;
 
@@ -47,32 +29,29 @@ export default function BreadcrumbBanner() {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, y: -40 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -40 }}
+          initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl border border-dopa-cyan/20 bg-zinc-900/95 backdrop-blur-md shadow-2xl"
-          style={{ boxShadow: "0 0 30px rgba(6,182,212,0.10)" }}
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl"
+          style={{
+            background: "rgba(20,20,20,0.9)",
+            backdropFilter: "blur(20px)",
+            border: "1px solid rgba(255,255,255,0.08)",
+            boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          }}
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-dopa-cyan animate-pulse shrink-0" />
+          <div className="w-1.5 h-1.5 rounded-full bg-white/40 animate-pulse shrink-0" />
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500">Où en étiez-vous ?</span>
-            <span className="text-xs font-semibold text-zinc-200">
-              Vous travailliez sur &ldquo;{lastTask.text}&rdquo;
-            </span>
+            <span className="text-[10px] text-zinc-500">Reprendre ?</span>
+            <span className="text-xs font-medium text-zinc-200">&ldquo;{lastTask.text}&rdquo;</span>
           </div>
-          <button
-            onClick={handleResume}
-            className="flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-lg bg-dopa-cyan/10 hover:bg-dopa-cyan/20 text-dopa-cyan text-xs font-semibold transition-colors"
+          <button onClick={() => { setLastActive(lastTask.id); setVisible(false); }}
+            className="flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors"
+            style={{ background: "rgba(255,255,255,0.06)", color: "#e4e4e7" }}
           >
-            <RotateCcw size={10} />
-            Reprendre
+            <RotateCcw size={10} /> Reprendre
           </button>
-          <button
-            onClick={() => setVisible(false)}
-            className="text-zinc-700 hover:text-zinc-500 transition-colors ml-1"
-          >
-            <X size={13} />
+          <button onClick={() => setVisible(false)} className="text-zinc-600 hover:text-zinc-400 ml-1">
+            <X size={12} />
           </button>
         </motion.div>
       )}
