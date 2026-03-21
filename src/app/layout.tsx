@@ -35,13 +35,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#09090b] text-zinc-50 h-screen overflow-hidden`}
       >
         <div className="flex h-screen overflow-hidden">
-          {/* Sidebar fixe ~17% */}
+          {/* Sidebar fixe */}
           <aside
-            className="shrink-0 h-full border-r overflow-hidden"
+            className="shrink-0 h-full overflow-hidden"
             style={{
-              width: "clamp(180px, 17vw, 220px)",
-              borderColor: "rgba(255,255,255,0.04)",
-              background: "#050507",
+              width: "var(--sidebar-width)",
+              background: "var(--sidebar-bg)",
+              borderRight: "1px solid rgba(255,255,255,0.04)",
             }}
           >
             <Sidebar />
