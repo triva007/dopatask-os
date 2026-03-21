@@ -19,9 +19,9 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "DopaTask — Prothèse Neuro-Cognitive",
+  title: "DopaTask OS — Productivity Reimagined",
   description:
-    "Conçu pour les cerveaux TDAH. Moins de friction, plus de focus, zéro culpabilité.",
+    "Conçu pour les cerveaux TDAH. Un espace de travail calme, structuré et beau.",
 };
 
 export default function RootLayout({
@@ -32,22 +32,15 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#09090b] text-zinc-50 h-screen overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0a0a0a] text-zinc-50 h-screen overflow-hidden`}
       >
         <div className="flex h-screen overflow-hidden">
-          {/* Sidebar fixe */}
-          <aside
-            className="shrink-0 h-full overflow-hidden"
-            style={{
-              width: "var(--sidebar-width)",
-              background: "var(--sidebar-bg)",
-              borderRight: "1px solid rgba(255,255,255,0.04)",
-            }}
-          >
+          {/* Sidebar — Glass */}
+          <aside className="glass-sidebar shrink-0 h-full overflow-hidden" style={{ width: "var(--sidebar-width)" }}>
             <Sidebar />
           </aside>
 
-          {/* Contenu principal */}
+          {/* Main content */}
           <div className="flex-1 h-full overflow-hidden">
             {children}
           </div>
