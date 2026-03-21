@@ -132,43 +132,45 @@ function RewardCard({
       layout
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col rounded-2xl border overflow-hidden"
+      whileHover={{ y: -4 }}
+      className="flex flex-col rounded-2xl border overflow-hidden transition-all duration-200 hover:shadow-lg"
       style={{
         background: "#0f0f12",
         borderColor: canAfford ? `${color}20` : "rgba(255,255,255,0.04)",
+        boxShadow: canAfford ? `0 0 12px ${color}10` : "none",
       }}
     >
       {/* Emoji */}
       <div
-        className="flex items-center justify-center py-5 text-3xl"
+        className="flex items-center justify-center py-6 text-4xl transition-transform duration-200 group-hover:scale-110"
         style={{ background: canAfford ? `${color}08` : "transparent" }}
       >
         {reward.emoji}
       </div>
 
       {/* Info */}
-      <div className="flex flex-col gap-1 px-3 py-3 flex-1">
-        <p className="text-xs font-semibold text-zinc-200 leading-tight">{reward.name}</p>
-        <p className="text-[10px] text-zinc-600 leading-relaxed flex-1">{reward.description}</p>
+      <div className="flex flex-col gap-2 px-4 py-3 flex-1">
+        <p className="text-sm font-semibold text-zinc-100 leading-tight">{reward.name}</p>
+        <p className="text-xs text-zinc-500 leading-relaxed flex-1">{reward.description}</p>
       </div>
 
       {/* Footer */}
-      <div className="px-3 pb-3 flex items-center justify-between">
-        <div className="flex items-center gap-1">
-          <Zap size={10} className="text-dopa-xp" />
-          <span className="text-[11px] font-bold text-dopa-xp">{reward.cost} XP</span>
+      <div className="px-4 pb-4 flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <Zap size={11} className="text-dopa-xp" />
+          <span className="text-xs font-bold text-dopa-xp">{reward.cost}</span>
         </div>
         <button
           onClick={() => canAfford && onBuy(reward)}
           disabled={!canAfford}
-          className="flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-lg font-semibold transition-all disabled:opacity-30 disabled:cursor-not-allowed"
+          className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg font-semibold transition-all duration-200 hover:scale-105 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
           style={{
-            background: canAfford ? `${color}15` : "transparent",
-            border: `1px solid ${canAfford ? color + "30" : "#27272a"}`,
+            background: canAfford ? `${color}20` : "transparent",
+            border: `1px solid ${canAfford ? color + "40" : "rgba(255,255,255,0.04)"}`,
             color: canAfford ? color : "#52525b",
           }}
         >
-          {canAfford ? "Acheter" : <Lock size={9} />}
+          {canAfford ? "Acheter" : <Lock size={10} />}
         </button>
       </div>
     </motion.div>
@@ -201,65 +203,65 @@ export default function BoutiqueDopamine() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-6 pt-5 pb-3 border-b border-zinc-900">
-        <h1 className="text-lg font-bold text-zinc-100 tracking-tight flex items-center gap-2">
-          <ShoppingBag size={18} className="text-dopa-xp" />
+      <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-[rgba(255,255,255,0.04)]">
+        <h1 className="text-xl font-bold text-zinc-50 tracking-tight flex items-center gap-2.5">
+          <ShoppingBag size={20} className="text-dopa-xp" />
           Boutique Dopamine
         </h1>
-        <p className="text-xs text-zinc-600 mt-0.5">
+        <p className="text-sm text-zinc-500 mt-1.5">
           Échange tes XP contre des récompenses bien méritées
         </p>
       </div>
 
       {/* XP Status bar */}
       <div
-        className="shrink-0 px-6 py-3 border-b border-zinc-900 flex items-center gap-4"
+        className="shrink-0 px-7 py-4 border-b border-b-[rgba(255,255,255,0.04)] flex items-center gap-5"
         style={{ background: "#050507" }}
       >
         {/* Level badge */}
         <div
-          className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 font-bold text-sm"
+          className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-base"
           style={{ background: "linear-gradient(135deg, #f59e0b22, #f59e0b44)", color: "#f59e0b" }}
         >
           {level}
         </div>
 
         <div className="flex-1 min-w-0">
-          <div className="flex items-center justify-between mb-1">
-            <span className="text-xs font-semibold text-zinc-400">Niveau {level}</span>
-            <div className="flex items-center gap-1">
-              <Zap size={11} className="text-dopa-xp" />
-              <span className="text-xs font-bold text-dopa-xp">{xp} XP</span>
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-semibold text-zinc-300">Niveau {level}</span>
+            <div className="flex items-center gap-1.5">
+              <Zap size={12} className="text-dopa-xp" />
+              <span className="text-sm font-bold text-dopa-xp">{xp} XP</span>
             </div>
           </div>
-          <div className="h-1.5 rounded-full bg-zinc-800 overflow-hidden">
+          <div className="h-2 rounded-full bg-zinc-800 overflow-hidden">
             <div
-              className="h-full rounded-full transition-all"
+              className="h-full rounded-full transition-all duration-500"
               style={{ width: `${progress}%`, background: "linear-gradient(90deg, #f59e0b, #ef4444)" }}
             />
           </div>
-          <p className="text-[10px] text-zinc-700 mt-0.5">
+          <p className="text-xs text-zinc-600 mt-1">
             {nextLevelXp - xp} XP pour le niveau {level + 1}
           </p>
         </div>
 
         {streak > 0 && (
-          <div className="flex items-center gap-1 shrink-0">
-            <Sparkles size={12} className="text-dopa-xp" />
-            <span className="text-xs font-bold text-dopa-xp">{streak} 🔥</span>
+          <div className="flex items-center gap-1.5 shrink-0 px-3 py-1.5 rounded-lg" style={{ background: "rgba(251, 191, 36, 0.08)" }}>
+            <Sparkles size={13} className="text-dopa-xp" />
+            <span className="text-sm font-bold text-dopa-xp">{streak} 🔥</span>
           </div>
         )}
       </div>
 
       {/* Category filter */}
-      <div className="shrink-0 px-6 pt-3 pb-2 flex items-center gap-2">
+      <div className="shrink-0 px-7 pt-4 pb-3 flex items-center gap-2.5 overflow-x-auto">
         <button
           onClick={() => setActiveCategory(null)}
-          className="text-[11px] px-3 py-1.5 rounded-full font-semibold transition-all"
+          className="text-xs px-4 py-2 rounded-full font-semibold transition-all duration-200 whitespace-nowrap hover:scale-105"
           style={{
-            background: activeCategory === null ? "rgba(255,255,255,0.08)" : "transparent",
-            border: `1px solid ${activeCategory === null ? "rgba(255,255,255,0.12)" : "#27272a"}`,
-            color: activeCategory === null ? "#d4d4d8" : "#52525b",
+            background: activeCategory === null ? "rgba(255,255,255,0.1)" : "transparent",
+            border: `1.5px solid ${activeCategory === null ? "rgba(255,255,255,0.15)" : "rgba(255,255,255,0.04)"}`,
+            color: activeCategory === null ? "#e4e4e7" : "#71717a",
           }}
         >
           Tous
@@ -268,11 +270,11 @@ export default function BoutiqueDopamine() {
           <button
             key={cat}
             onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-            className="text-[11px] px-3 py-1.5 rounded-full font-semibold transition-all"
+            className="text-xs px-4 py-2 rounded-full font-semibold transition-all duration-200 whitespace-nowrap hover:scale-105"
             style={{
-              background: activeCategory === cat ? `${CATEGORY_COLORS[cat]}15` : "transparent",
-              border: `1px solid ${activeCategory === cat ? CATEGORY_COLORS[cat] + "30" : "#27272a"}`,
-              color: activeCategory === cat ? CATEGORY_COLORS[cat] : "#52525b",
+              background: activeCategory === cat ? `${CATEGORY_COLORS[cat]}18` : "transparent",
+              border: `1.5px solid ${activeCategory === cat ? CATEGORY_COLORS[cat] + "40" : "rgba(255,255,255,0.04)"}`,
+              color: activeCategory === cat ? CATEGORY_COLORS[cat] : "#71717a",
             }}
           >
             {CATEGORY_LABELS[cat]}
@@ -281,8 +283,8 @@ export default function BoutiqueDopamine() {
       </div>
 
       {/* Rewards grid */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 pb-6">
-        <div className="grid grid-cols-3 gap-3 pt-2">
+      <div className="flex-1 min-h-0 overflow-y-auto px-7 pb-6">
+        <div className="grid grid-cols-4 gap-4 pt-3">
           <AnimatePresence>
             {filtered.map((r) => (
               <RewardCard key={r.id} reward={r} xp={xp} onBuy={handleBuy} />
@@ -291,8 +293,8 @@ export default function BoutiqueDopamine() {
         </div>
 
         {xp < 100 && (
-          <div className="mt-4 px-4 py-3 rounded-xl border border-zinc-800/50 text-center">
-            <p className="text-xs text-zinc-600">
+          <div className="mt-6 px-5 py-4 rounded-2xl border border-[rgba(255,255,255,0.04)] text-center bg-[rgba(255,255,255,0.02)]">
+            <p className="text-sm text-zinc-500">
               Complète des tâches pour gagner tes premiers XP et débloquer des récompenses !
             </p>
           </div>
@@ -306,15 +308,15 @@ export default function BoutiqueDopamine() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 px-4 py-2.5 rounded-2xl border text-sm font-semibold z-50"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2.5 px-5 py-3 rounded-2xl border text-sm font-semibold z-50"
             style={{
               background: "#131316",
-              borderColor: "rgba(34,197,94,0.3)",
+              borderColor: "rgba(34,197,94,0.4)",
               color: "#22c55e",
-              boxShadow: "0 4px 24px rgba(0,0,0,0.4)",
+              boxShadow: "0 8px 32px rgba(34,197,94,0.2)",
             }}
           >
-            <CheckCircle2 size={14} />
+            <CheckCircle2 size={16} />
             {toast}
           </motion.div>
         )}
