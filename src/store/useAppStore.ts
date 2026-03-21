@@ -25,15 +25,6 @@ export interface Task {
 
 export type ObjectiveHorizon = "week" | "month" | "quarter" | "year";
 
-export interface Sprint {
-  id: string;
-  name: string;
-  startDate: number;
-  endDate: number;
-  taskIds: string[];
-  active: boolean;
-}
-
 export interface HyperfocusSession {
   id: string;
   taskName: string;
@@ -92,13 +83,6 @@ interface AppState {
   lastCritical: boolean;
   addXp: (amount: number) => void;
   damageBoss: (dmg: number) => void;
-
-  // ── Sprints ─────────────────────────────────────────────────────────────
-  sprints: Sprint[];
-  addSprint: (name: string, startDate: number, endDate: number) => void;
-  deleteSprint: (id: string) => void;
-  assignTaskToSprint: (taskId: string, sprintId: string | null) => void;
-  activateSprint: (id: string) => void;
 
   // ── Hyperfocus Sessions ──────────────────────────────────────────────────
   hyperfocusSessions: HyperfocusSession[];
@@ -349,31 +333,6 @@ export const useAppStore = create<AppState>()(
 
       deleteObjective: (id) =>
         set((s) => ({ objectives: s.objectives.filter((o) => o.id !== id) })),
-
-      // ── Sprints ─────────────────────────────────────────────────────────
-      sprints: [],
-      addSprint: (name, startDate, endDate) =>
-        set((s) => ({
-          sprints: [
-            ...s.sprints,
-            { id: uid(), name, startDate, endDate, taskIds: [], active: s.sprints.length === 0 },
-          ],
-        })),
-      deleteSprint: (id) =>
-        set((s) => ({ sprints: s.sprints.filter((sp) => sp.id !== id) })),
-      assignTaskToSprint: (taskId, sprintId) =>
-        set((s) => ({
-          sprints: s.sprints.map((sp) => {
-            if (sprintId && sp.id === sprintId) {
-              return { ...sp, taskIds: sp.taskIds.includes(taskId) ? sp.taskIds : [...sp.taskIds, taskId] };
-            }
-            return { ...sp, taskIds: sp.taskIds.filter((id) => id !== taskId) };
-          }),
-        })),
-      activateSprint: (id) =>
-        set((s) => ({
-          sprints: s.sprints.map((sp) => ({ ...sp, active: sp.id === id })),
-        })),
 
       // ── Hyperfocus Sessions ──────────────────────────────────────────────
       hyperfocusSessions: [],
