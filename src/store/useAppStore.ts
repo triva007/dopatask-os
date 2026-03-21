@@ -5,6 +5,8 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 export type TaskStatus = "today" | "inbox" | "done" | "todo" | "in_progress" | "completed" | "saved";
 export type IncupTag = "Intérêt" | "Nouveauté" | "Challenge" | "Urgence" | "Passion";
+export type ObjectiveHorizon = "week" | "month" | "quarter" | "year";
+export type ProjectStatus = "active" | "paused" | "completed" | "archived";
 
 export interface MicroStep {
   id: string;
@@ -16,6 +18,7 @@ export interface Task {
   id: string;
   text: string;
   status: TaskStatus;
+  projectId?: string;
   createdAt: number;
   completedAt?: number;
   tags: IncupTag[];
@@ -23,14 +26,14 @@ export interface Task {
   expanded: boolean;
 }
 
-export type ObjectiveHorizon = "week" | "month" | "quarter" | "year";
-
-export interface HyperfocusSession {
+export interface Project {
   id: string;
-  taskName: string;
-  durationMinutes: number;
-  completedAt: number;
-  noise: "brown" | "white" | "none";
+  name: string;
+  objectiveId?: string;
+  status: ProjectStatus;
+  emoji: string;
+  color: string;
+  createdAt: number;
 }
 
 export interface Milestone {
@@ -43,10 +46,18 @@ export interface Objective {
   id: string;
   title: string;
   horizon: ObjectiveHorizon;
-  progress: number; // 0-100
+  progress: number;
   milestones: Milestone[];
   color: string;
   createdAt: number;
+}
+
+export interface HyperfocusSession {
+  id: string;
+  taskName: string;
+  durationMinutes: number;
+  completedAt: number;
+  noise: "brown" | "white" | "none";
 }
 
 interface AppState {
@@ -56,7 +67,7 @@ interface AppState {
 
   // ── Tâches ──────────────────────────────────────────────────────────────
   tasks: Task[];
-  addTask: (text: string, status?: TaskStatus) => void;
+  addTask: (text: string, status?: TaskStatus, projectId?: string) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   completeTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -65,7 +76,14 @@ interface AppState {
   toggleMicroStep: (taskId: string, stepId: string) => void;
   deleteMicroStep: (taskId: string, stepId: string) => void;
   toggleTag: (taskId: string, tag: IncupTag) => void;
+  assignTaskToProject: (taskId: string, projectId: string | undefined) => void;
   newStart: () => void;
+
+  // ── Projets ─────────────────────────────────────────────────────────────
+  projects: Project[];
+  addProject: (name: string, emoji?: string, objectiveId?: string, color?: string) => void;
+  updateProject: (id: string, updates: Partial<Pick<Project, "name" | "emoji" | "status" | "objectiveId" | "color">>) => void;
+  deleteProject: (id: string) => void;
 
   // ── Objectifs ───────────────────────────────────────────────────────────
   objectives: Objective[];
@@ -84,15 +102,15 @@ interface AppState {
   addXp: (amount: number) => void;
   damageBoss: (dmg: number) => void;
 
-  // ── Hyperfocus Sessions ──────────────────────────────────────────────────
+  // ── Hyperfocus Sessions ─────────────────────────────────────────────────
   hyperfocusSessions: HyperfocusSession[];
   addHyperfocusSession: (session: Omit<HyperfocusSession, "id">) => void;
 
-  // ── Boutique ─────────────────────────────────────────────────────────────
+  // ── Boutique ────────────────────────────────────────────────────────────
   purchasedRewards: string[];
   buyReward: (rewardId: string, cost: number) => void;
 
-  // ── Fil d'Ariane (Loi n°6) ──────────────────────────────────────────────
+  // ── Fil d'Ariane ────────────────────────────────────────────────────────
   lastActiveAt: number;
   lastActiveTaskId: string | null;
   setLastActive: (taskId?: string) => void;
@@ -110,6 +128,8 @@ const XP_CRITICAL       = 80;
 const CRITICAL_RATE     = 0.15;
 
 const OBJ_COLORS = ["#06b6d4", "#7c3aed", "#22c55e", "#f59e0b", "#ef4444", "#ec4899"];
+const PROJECT_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
+const PROJECT_EMOJIS = ["📁", "🚀", "💡", "🎯", "⚡", "🔥"];
 
 // ─── Store ───────────────────────────────────────────────────────────────────
 
@@ -155,11 +175,11 @@ export const useAppStore = create<AppState>()(
         },
       ],
 
-      addTask: (text, status) => {
+      addTask: (text, status, projectId) => {
         const { tasks } = get();
         const targetStatus = status ?? (tasks.filter((t) => t.status === "today").length < 5 ? "today" : "inbox");
         const newTask: Task = {
-          id: uid(), text: text.trim(), status: targetStatus,
+          id: uid(), text: text.trim(), status: targetStatus, projectId,
           createdAt: Date.now(), tags: [], microSteps: [], expanded: false,
         };
         set({ tasks: [...tasks, newTask] });
@@ -237,6 +257,13 @@ export const useAppStore = create<AppState>()(
           }),
         })),
 
+      assignTaskToProject: (taskId, projectId) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id === taskId ? { ...t, projectId } : t
+          ),
+        })),
+
       newStart: () => {
         const { tasks } = get();
         set({
@@ -244,6 +271,51 @@ export const useAppStore = create<AppState>()(
           lastActiveTaskId: null,
         });
       },
+
+      // ── Projets ─────────────────────────────────────────────────────────
+      projects: [
+        {
+          id: "proj_agence", name: "Site Agence Web", objectiveId: undefined,
+          status: "active", emoji: "🚀", color: "#3b82f6", createdAt: Date.now() - 604800000,
+        },
+        {
+          id: "proj_seo", name: "Campagne SEO Q1", objectiveId: undefined,
+          status: "active", emoji: "📈", color: "#10b981", createdAt: Date.now() - 432000000,
+        },
+        {
+          id: "proj_content", name: "Contenu Réseaux", objectiveId: undefined,
+          status: "active", emoji: "🎬", color: "#8b5cf6", createdAt: Date.now() - 259200000,
+        },
+      ],
+
+      addProject: (name, emoji, objectiveId, color) =>
+        set((s) => ({
+          projects: [
+            ...s.projects,
+            {
+              id: uid(),
+              name: name.trim(),
+              emoji: emoji ?? PROJECT_EMOJIS[s.projects.length % PROJECT_EMOJIS.length],
+              objectiveId,
+              status: "active" as ProjectStatus,
+              color: color ?? PROJECT_COLORS[s.projects.length % PROJECT_COLORS.length],
+              createdAt: Date.now(),
+            },
+          ],
+        })),
+
+      updateProject: (id, updates) =>
+        set((s) => ({
+          projects: s.projects.map((p) =>
+            p.id === id ? { ...p, ...updates } : p
+          ),
+        })),
+
+      deleteProject: (id) =>
+        set((s) => ({
+          projects: s.projects.filter((p) => p.id !== id),
+          tasks: s.tasks.map((t) => t.projectId === id ? { ...t, projectId: undefined } : t),
+        })),
 
       // ── Objectifs ──────────────────────────────────────────────────────────
       objectives: [
@@ -332,7 +404,10 @@ export const useAppStore = create<AppState>()(
         })),
 
       deleteObjective: (id) =>
-        set((s) => ({ objectives: s.objectives.filter((o) => o.id !== id) })),
+        set((s) => ({
+          objectives: s.objectives.filter((o) => o.id !== id),
+          projects: s.projects.map((p) => p.objectiveId === id ? { ...p, objectiveId: undefined } : p),
+        })),
 
       // ── Hyperfocus Sessions ──────────────────────────────────────────────
       hyperfocusSessions: [],
