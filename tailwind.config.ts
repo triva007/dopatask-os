@@ -10,13 +10,13 @@ const config: Config = {
   theme: {
     extend: {
       colors: {
-        background:     "#09090b",
-        surface:        "#18181b",
-        "dopa-green":   "#22c55e",
-        "dopa-cyan":    "#06b6d4",
-        "dopa-violet":  "#7c3aed",
-        "dopa-red":     "#ef4444",
-        "dopa-xp":      "#f59e0b",
+        background:     "#0a0a0a",
+        surface:        "#141414",
+        "dopa-green":   "#4ade80",
+        "dopa-cyan":    "#67e8f9",
+        "dopa-violet":  "#a78bfa",
+        "dopa-red":     "#fca5a5",
+        "dopa-xp":      "#fbbf24",
       },
       fontFamily: {
         sans: ["var(--font-geist-sans)", "Inter", "system-ui", "sans-serif"],
