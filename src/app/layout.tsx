@@ -32,16 +32,23 @@ export default function RootLayout({
   return (
     <html lang="fr" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-[#0a0a0a] text-zinc-50 h-screen overflow-hidden`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}
+        style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
-        <div className="flex h-screen overflow-hidden">
+        <div className="flex h-screen overflow-hidden relative">
+          {/* Global ambient mesh gradient */}
+          <div className="absolute inset-0 pointer-events-none mesh-gradient opacity-60" />
+
           {/* Sidebar — Glass */}
-          <aside className="glass-sidebar shrink-0 h-full overflow-hidden" style={{ width: "var(--sidebar-width)" }}>
+          <aside
+            className="glass-sidebar shrink-0 h-full overflow-hidden relative z-10"
+            style={{ width: "var(--sidebar-width)" }}
+          >
             <Sidebar />
           </aside>
 
           {/* Main content */}
-          <div className="flex-1 h-full overflow-hidden">
+          <div className="flex-1 h-full overflow-hidden relative z-10">
             {children}
           </div>
         </div>

@@ -11,19 +11,33 @@ export default function Home() {
     <>
       <BreadcrumbBanner />
 
-      <div className="flex h-screen overflow-hidden select-none" style={{ background: "#0a0a0a" }}>
+      <div className="flex h-screen overflow-hidden select-none relative" style={{ background: "var(--surface-0)" }}>
+        {/* Ambient orbs */}
+        <div className="absolute top-[-20%] left-[10%] w-[500px] h-[500px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(167,139,250,0.03), transparent 70%)", filter: "blur(60px)" }}
+        />
+        <div className="absolute bottom-[-20%] right-[15%] w-[400px] h-[400px] rounded-full pointer-events-none"
+          style={{ background: "radial-gradient(circle, rgba(34,211,238,0.025), transparent 70%)", filter: "blur(60px)" }}
+        />
+
         {/* Timeline — 22% */}
-        <aside className="h-full overflow-hidden" style={{ width: "22%", minWidth: 220, borderRight: "1px solid rgba(255,255,255,0.04)" }}>
+        <aside
+          className="h-full overflow-hidden relative z-10"
+          style={{ width: "22%", minWidth: 220, borderRight: "1px solid rgba(255,255,255,0.04)" }}
+        >
           <TimelineColumn />
         </aside>
 
         {/* Focus — flexible center */}
-        <main className="flex-1 h-full overflow-hidden" style={{ borderRight: "1px solid rgba(255,255,255,0.04)" }}>
+        <main
+          className="flex-1 h-full overflow-hidden relative z-10"
+          style={{ borderRight: "1px solid rgba(255,255,255,0.04)" }}
+        >
           <FocusColumn />
         </main>
 
         {/* Dopamine — 28% */}
-        <aside className="h-full overflow-hidden" style={{ width: "28%", minWidth: 260 }}>
+        <aside className="h-full overflow-hidden relative z-10" style={{ width: "28%", minWidth: 260 }}>
           <DopamineColumn />
         </aside>
       </div>
