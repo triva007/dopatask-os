@@ -157,8 +157,16 @@ interface AppState {
   streak: number;
   bossHp: number;
   lastCritical: boolean;
+  totalTasksCompleted: number;
+  totalFocusMinutes: number;
+  unlockedAchievements: string[];
+  dailyChallengeId: string | null;
+  dailyChallengeCompleted: boolean;
   addXp: (amount: number) => void;
   damageBoss: (dmg: number) => void;
+  unlockAchievement: (id: string) => void;
+  completeDailyChallenge: () => void;
+  setDailyChallenge: (id: string) => void;
 
   // ── Hyperfocus Sessions ─────────────────────────────────────────────────
   hyperfocusSessions: HyperfocusSession[];
@@ -260,7 +268,7 @@ export const useAppStore = create<AppState>()(
         })),
 
       completeTask: (id) => {
-        const { tasks, bossHp, xp, streak } = get();
+        const { tasks, bossHp, xp, streak, totalTasksCompleted } = get();
         const isCritical = Math.random() < CRITICAL_RATE;
         const dmg  = isCritical ? BOSS_DMG_CRITICAL : BOSS_DMG_NORMAL;
         const gain = isCritical ? XP_CRITICAL       : XP_NORMAL;
@@ -274,6 +282,7 @@ export const useAppStore = create<AppState>()(
           streak: streak + 1,
           lastCritical: isCritical,
           lastActiveAt: Date.now(),
+          totalTasksCompleted: totalTasksCompleted + 1,
         });
       },
 
@@ -597,6 +606,7 @@ export const useAppStore = create<AppState>()(
       addHyperfocusSession: (session) =>
         set((s) => ({
           hyperfocusSessions: [{ ...session, id: uid() }, ...s.hyperfocusSessions],
+          totalFocusMinutes: s.totalFocusMinutes + session.durationMinutes,
         })),
 
       // ── Boutique ─────────────────────────────────────────────────────────
@@ -612,8 +622,26 @@ export const useAppStore = create<AppState>()(
       streak: 0,
       bossHp: 100,
       lastCritical: false,
+      totalTasksCompleted: 0,
+      totalFocusMinutes: 0,
+      unlockedAchievements: [],
+      dailyChallengeId: null,
+      dailyChallengeCompleted: false,
       addXp: (amount) => set((s) => ({ xp: s.xp + amount })),
       damageBoss: (dmg) => set((s) => ({ bossHp: Math.max(0, s.bossHp - dmg) })),
+      unlockAchievement: (id) =>
+        set((s) => ({
+          unlockedAchievements: s.unlockedAchievements.includes(id)
+            ? s.unlockedAchievements
+            : [...s.unlockedAchievements, id],
+        })),
+      completeDailyChallenge: () =>
+        set((s) => ({
+          dailyChallengeCompleted: true,
+          xp: s.xp + 150,
+        })),
+      setDailyChallenge: (id) =>
+        set({ dailyChallengeId: id, dailyChallengeCompleted: false }),
 
       // ── Fil d'Ariane ────────────────────────────────────────────────────
       lastActiveAt: Date.now(),
