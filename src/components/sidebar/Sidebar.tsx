@@ -10,15 +10,21 @@ import {
   ShoppingBag,
   Settings,
   FolderKanban,
+  Eye,
+  BookOpen,
+  Inbox,
 } from "lucide-react";
 
 const NAV_ITEMS = [
-  { href: "/",           label: "Dashboard",  Icon: LayoutDashboard },
-  { href: "/taches",     label: "Tâches",     Icon: ListChecks      },
-  { href: "/projets",    label: "Projets",    Icon: FolderKanban    },
-  { href: "/objectifs",  label: "Objectifs",  Icon: Target          },
-  { href: "/hyperfocus", label: "Focus Lab",  Icon: FlaskConical    },
-  { href: "/boutique",   label: "Boutique",   Icon: ShoppingBag     },
+  { href: "/",           label: "Dashboard",    Icon: LayoutDashboard },
+  { href: "/inbox",      label: "Inbox",        Icon: Inbox           },
+  { href: "/taches",     label: "Tâches",       Icon: ListChecks      },
+  { href: "/projets",    label: "Projets",      Icon: FolderKanban    },
+  { href: "/objectifs",  label: "Objectifs",    Icon: Target          },
+  { href: "/vision",     label: "Vision Board", Icon: Eye             },
+  { href: "/journal",    label: "Journal",      Icon: BookOpen        },
+  { href: "/hyperfocus", label: "Focus Lab",    Icon: FlaskConical    },
+  { href: "/boutique",   label: "Boutique",     Icon: ShoppingBag     },
 ] as const;
 
 export default function Sidebar() {
@@ -52,7 +58,7 @@ export default function Sidebar() {
       </div>
 
       {/* Navigation */}
-      <div className="flex flex-col gap-0.5 flex-1">
+      <div className="flex flex-col gap-0.5 flex-1 overflow-y-auto">
         {NAV_ITEMS.map(({ href, label, Icon }) => {
           const isActive = pathname === href;
           return (
