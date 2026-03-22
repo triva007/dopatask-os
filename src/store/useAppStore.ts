@@ -7,6 +7,8 @@ export type TaskStatus = "today" | "inbox" | "done" | "todo" | "in_progress" | "
 export type IncupTag = "Intérêt" | "Nouveauté" | "Challenge" | "Urgence" | "Passion";
 export type ObjectiveHorizon = "week" | "month" | "quarter" | "year";
 export type ProjectStatus = "active" | "paused" | "completed" | "archived";
+export type LifeGoalHorizon = "court_terme" | "moyen_terme" | "long_terme";
+export type InboxItemType = "task" | "note" | "event";
 
 export interface MicroStep {
   id: string;
@@ -17,6 +19,7 @@ export interface MicroStep {
 export interface Task {
   id: string;
   text: string;
+  description?: string;
   status: TaskStatus;
   projectId?: string;
   createdAt: number;
@@ -24,6 +27,9 @@ export interface Task {
   tags: IncupTag[];
   microSteps: MicroStep[];
   expanded: boolean;
+  estimatedMinutes?: number;
+  dueDate?: string;
+  priority?: "low" | "medium" | "high";
 }
 
 export interface Project {
@@ -52,6 +58,34 @@ export interface Objective {
   createdAt: number;
 }
 
+export interface LifeGoal {
+  id: string;
+  title: string;
+  description: string;
+  horizon: LifeGoalHorizon;
+  category: string;
+  imageUrl?: string;
+  actionSteps: { id: string; text: string; done: boolean }[];
+  createdAt: number;
+  color: string;
+}
+
+export interface JournalEntry {
+  id: string;
+  content: string;
+  mood?: "great" | "good" | "neutral" | "bad" | "terrible";
+  createdAt: number;
+  tags: string[];
+}
+
+export interface InboxItem {
+  id: string;
+  text: string;
+  type: InboxItemType;
+  processed: boolean;
+  createdAt: number;
+}
+
 export interface HyperfocusSession {
   id: string;
   taskName: string;
@@ -68,6 +102,7 @@ interface AppState {
   // ── Tâches ──────────────────────────────────────────────────────────────
   tasks: Task[];
   addTask: (text: string, status?: TaskStatus, projectId?: string) => void;
+  updateTask: (id: string, updates: Partial<Pick<Task, "text" | "description" | "status" | "projectId" | "tags" | "estimatedMinutes" | "dueDate" | "priority">>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   completeTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -77,6 +112,7 @@ interface AppState {
   deleteMicroStep: (taskId: string, stepId: string) => void;
   toggleTag: (taskId: string, tag: IncupTag) => void;
   assignTaskToProject: (taskId: string, projectId: string | undefined) => void;
+  setMicroSteps: (taskId: string, steps: MicroStep[]) => void;
   newStart: () => void;
 
   // ── Projets ─────────────────────────────────────────────────────────────
@@ -93,6 +129,28 @@ interface AppState {
   toggleMilestone: (objId: string, msId: string) => void;
   deleteMilestone: (objId: string, msId: string) => void;
   deleteObjective: (id: string) => void;
+
+  // ── Life Goals (Vision Board) ─────────────────────────────────────────
+  lifeGoals: LifeGoal[];
+  addLifeGoal: (goal: Omit<LifeGoal, "id" | "createdAt">) => void;
+  updateLifeGoal: (id: string, updates: Partial<Omit<LifeGoal, "id" | "createdAt">>) => void;
+  deleteLifeGoal: (id: string) => void;
+  toggleLifeGoalStep: (goalId: string, stepId: string) => void;
+  addLifeGoalStep: (goalId: string, text: string) => void;
+  deleteLifeGoalStep: (goalId: string, stepId: string) => void;
+
+  // ── Journal ───────────────────────────────────────────────────────────
+  journalEntries: JournalEntry[];
+  addJournalEntry: (content: string, mood?: JournalEntry["mood"], tags?: string[]) => void;
+  updateJournalEntry: (id: string, updates: Partial<Pick<JournalEntry, "content" | "mood" | "tags">>) => void;
+  deleteJournalEntry: (id: string) => void;
+
+  // ── Inbox (Quick Capture) ─────────────────────────────────────────────
+  inboxItems: InboxItem[];
+  addInboxItem: (text: string, type?: InboxItemType) => void;
+  processInboxItem: (id: string) => void;
+  convertInboxToTask: (id: string) => void;
+  deleteInboxItem: (id: string) => void;
 
   // ── Gamification ────────────────────────────────────────────────────────
   xp: number;
@@ -130,6 +188,7 @@ const CRITICAL_RATE     = 0.15;
 const OBJ_COLORS = ["#06b6d4", "#7c3aed", "#22c55e", "#f59e0b", "#ef4444", "#ec4899"];
 const PROJECT_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
 const PROJECT_EMOJIS = ["📁", "🚀", "💡", "🎯", "⚡", "🔥"];
+const GOAL_COLORS = ["#7c3aed", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#3b82f6", "#10b981"];
 
 // ─── Store ───────────────────────────────────────────────────────────────────
 
@@ -185,6 +244,13 @@ export const useAppStore = create<AppState>()(
         set({ tasks: [...tasks, newTask] });
         get().setLastActive(newTask.id);
       },
+
+      updateTask: (id, updates) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id === id ? { ...t, ...updates } : t
+          ),
+        })),
 
       updateTaskStatus: (id, status) =>
         set((s) => ({
@@ -261,6 +327,13 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           tasks: s.tasks.map((t) =>
             t.id === taskId ? { ...t, projectId } : t
+          ),
+        })),
+
+      setMicroSteps: (taskId, steps) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
+            t.id === taskId ? { ...t, microSteps: steps } : t
           ),
         })),
 
@@ -407,6 +480,116 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           objectives: s.objectives.filter((o) => o.id !== id),
           projects: s.projects.map((p) => p.objectiveId === id ? { ...p, objectiveId: undefined } : p),
+        })),
+
+      // ── Life Goals (Vision Board) ─────────────────────────────────────
+      lifeGoals: [],
+      addLifeGoal: (goal) =>
+        set((s) => ({
+          lifeGoals: [
+            ...s.lifeGoals,
+            {
+              ...goal,
+              id: uid(),
+              createdAt: Date.now(),
+              color: goal.color || GOAL_COLORS[s.lifeGoals.length % GOAL_COLORS.length],
+            },
+          ],
+        })),
+
+      updateLifeGoal: (id, updates) =>
+        set((s) => ({
+          lifeGoals: s.lifeGoals.map((g) =>
+            g.id === id ? { ...g, ...updates } : g
+          ),
+        })),
+
+      deleteLifeGoal: (id) =>
+        set((s) => ({
+          lifeGoals: s.lifeGoals.filter((g) => g.id !== id),
+        })),
+
+      toggleLifeGoalStep: (goalId, stepId) =>
+        set((s) => ({
+          lifeGoals: s.lifeGoals.map((g) =>
+            g.id === goalId
+              ? { ...g, actionSteps: g.actionSteps.map((s) => s.id === stepId ? { ...s, done: !s.done } : s) }
+              : g
+          ),
+        })),
+
+      addLifeGoalStep: (goalId, text) =>
+        set((s) => ({
+          lifeGoals: s.lifeGoals.map((g) =>
+            g.id === goalId
+              ? { ...g, actionSteps: [...g.actionSteps, { id: uid(), text: text.trim(), done: false }] }
+              : g
+          ),
+        })),
+
+      deleteLifeGoalStep: (goalId, stepId) =>
+        set((s) => ({
+          lifeGoals: s.lifeGoals.map((g) =>
+            g.id === goalId
+              ? { ...g, actionSteps: g.actionSteps.filter((s) => s.id !== stepId) }
+              : g
+          ),
+        })),
+
+      // ── Journal ───────────────────────────────────────────────────────
+      journalEntries: [],
+      addJournalEntry: (content, mood, tags) =>
+        set((s) => ({
+          journalEntries: [
+            { id: uid(), content: content.trim(), mood, tags: tags ?? [], createdAt: Date.now() },
+            ...s.journalEntries,
+          ],
+        })),
+
+      updateJournalEntry: (id, updates) =>
+        set((s) => ({
+          journalEntries: s.journalEntries.map((e) =>
+            e.id === id ? { ...e, ...updates } : e
+          ),
+        })),
+
+      deleteJournalEntry: (id) =>
+        set((s) => ({
+          journalEntries: s.journalEntries.filter((e) => e.id !== id),
+        })),
+
+      // ── Inbox (Quick Capture) ─────────────────────────────────────────
+      inboxItems: [],
+      addInboxItem: (text, type) =>
+        set((s) => ({
+          inboxItems: [
+            { id: uid(), text: text.trim(), type: type ?? "task", processed: false, createdAt: Date.now() },
+            ...s.inboxItems,
+          ],
+        })),
+
+      processInboxItem: (id) =>
+        set((s) => ({
+          inboxItems: s.inboxItems.map((i) =>
+            i.id === id ? { ...i, processed: true } : i
+          ),
+        })),
+
+      convertInboxToTask: (id) => {
+        const { inboxItems } = get();
+        const item = inboxItems.find((i) => i.id === id);
+        if (!item) return;
+        get().addTask(item.text);
+        set((s) => ({
+          inboxItems: s.inboxItems.map((i) =>
+            i.id === id ? { ...i, processed: true } : i
+          ),
+        }));
+      },
+
+      deleteInboxItem: (id) =>
+        set((s) => ({
+          inboxItems: s.inboxItems.filter((i) => i.id !== id),
         })),
 
       // ── Hyperfocus Sessions ──────────────────────────────────────────────
