@@ -51,15 +51,15 @@ const backdropVariants = {
 };
 
 const modalVariants = {
-  hidden:  { opacity: 0, scale: 0.92, y: 24 },
-  visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 280, damping: 26 } },
-  exit:    { opacity: 0, scale: 0.92, y: 24, transition: { duration: 0.2, ease: "easeIn" as const } },
+  hidden:  { opacity: 0, scale: 0.94, y: 20 },
+  visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 300, damping: 28 } },
+  exit:    { opacity: 0, scale: 0.94, y: 20, transition: { duration: 0.2, ease: "easeIn" as const } },
 };
 
 const stepVariants = {
-  enter:  (dir: number) => ({ opacity: 0, x: dir > 0 ? 50 : -50, scale: 0.96 }),
-  center: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.35, ease: "easeOut" as const } },
-  exit:   (dir: number) => ({ opacity: 0, x: dir > 0 ? -50 : 50, scale: 0.96, transition: { duration: 0.2, ease: "easeIn" as const } }),
+  enter:  (dir: number) => ({ opacity: 0, x: dir > 0 ? 40 : -40, scale: 0.97 }),
+  center: { opacity: 1, x: 0, scale: 1, transition: { duration: 0.3, ease: [0.4, 0, 0.2, 1] as const } },
+  exit:   (dir: number) => ({ opacity: 0, x: dir > 0 ? -40 : 40, scale: 0.97, transition: { duration: 0.2, ease: "easeIn" as const } }),
 };
 
 export default function OnboardingModal() {
@@ -93,7 +93,7 @@ export default function OnboardingModal() {
         initial="hidden" animate="visible" exit="exit"
         transition={{ duration: 0.3 }}
         className="fixed inset-0 z-50 flex items-center justify-center"
-        style={{ background: "rgba(10,10,12,0.8)", backdropFilter: "blur(12px)" }}
+        style={{ background: "rgba(0,0,0,0.75)", backdropFilter: "blur(8px)" }}
         onClick={handleSkip}
       >
         <motion.div
@@ -103,39 +103,42 @@ export default function OnboardingModal() {
           onClick={(e) => e.stopPropagation()}
           className="relative w-full max-w-lg mx-4 rounded-3xl overflow-hidden"
           style={{
-            background: "linear-gradient(180deg, #2a2a31, #222228)",
-            border: "1px solid rgba(255,255,255,0.10)",
-            boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 8px 32px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.08)",
+            background: "linear-gradient(180deg, rgba(20,20,24,0.98), rgba(15,15,18,0.99))",
+            border: "1px solid rgba(255,255,255,0.06)",
+            boxShadow: "0 24px 80px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05)",
           }}
         >
-          {/* Top accent glow */}
+          {/* Top accent line — glowing */}
           <motion.div
             key={`glow-${stepIndex}`}
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.5 }}
-            className="pointer-events-none absolute inset-x-0 top-0 h-[2px]"
+            className="pointer-events-none absolute inset-x-0 top-0 h-px"
             style={{
               background: `linear-gradient(to right, transparent, ${step.accent}, transparent)`,
-              boxShadow: `0 0 24px ${step.accent}50`,
+              boxShadow: `0 0 20px ${step.accent}40`,
             }}
           />
+          {/* Radial glow */}
           <motion.div
             key={`glow-bg-${stepIndex}`}
-            initial={{ opacity: 0 }} animate={{ opacity: 0.12 }} transition={{ duration: 0.6 }}
+            initial={{ opacity: 0 }} animate={{ opacity: 0.08 }} transition={{ duration: 0.6 }}
             className="pointer-events-none absolute inset-x-0 top-0 h-48 rounded-3xl"
             style={{ background: `radial-gradient(ellipse at 50% 0%, ${step.accent}, transparent 70%)` }}
           />
 
           <div className="relative z-10 px-8 pt-10 pb-8 flex flex-col gap-8">
+            {/* Header */}
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Sparkles size={13} style={{ color: "#6b6b76" }} />
-                <span className="text-[11px] font-semibold tracking-widest uppercase" style={{ color: "#6b6b76" }}>Guide de Survie</span>
+                <Sparkles size={13} className="text-zinc-500" />
+                <span className="text-[11px] font-medium text-zinc-500 tracking-widest uppercase">Guide de Survie</span>
               </div>
-              <button onClick={handleSkip} className="text-[11px] px-3 py-1 rounded-lg btn-3d" style={{ color: "#6b6b76" }}>
+              <button onClick={handleSkip} className="text-[11px] text-zinc-600 hover:text-zinc-400 transition-colors px-2 py-1 rounded-lg hover:bg-white/[0.03]">
                 Passer
               </button>
             </div>
 
+            {/* Step content */}
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
                 key={stepIndex}
@@ -145,36 +148,43 @@ export default function OnboardingModal() {
                 className="flex flex-col gap-6"
               >
                 {/* Icon — 3D */}
-                <motion.div
-                  whileHover={{ scale: 1.05, rotate: 3 }}
-                  className="w-16 h-16 rounded-2xl flex items-center justify-center"
+                <div
+                  className="w-14 h-14 rounded-2xl flex items-center justify-center"
                   style={{
-                    background: `linear-gradient(135deg, ${step.accent}25, ${step.accent}0a)`,
-                    border: `1px solid ${step.accent}30`,
-                    boxShadow: `0 4px 16px ${step.accent}15, 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.08)`,
+                    background: `linear-gradient(135deg, ${step.accent}20, ${step.accent}08)`,
+                    border: `1px solid ${step.accent}25`,
+                    boxShadow: `0 4px 16px ${step.accent}10, inset 0 1px 0 rgba(255,255,255,0.06)`,
                   }}
                 >
-                  <Icon size={28} style={{ color: step.accent }} strokeWidth={1.75} />
-                </motion.div>
-
-                <div className="flex flex-col gap-2">
-                  <span className="text-[11px] font-bold tracking-wider uppercase" style={{ color: step.accent }}>
-                    {step.tag}
-                  </span>
-                  <h2 className="text-[24px] font-black leading-tight tracking-tight" style={{ color: "#ececef" }}>{step.title}</h2>
-                  <p className="text-[15px] font-medium" style={{ color: "#9d9da7" }}>{step.subtitle}</p>
+                  <Icon size={26} style={{ color: step.accent }} strokeWidth={1.75} />
                 </div>
 
-                <p className="text-[13px] leading-relaxed" style={{ color: "#6b6b76" }}>{step.body}</p>
+                {/* Text */}
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-[11px] font-semibold tracking-wider uppercase" style={{ color: step.accent }}>
+                    {step.tag}
+                  </span>
+                  <h2 className="text-[22px] font-bold text-zinc-50 leading-tight tracking-tight">{step.title}</h2>
+                  <p className="text-[15px] font-medium text-zinc-300">{step.subtitle}</p>
+                </div>
 
-                {/* Hint — 3D pill */}
-                <div className="inline-flex self-start items-center gap-2.5 px-4 py-2 rounded-xl glass-pill">
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: step.accent, boxShadow: `0 0 8px ${step.accent}60` }} />
-                  <span className="text-[11px] italic" style={{ color: "#9d9da7" }}>{step.hint}</span>
+                <p className="text-[13px] text-zinc-400 leading-relaxed">{step.body}</p>
+
+                {/* Hint pill — 3D */}
+                <div className="inline-flex self-start items-center gap-2 px-3.5 py-2 rounded-xl"
+                  style={{
+                    background: "linear-gradient(135deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02))",
+                    border: "1px solid rgba(255,255,255,0.06)",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.04)",
+                  }}
+                >
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: step.accent, boxShadow: `0 0 6px ${step.accent}60` }} />
+                  <span className="text-[11px] text-zinc-400 italic">{step.hint}</span>
                 </div>
               </motion.div>
             </AnimatePresence>
 
+            {/* Footer */}
             <div className="flex items-center justify-between pt-2">
               <div className="flex gap-2 items-center">
                 {STEPS.map((_, i) => (
@@ -182,13 +192,12 @@ export default function OnboardingModal() {
                     key={i}
                     onClick={() => handleDotClick(i)}
                     animate={{
-                      width: i === stepIndex ? 24 : 8,
-                      height: 8,
-                      backgroundColor: i === stepIndex ? step.accent : "#36363f",
-                      boxShadow: i === stepIndex ? `0 0 10px ${step.accent}50` : "none",
+                      width: i === stepIndex ? 22 : 6,
+                      backgroundColor: i === stepIndex ? step.accent : "#3f3f46",
+                      boxShadow: i === stepIndex ? `0 0 8px ${step.accent}40` : "none",
                     }}
                     transition={{ type: "spring", stiffness: 400, damping: 24 }}
-                    className="rounded-full"
+                    className="h-1.5 rounded-full"
                     aria-label={`Étape ${i + 1}`}
                   />
                 ))}
@@ -196,13 +205,13 @@ export default function OnboardingModal() {
 
               <motion.button
                 onClick={handleNext}
-                whileHover={{ scale: 1.05, y: -1 }}
-                whileTap={{ scale: 0.95 }}
-                className="flex items-center gap-2 px-6 py-3 rounded-xl text-[13px] font-bold"
+                whileHover={{ scale: 1.04, y: -1 }}
+                whileTap={{ scale: 0.97 }}
+                className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
                 style={{
                   background: `linear-gradient(135deg, ${step.accent}, ${step.accent}cc)`,
-                  color: "#1c1c21",
-                  boxShadow: `0 4px 16px ${step.accent}35, 0 8px 24px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.2)`,
+                  color: "#0a0a0a",
+                  boxShadow: `0 4px 16px ${step.accent}30, inset 0 1px 0 rgba(255,255,255,0.15)`,
                 }}
               >
                 {isLast ? (<>C&apos;est parti <Sparkles size={14} /></>) : (<>Suivant <ArrowRight size={14} /></>)}

@@ -4,16 +4,16 @@ import { motion } from "framer-motion";
 import { Settings, Bell, Palette, Brain, Shield, Download, Trash2, ChevronRight } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
-function SettingRow({ icon: Icon, label, description, badge }: {
-  icon: typeof Settings; label: string; description: string; badge?: string;
+function SettingRow({ icon: Icon, label, description, badge, color = "#52525b" }: {
+  icon: typeof Settings; label: string; description: string; badge?: string; color?: string;
 }) {
   return (
     <div className="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all group cursor-default"
       style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
     >
       <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-105"
-        style={{ background: "rgba(255,255,255,0.04)" }}>
-        <Icon size={15} style={{ color: "rgba(255,255,255,0.35)" }} />
+        style={{ background: `${color}10` }}>
+        <Icon size={15} style={{ color }} />
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
@@ -63,29 +63,29 @@ export default function ReglagesPanel() {
             </div>
             <div className="grid grid-cols-4">
               {[
-                { label: "XP total",      value: xp },
-                { label: "Tâches faites", value: doneTasks },
-                { label: "Streak",        value: streak },
-                { label: "Objectifs",     value: objectives.length },
-              ].map(({ label, value }) => (
+                { label: "XP total",      value: xp,               color: "#fbbf24" },
+                { label: "Tâches faites", value: doneTasks,        color: "#67e8f9" },
+                { label: "Streak",        value: `${streak} 🔥`,  color: "#fca5a5" },
+                { label: "Objectifs",     value: objectives.length, color: "#4ade80" },
+              ].map(({ label, value, color }) => (
                 <div key={label} className="flex flex-col items-center py-4 gap-1">
-                  <span className="text-lg font-semibold tabular-nums" style={{ color: "rgba(255,255,255,0.6)" }}>{value}</span>
-                  <span className="text-[10px] text-center" style={{ color: "rgba(255,255,255,0.2)" }}>{label}</span>
+                  <span className="text-lg font-semibold tabular-nums" style={{ color }}>{value}</span>
+                  <span className="text-[10px] text-zinc-600 text-center">{label}</span>
                 </div>
               ))}
             </div>
           </motion.div>
 
           <Section title="Profil">
-            <SettingRow icon={Bell} label="Notifications" description="Rappels, alertes streak, résumé quotidien" badge="Bientôt" />
-            <SettingRow icon={Palette} label="Thème" description="Personnalise les couleurs" badge="Bientôt" />
-            <SettingRow icon={Brain} label="Profil TDAH" description="Ajuste selon ton sous-type" badge="Bientôt" />
+            <SettingRow icon={Bell} label="Notifications" description="Rappels, alertes streak, résumé quotidien" badge="Bientôt" color="#67e8f9" />
+            <SettingRow icon={Palette} label="Thème" description="Personnalise les couleurs" badge="Bientôt" color="#a78bfa" />
+            <SettingRow icon={Brain} label="Profil TDAH" description="Ajuste selon ton sous-type" badge="Bientôt" color="#fbbf24" />
           </Section>
 
           <Section title="Données">
-            <SettingRow icon={Download} label="Exporter" description="Télécharge tes données en JSON" badge="Bientôt" />
-            <SettingRow icon={Shield} label="Confidentialité" description="Données locales · Aucun tracking" />
-            <SettingRow icon={Trash2} label="Réinitialiser" description="Supprimer toutes les données" badge="Danger" />
+            <SettingRow icon={Download} label="Exporter" description="Télécharge tes données en JSON" badge="Bientôt" color="#4ade80" />
+            <SettingRow icon={Shield} label="Confidentialité" description="Données locales · Aucun tracking" color="#71717a" />
+            <SettingRow icon={Trash2} label="Réinitialiser" description="Supprimer toutes les données" badge="Danger" color="#fca5a5" />
           </Section>
 
           <div className="rounded-2xl px-5 py-4 text-center" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
