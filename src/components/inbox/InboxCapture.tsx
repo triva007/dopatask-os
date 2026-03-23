@@ -9,10 +9,10 @@ import {
 import { useAppStore } from "@/store/useAppStore";
 import type { InboxItemType } from "@/store/useAppStore";
 
-const TYPE_CONFIG: { id: InboxItemType; label: string; icon: typeof ListTodo; color: string }[] = [
-  { id: "task", label: "Tâche", icon: ListTodo, color: "#4ade80" },
-  { id: "note", label: "Note", icon: StickyNote, color: "#67e8f9" },
-  { id: "event", label: "Event", icon: Calendar, color: "#a78bfa" },
+const TYPE_CONFIG: { id: InboxItemType; label: string; icon: typeof ListTodo; dot: string }[] = [
+  { id: "task", label: "Tâche", icon: ListTodo, dot: "#4ade80" },
+  { id: "note", label: "Note", icon: StickyNote, dot: "#67e8f9" },
+  { id: "event", label: "Event", icon: Calendar, dot: "#a78bfa" },
 ];
 
 export default function InboxCapture() {
@@ -104,14 +104,15 @@ export default function InboxCapture() {
                 <button
                   key={t.id}
                   onClick={() => setSelectedType(t.id)}
-                  className="text-[10px] px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1"
+                  className="text-[10px] px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1.5"
                   style={{
-                    background: selectedType === t.id ? `${t.color}12` : "transparent",
-                    color: selectedType === t.id ? t.color : "#52525b",
-                    border: `1px solid ${selectedType === t.id ? t.color + "25" : "rgba(255,255,255,0.04)"}`,
+                    background: selectedType === t.id ? "rgba(255,255,255,0.06)" : "transparent",
+                    color: selectedType === t.id ? "rgba(255,255,255,0.6)" : "rgba(255,255,255,0.2)",
+                    border: `1px solid ${selectedType === t.id ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)"}`,
                   }}
                 >
-                  <t.icon size={9} /> {t.label}
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: selectedType === t.id ? t.dot : "rgba(255,255,255,0.1)" }} />
+                  {t.label}
                 </button>
               ))}
             </div>
@@ -142,7 +143,7 @@ export default function InboxCapture() {
               type="submit"
               disabled={!input.trim()}
               className="p-2 rounded-xl transition-all disabled:opacity-20"
-              style={{ background: "rgba(74,222,128,0.08)", border: "1px solid rgba(74,222,128,0.15)", color: "#4ade80" }}
+              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.5)" }}
             >
               <Plus size={14} />
             </button>
@@ -177,9 +178,9 @@ export default function InboxCapture() {
                   >
                     <div
                       className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: `${cfg?.color}10`, border: `1px solid ${cfg?.color}20` }}
+                      style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
                     >
-                      {cfg && <cfg.icon size={11} style={{ color: cfg.color }} />}
+                      {cfg && <span className="w-2 h-2 rounded-full" style={{ background: cfg.dot }} />}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm text-zinc-300 truncate">{item.text}</p>
@@ -193,7 +194,7 @@ export default function InboxCapture() {
                         <button
                           onClick={() => convertInboxToTask(item.id)}
                           className="p-1.5 rounded-lg text-[10px] flex items-center gap-1 transition-all"
-                          style={{ background: "rgba(74,222,128,0.08)", color: "#4ade80" }}
+                          style={{ background: "rgba(255,255,255,0.04)", color: "rgba(255,255,255,0.5)" }}
                           title="Convertir en tâche"
                         >
                           <ArrowRight size={10} /> Tâche

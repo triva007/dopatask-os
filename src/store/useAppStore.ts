@@ -244,7 +244,7 @@ export const useAppStore = create<AppState>()(
 
       addTask: (text, status, projectId) => {
         const { tasks } = get();
-        const targetStatus = status ?? (tasks.filter((t) => t.status === "today").length < 5 ? "today" : "inbox");
+        const targetStatus = status ?? "inbox";
         const newTask: Task = {
           id: uid(), text: text.trim(), status: targetStatus, projectId,
           createdAt: Date.now(), tags: [], microSteps: [], expanded: false,
