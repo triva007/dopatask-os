@@ -55,7 +55,7 @@ export default function Sidebar() {
               boxShadow: "0 2px 8px rgba(0,0,0,0.2), inset 0 1px 0 rgba(255,255,255,0.08)",
             }}
           >
-            <Zap size={15} className="text-dopa-violet" />
+            <Zap size={18} className="text-dopa-violet" />
           </div>
           {/* Pulse ring */}
           <div className="absolute inset-0 rounded-xl animate-pulse-slow opacity-30"
@@ -63,10 +63,10 @@ export default function Sidebar() {
           />
         </div>
         <div>
-          <p className="text-[13px] font-semibold text-zinc-100 leading-none tracking-tight">
+          <p className="text-sm font-semibold text-zinc-100 leading-none tracking-tight">
             DopaTask
           </p>
-          <p className="text-[10px] text-zinc-600 leading-none mt-1 font-medium">
+          <p className="text-[10px] text-zinc-500 leading-none mt-1 font-medium">
             OS v4.0
           </p>
         </div>
@@ -81,7 +81,7 @@ export default function Sidebar() {
               key={href}
               href={href}
               onClick={() => setPathname(href)}
-              className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative overflow-hidden"
+              className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative overflow-hidden"
               style={{
                 background: isActive ? "rgba(255,255,255,0.06)" : "transparent",
               }}
@@ -111,15 +111,15 @@ export default function Sidebar() {
                 />
               )}
               <Icon
-                size={16}
-                style={{ color: isActive ? "#d4d4d8" : "#52525b" }}
+                size={18}
+                style={{ color: isActive ? "#e4e4e7" : "#6b6b7a" }}
                 className="shrink-0 transition-colors group-hover:text-zinc-400 relative z-10"
                 strokeWidth={isActive ? 2 : 1.5}
               />
               <span
-                className="text-[13px] transition-colors leading-none relative z-10"
+                className="text-sm transition-colors leading-none relative z-10"
                 style={{
-                  color: isActive ? "#e4e4e7" : "#71717a",
+                  color: isActive ? "#f0f0f3" : "#8a8a98",
                   fontWeight: isActive ? 500 : 400,
                 }}
               >
@@ -139,21 +139,21 @@ export default function Sidebar() {
       <Link
         href="/reglages"
         onClick={() => setPathname("/reglages")}
-        className="flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 group relative z-10"
+        className="flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group relative z-10"
         style={{
           background: pathname === "/reglages" ? "rgba(255,255,255,0.06)" : "transparent",
         }}
       >
         <Settings
-          size={16}
-          style={{ color: pathname === "/reglages" ? "#a1a1aa" : "#52525b" }}
+          size={18}
+          style={{ color: pathname === "/reglages" ? "#d4d4d8" : "#6b6b7a" }}
           className="shrink-0 transition-colors group-hover:text-zinc-400"
           strokeWidth={1.5}
         />
         <span
-          className="text-[13px] transition-colors leading-none"
+          className="text-sm transition-colors leading-none"
           style={{
-            color: pathname === "/reglages" ? "#d4d4d8" : "#71717a",
+            color: pathname === "/reglages" ? "#f0f0f3" : "#8a8a98",
             fontWeight: pathname === "/reglages" ? 500 : 400,
           }}
         >
@@ -165,7 +165,7 @@ export default function Sidebar() {
       <div className="px-3 pt-3 mt-1 relative z-10">
         <div className="flex items-center gap-2">
           <div className="w-1.5 h-1.5 rounded-full bg-dopa-green animate-pulse" />
-          <p className="text-[10px] text-zinc-700">
+          <p className="text-[10px] text-zinc-600">
             DopaTask OS 4.0
           </p>
         </div>

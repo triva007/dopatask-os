@@ -115,7 +115,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="flex items-start justify-between p-6 pb-4">
+        <div className="flex items-start justify-between p-7 pb-5">
           <div className="flex-1 min-w-0">
             {editingTitle ? (
               <input
@@ -124,12 +124,12 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 onBlur={handleSaveTitle}
                 onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); }}
                 autoFocus
-                className="text-xl font-semibold text-zinc-100 bg-transparent focus:outline-none w-full border-b pb-1"
+                className="text-2xl font-semibold text-zinc-100 bg-transparent focus:outline-none w-full border-b pb-1"
                 style={{ borderColor: "rgba(255,255,255,0.1)" }}
               />
             ) : (
               <h2
-                className="text-xl font-semibold text-zinc-100 cursor-pointer hover:text-white transition-colors"
+                className="text-2xl font-semibold text-zinc-100 cursor-pointer hover:text-white transition-colors"
                 onClick={() => setEditingTitle(true)}
               >
                 {task.text}
@@ -151,19 +151,19 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
         </div>
 
         {/* Content */}
-        <div className="px-6 pb-6 flex flex-col gap-5">
+        <div className="px-7 pb-7 flex flex-col gap-6">
 
           {/* Status */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="flex flex-col gap-3">
+            <label className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
               <Clock size={10} /> Statut
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               {STATUS_CONFIG.map((s) => (
                 <button
                   key={s.id}
                   onClick={() => updateTaskStatus(task.id, s.id)}
-                  className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
+                  className="text-xs px-3.5 py-2 rounded-xl font-medium transition-all"
                   style={{
                     background: task.status === s.id ? `${s.color}15` : "rgba(255,255,255,0.03)",
                     color: task.status === s.id ? s.color : "#71717a",
@@ -177,16 +177,16 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           </div>
 
           {/* Priority */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="flex flex-col gap-3">
+            <label className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
               <Flag size={10} /> Priorité
             </label>
-            <div className="flex gap-2">
+            <div className="flex gap-2.5">
               {PRIORITY_CONFIG.map((p) => (
                 <button
                   key={p.id}
                   onClick={() => updateTask(task.id, { priority: task.priority === p.id ? undefined : p.id })}
-                  className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
+                  className="text-xs px-3.5 py-2 rounded-xl font-medium transition-all"
                   style={{
                     background: task.priority === p.id ? `${p.color}15` : "rgba(255,255,255,0.03)",
                     color: task.priority === p.id ? p.color : "#71717a",
@@ -200,15 +200,15 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           </div>
 
           {/* Tags INCUP */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="flex flex-col gap-3">
+            <label className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
               <Tag size={10} /> Tags INCUP
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               {INCUP_TAGS.map(({ tag, color }) => {
                 const active = task.tags.includes(tag);
                 return (
-                  <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
+                  <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-xs px-3.5 py-2 rounded-xl font-medium transition-all"
                     style={{ color: active ? color : "#52525b", background: active ? `${color}12` : "rgba(255,255,255,0.03)", border: `1px solid ${active ? color + "25" : "rgba(255,255,255,0.06)"}` }}
                   >{tag}</button>
                 );
@@ -217,14 +217,14 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           </div>
 
           {/* Project */}
-          <div className="flex flex-col gap-2">
-            <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
+          <div className="flex flex-col gap-3">
+            <label className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
               <FolderKanban size={10} /> Projet
             </label>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex flex-wrap gap-2.5">
               <button
                 onClick={() => updateTask(task.id, { projectId: undefined })}
-                className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
+                className="text-xs px-3.5 py-2 rounded-xl font-medium transition-all"
                 style={{
                   background: !task.projectId ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)",
                   color: !task.projectId ? "#e4e4e7" : "#71717a",
@@ -235,7 +235,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 <button
                   key={p.id}
                   onClick={() => updateTask(task.id, { projectId: p.id })}
-                  className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
+                  className="text-xs px-3.5 py-2 rounded-xl font-medium transition-all"
                   style={{
                     background: task.projectId === p.id ? `${p.color}15` : "rgba(255,255,255,0.03)",
                     color: task.projectId === p.id ? p.color : "#71717a",
@@ -247,13 +247,13 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           </div>
 
           {/* Description */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
+              <label className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
                 <FileText size={10} /> Description
               </label>
               {!showDesc && (
-                <button onClick={() => setShowDesc(true)} className="text-[10px] text-zinc-600 hover:text-zinc-400">+ Ajouter</button>
+                <button onClick={() => setShowDesc(true)} className="text-[11px] text-zinc-600 hover:text-zinc-400">+ Ajouter</button>
               )}
             </div>
             {showDesc && (
@@ -262,17 +262,17 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 onChange={(e) => setDescDraft(e.target.value)}
                 onBlur={handleSaveDesc}
                 placeholder="Ajoute une description, des notes, du contexte…"
-                rows={4}
-                className="text-sm bg-transparent text-zinc-300 placeholder:text-zinc-700 rounded-2xl p-4 focus:outline-none resize-none"
+                rows={5}
+                className="text-base bg-transparent text-zinc-300 placeholder:text-zinc-700 rounded-2xl p-5 focus:outline-none resize-none"
                 style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
               />
             )}
           </div>
 
           {/* Micro-steps */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3">
             <div className="flex items-center justify-between">
-              <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
+              <label className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
                 <Check size={10} /> Micro-étapes
                 {totalSteps > 0 && <span className="text-zinc-700 ml-1">{doneSteps}/{totalSteps}</span>}
               </label>
@@ -292,13 +292,13 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               </div>
             )}
 
-            <div className="flex flex-col gap-1.5">
+            <div className="flex flex-col gap-2">
               {task.microSteps.map((ms) => (
-                <div key={ms.id} className="flex items-center gap-3 group/ms px-2 py-1.5 rounded-xl hover:bg-white/[0.02] transition-colors">
+                <div key={ms.id} className="flex items-center gap-3 group/ms px-3 py-2 rounded-xl hover:bg-white/[0.02] transition-colors">
                   <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-4 h-4 rounded-lg border flex items-center justify-center transition-all"
                     style={{ borderColor: ms.done ? "rgba(74,222,128,0.4)" : "rgba(255,255,255,0.1)", background: ms.done ? "rgba(74,222,128,0.1)" : "transparent" }}
                   >{ms.done && <Check size={9} style={{ color: "#4ade80" }} strokeWidth={3} />}</button>
-                  <span className="flex-1 text-[12px]" style={{ color: ms.done ? "#3f3f46" : "#d4d4d8", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
+                  <span className="flex-1 text-sm" style={{ color: ms.done ? "#3f3f46" : "#d4d4d8", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
                   <button onClick={() => deleteMicroStep(task.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-zinc-700 hover:text-zinc-400 transition-all">
                     <X size={11} />
                   </button>
@@ -306,28 +306,28 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               ))}
             </div>
 
-            <form onSubmit={handleAddMicro} className="flex items-center gap-2 mt-1">
+            <form onSubmit={handleAddMicro} className="flex items-center gap-2.5 mt-2">
               <Plus size={12} className="text-zinc-700 shrink-0" />
               <input
                 value={microInput}
                 onChange={(e) => setMicroInput(e.target.value)}
                 placeholder="Ajouter une micro-étape…"
-                className="flex-1 text-[12px] bg-transparent text-zinc-400 placeholder:text-zinc-700 focus:outline-none py-1"
+                className="flex-1 text-sm bg-transparent text-zinc-400 placeholder:text-zinc-700 focus:outline-none py-1.5"
               />
             </form>
           </div>
 
           {/* Actions */}
-          <div className="flex items-center justify-between pt-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
-            <p className="text-[10px] text-zinc-700">
+          <div className="flex items-center justify-between pt-4" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+            <p className="text-[11px] text-zinc-700">
               {taskProject ? `${taskProject.emoji} ${taskProject.name}` : "Aucun projet"}
             </p>
             <button
               onClick={() => { deleteTask(task.id); onClose(); }}
-              className="flex items-center gap-1.5 text-[11px] text-zinc-600 hover:text-red-300 transition-colors px-3 py-1.5 rounded-xl"
+              className="flex items-center gap-2 text-xs text-zinc-600 hover:text-red-300 transition-colors px-3.5 py-2 rounded-xl"
               style={{ border: "1px solid rgba(255,255,255,0.04)" }}
             >
-              <Trash2 size={11} /> Supprimer cette tâche
+              <Trash2 size={12} /> Supprimer cette tâche
             </button>
           </div>
         </div>

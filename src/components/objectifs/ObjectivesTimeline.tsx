@@ -40,21 +40,21 @@ export default function ObjectivesTimeline() {
     <div className="flex flex-col h-full overflow-hidden">
       <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         <div>
-          <h1 className="text-lg font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
-            <Target size={18} className="text-zinc-400" /> Objectifs
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
+            <Target size={20} className="text-zinc-400" /> Objectifs
           </h1>
-          <p className="text-xs text-zinc-600 mt-1">{objectives.length} objectifs actifs</p>
+          <p className="text-sm text-zinc-600 mt-1">{objectives.length} objectifs actifs</p>
         </div>
-        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
+        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-4 py-2.5 rounded-xl font-medium transition-all"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#d4d4d8" }}
         ><Plus size={13} /> Nouveau</button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-7 py-6">
         <AnimatePresence>
           {adding && (
             <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              onSubmit={handleAdd} className="mb-5 p-4 rounded-2xl flex flex-col gap-3"
+              onSubmit={handleAdd} className="mb-5 p-5 rounded-2xl flex flex-col gap-3"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Titre de l'objectif"
@@ -80,14 +80,14 @@ export default function ObjectivesTimeline() {
             if (objs.length === 0) return null;
             return (
               <div key={key} className="flex flex-col gap-3">
-                <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest px-1">{label}</p>
+                <p className="text-xs font-medium text-zinc-600 uppercase tracking-widest px-1">{label}</p>
                 {objs.map((obj) => {
                   const isExpanded = expandedId === obj.id;
                   return (
-                    <motion.div key={obj.id} layout className="rounded-2xl overflow-hidden transition-all"
+                    <motion.div key={obj.id} layout className="rounded-2xl overflow-hidden transition-all border-collapse"
                       style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${isExpanded ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}` }}
                     >
-                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : obj.id)}>
+                      <div className="flex items-center gap-3 px-5 py-4 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : obj.id)}>
                         <div className="w-3 h-3 rounded-full shrink-0" style={{ background: obj.color }} />
                         <span className="flex-1 text-sm text-zinc-200 min-w-0 truncate" style={{ fontWeight: 450 }}>{obj.title}</span>
                         <span className="text-[10px] font-mono text-zinc-600 shrink-0">{obj.progress}%</span>
@@ -100,13 +100,13 @@ export default function ObjectivesTimeline() {
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                            <div className="px-4 pb-3 pt-1 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div className="px-4 pb-3 pt-1 flex flex-col gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
                               {obj.milestones.map((ms) => (
                                 <div key={ms.id} className="flex items-center gap-2.5 group/ms py-0.5">
                                   <button onClick={() => toggleMilestone(obj.id, ms.id)} className="shrink-0 w-4 h-4 rounded-md border flex items-center justify-center transition-all"
                                     style={{ borderColor: ms.done ? `${obj.color}60` : "rgba(255,255,255,0.08)", background: ms.done ? `${obj.color}15` : "transparent" }}
                                   >{ms.done && <Check size={8} style={{ color: obj.color }} strokeWidth={3} />}</button>
-                                  <span className="flex-1 text-[11px]" style={{ color: ms.done ? "#3f3f46" : "#a1a1aa", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
+                                  <span className="flex-1 text-xs" style={{ color: ms.done ? "#3f3f46" : "#a1a1aa", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
                                   <button onClick={() => deleteMilestone(obj.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-zinc-700 hover:text-zinc-400"><Trash2 size={9} /></button>
                                 </div>
                               ))}
@@ -114,7 +114,7 @@ export default function ObjectivesTimeline() {
                               <div className="flex items-center gap-2 mt-1">
                                 <input value={msInputs[obj.id] || ""} onChange={(e) => setMsInputs((p) => ({ ...p, [obj.id]: e.target.value }))}
                                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddMs(obj.id); } }}
-                                  placeholder="+ jalon" className="flex-1 text-[11px] bg-transparent border-b py-1 text-zinc-400 placeholder:text-zinc-700 focus:outline-none"
+                                  placeholder="+ jalon" className="flex-1 text-xs bg-transparent border-b py-1 text-zinc-400 placeholder:text-zinc-700 focus:outline-none"
                                   style={{ borderColor: "rgba(255,255,255,0.04)" }} />
                               </div>
 

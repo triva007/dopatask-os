@@ -51,9 +51,9 @@ export default function TimelineColumn() {
       <div className="shrink-0 relative z-10">
         <div className="flex items-center gap-2 mb-2">
           <Calendar size={12} className="text-zinc-600" />
-          <span className="text-[10px] text-zinc-600 uppercase tracking-widest font-medium">Aujourd&apos;hui</span>
+          <span className="text-[11px] text-zinc-600 uppercase tracking-widest font-medium">Aujourd&apos;hui</span>
         </div>
-        <p className="text-sm font-semibold text-zinc-100 capitalize leading-tight tracking-tight">
+        <p className="text-base font-semibold text-zinc-100 capitalize leading-tight tracking-tight">
           {now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}
         </p>
         <div className="flex items-center gap-2 mt-2.5">
@@ -61,7 +61,7 @@ export default function TimelineColumn() {
             <div className="w-2 h-2 rounded-full bg-dopa-green" />
             <div className="absolute inset-0 w-2 h-2 rounded-full bg-dopa-green animate-ping opacity-30" />
           </div>
-          <p className="text-[12px] text-zinc-400 flex items-center gap-1.5 font-mono tabular-nums">
+          <p className="text-sm text-zinc-400 flex items-center gap-1.5 font-mono tabular-nums">
             <Clock size={10} />
             {pad(now.getHours())}:{pad(now.getMinutes())}
           </p>
@@ -80,7 +80,7 @@ export default function TimelineColumn() {
           const pct = (i / TOTAL_HOURS) * 100;
           return (
             <div key={h} className="absolute left-0 right-0 flex items-center gap-2" style={{ top: `${pct}%` }}>
-              <span className="text-[9px] text-zinc-700 w-9 shrink-0 select-none font-mono text-right pr-1">
+              <span className="text-[10px] text-zinc-700 w-9 shrink-0 select-none font-mono text-right pr-1">
                 {pad(h)}h
               </span>
               <div className="flex-1 h-px" style={{ background: "rgba(255,255,255,0.025)" }} />
@@ -110,11 +110,11 @@ export default function TimelineColumn() {
                 boxShadow: `0 2px 8px ${ev.color}08, inset 0 1px 0 rgba(255,255,255,0.03)`,
               }}
             >
-              <p className="text-[10px] font-medium leading-tight truncate" style={{ color: `${ev.color}dd` }}>
+              <p className="text-[11px] font-medium leading-tight truncate" style={{ color: `${ev.color}dd` }}>
                 {ev.label}
               </p>
               {ev.duration > 1 && (
-                <p className="text-[9px] mt-0.5 font-mono" style={{ color: `${ev.color}60` }}>
+                <p className="text-xs mt-0.5 font-mono" style={{ color: `${ev.color}60` }}>
                   {ev.duration}h
                 </p>
               )}

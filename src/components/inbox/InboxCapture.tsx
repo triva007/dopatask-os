@@ -84,18 +84,18 @@ export default function InboxCapture() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="shrink-0 px-7 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <h1 className="text-lg font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
-          <Inbox size={18} className="text-zinc-400" /> Inbox
+        <h1 className="text-xl font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
+          <Inbox size={20} className="text-zinc-400" /> Inbox
         </h1>
-        <p className="text-xs text-zinc-600 mt-1">
+        <p className="text-sm text-zinc-600 mt-1">
           Capture rapide · {pendingItems.length} en attente
         </p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-7 py-6 flex flex-col gap-6">
 
         {/* Quick Capture Input */}
-        <div className="rounded-2xl p-4 flex flex-col gap-3"
+        <div className="rounded-2xl p-5 flex flex-col gap-3"
           style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="flex items-center gap-2">
@@ -158,8 +158,8 @@ export default function InboxCapture() {
 
         {/* Pending Items */}
         {pendingItems.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest px-1">
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest px-1">
               En attente ({pendingItems.length})
             </p>
             <AnimatePresence mode="popLayout">
@@ -172,7 +172,7 @@ export default function InboxCapture() {
                     initial={{ opacity: 0, y: -5 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -20 }}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl group"
+                    className="flex items-center gap-3 px-5 py-4 rounded-2xl group"
                     style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
                   >
                     <div
@@ -224,8 +224,8 @@ export default function InboxCapture() {
 
         {/* Processed Items */}
         {processedItems.length > 0 && (
-          <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest px-1">
+          <div className="flex flex-col gap-3">
+            <p className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest px-1">
               Traités ({processedItems.length})
             </p>
             {processedItems.slice(0, 10).map((item) => (
@@ -249,12 +249,12 @@ export default function InboxCapture() {
 
         {inboxItems.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
               <Inbox size={22} className="text-zinc-600" />
             </div>
             <div className="text-center">
               <p className="text-sm text-zinc-400">Inbox vide</p>
-              <p className="text-xs text-zinc-600 mt-1">Capture tes idées en un clic. Trie-les plus tard.</p>
+              <p className="text-sm text-zinc-600 mt-1">Capture tes idées en un clic. Trie-les plus tard.</p>
             </div>
           </div>
         )}

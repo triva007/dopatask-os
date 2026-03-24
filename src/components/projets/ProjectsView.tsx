@@ -45,22 +45,22 @@ export default function ProjectsView() {
       {/* Header */}
       <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         <div>
-          <h1 className="text-lg font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
-            <FolderKanban size={18} className="text-zinc-400" /> Projets
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
+            <FolderKanban size={20} className="text-zinc-400" /> Projets
           </h1>
-          <p className="text-xs text-zinc-600 mt-1">{projects.length} projets · {activeProjects.length} actifs</p>
+          <p className="text-sm text-zinc-600 mt-1">{projects.length} projets · {activeProjects.length} actifs</p>
         </div>
-        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
+        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-4 py-2.5 rounded-xl font-medium transition-all"
           style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#d4d4d8" }}
         ><Plus size={13} /> Nouveau</button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-7 py-6 flex flex-col gap-6">
         {/* Add form */}
         <AnimatePresence>
           {adding && (
             <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              onSubmit={handleAdd} className="p-4 rounded-2xl flex flex-col gap-3"
+              onSubmit={handleAdd} className="p-5 rounded-2xl flex flex-col gap-3"
               style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <div className="flex items-center gap-3">
@@ -81,7 +81,7 @@ export default function ProjectsView() {
         {/* Active projects */}
         {activeProjects.length > 0 && (
           <div className="flex flex-col gap-3">
-            <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest px-1">Actifs</p>
+            <p className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest px-1">Actifs</p>
             <div className="grid grid-cols-2 gap-3">
               {activeProjects.map((project) => {
                 const projectTasks = tasks.filter((t) => t.projectId === project.id);
@@ -93,10 +93,10 @@ export default function ProjectsView() {
                     onClick={() => setSelectedId(isSelected ? null : project.id)}
                     style={{ background: isSelected ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)", border: `1px solid ${isSelected ? "rgba(255,255,255,0.1)" : "rgba(255,255,255,0.04)"}` }}
                   >
-                    <div className="flex items-center gap-3 p-4">
+                    <div className="flex items-center gap-3 p-5">
                       <span className="text-2xl">{project.emoji}</span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-zinc-200 truncate" style={{ fontWeight: 450 }}>{project.name}</p>
+                        <p className="text-[15px] text-zinc-200 truncate" style={{ fontWeight: 450 }}>{project.name}</p>
                         <p className="text-[11px] text-zinc-600 mt-0.5">{projectTasks.length} tâches · {doneTasks} faites</p>
                       </div>
                       {isSelected ? <ChevronDown size={14} className="text-zinc-500 shrink-0" /> : <ChevronRight size={14} className="text-zinc-700 shrink-0" />}
@@ -111,7 +111,7 @@ export default function ProjectsView() {
                     <AnimatePresence>
                       {isSelected && (
                         <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                          <div className="px-4 pb-3 flex flex-col gap-2" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                          <div className="px-4 pb-3 flex flex-col gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
                             <div className="flex flex-wrap gap-1.5 pt-2">
                               {(["active", "paused", "completed", "archived"] as ProjectStatus[]).map((s) => (
                                 <button key={s} onClick={(e) => { e.stopPropagation(); updateProject(project.id, { status: s }); }}
@@ -149,8 +149,8 @@ export default function ProjectsView() {
         {/* Other projects — now with full interactivity */}
         {otherProjects.length > 0 && (
           <div className="flex flex-col gap-3">
-            <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest px-1">Autres</p>
-            <div className="flex flex-col gap-2">
+            <p className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest px-1">Autres</p>
+            <div className="flex flex-col gap-3">
               {otherProjects.map((project) => {
                 const projectTasks = tasks.filter((t) => t.projectId === project.id);
                 const doneTasks = projectTasks.filter((t) => t.status === "done" || t.status === "completed").length;
@@ -239,8 +239,8 @@ export default function ProjectsView() {
 
         {projects.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 gap-3">
-            <div className="w-11 h-11 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <FolderKanban size={18} className="text-zinc-600" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <FolderKanban size={20} className="text-zinc-600" />
             </div>
             <p className="text-xs text-zinc-600">Aucun projet. Crée ton premier !</p>
           </div>

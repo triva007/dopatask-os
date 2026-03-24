@@ -35,10 +35,10 @@ export default function BreadcrumbBanner() {
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
           className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl"
           style={{
-            background: "linear-gradient(135deg, rgba(18,18,22,0.95), rgba(14,14,18,0.98))",
+            background: "linear-gradient(135deg, rgba(24,24,30,0.96), rgba(20,20,26,0.99))",
             backdropFilter: "blur(24px) saturate(150%)",
-            border: "1px solid rgba(255,255,255,0.08)",
-            boxShadow: "0 12px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.03), inset 0 1px 0 rgba(255,255,255,0.05)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         >
           {/* Pulsing dot */}
@@ -48,8 +48,8 @@ export default function BreadcrumbBanner() {
           </div>
 
           <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-zinc-500">Reprendre ?</span>
-            <span className="text-[12px] font-medium text-zinc-200">&ldquo;{lastTask.text}&rdquo;</span>
+            <span className="text-[10px] text-zinc-400">Reprendre ?</span>
+            <span className="text-[12px] font-medium text-zinc-100">&ldquo;{lastTask.text}&rdquo;</span>
           </div>
 
           <motion.button
@@ -67,7 +67,7 @@ export default function BreadcrumbBanner() {
             <RotateCcw size={10} /> Reprendre
           </motion.button>
 
-          <button onClick={() => setVisible(false)} className="text-zinc-600 hover:text-zinc-400 ml-1 transition-colors">
+          <button onClick={() => setVisible(false)} className="text-zinc-500 hover:text-zinc-300 ml-1 transition-colors">
             <X size={12} />
           </button>
         </motion.div>

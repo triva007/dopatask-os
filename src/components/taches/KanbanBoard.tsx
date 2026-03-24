@@ -84,7 +84,7 @@ function estimateMinutes(taskText: string): number {
 /* ─── Kanban Card ──────────────────────────────────────────────────── */
 
 function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: Task) => void }) {
-  const { updateTaskStatus, deleteTask, toggleTag, toggleExpand, addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps, updateTask } = useAppStore();
+  const { updateTaskStatus, deleteTask, toggleTag, toggleExpand, addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps, updateTask, projects } = useAppStore();
   const [microInput, setMicroInput] = useState("");
   const doneCount = task.microSteps.filter((ms) => ms.done).length;
   const totalSteps = task.microSteps.length;
@@ -124,17 +124,26 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
         background: task.expanded ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.02)",
       }}
     >
-      <div className="flex items-start gap-2 px-4 py-3">
+      <div className="flex items-start gap-2 px-5 py-4">
         <GripVertical size={11} className="text-zinc-800 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
         <div
           className="flex-1 min-w-0 cursor-pointer"
           onClick={(e) => { e.stopPropagation(); onOpenDetail(task); }}
         >
           <p className="text-sm text-zinc-200 leading-snug hover:text-white transition-colors" style={{ fontWeight: 450 }}>{task.text}</p>
+          {task.projectId && (() => {
+            const project = projects.find(p => p.id === task.projectId);
+            return project ? (
+              <div className="flex items-center gap-1.5 mt-1">
+                <span className="text-[11px]">{project.emoji}</span>
+                <span className="text-[11px] font-medium" style={{ color: project.color }}>{project.name}</span>
+              </div>
+            ) : null;
+          })()}
           {task.estimatedMinutes && (
             <div className="flex items-center gap-1 mt-1">
               <Timer size={9} className="text-zinc-600" />
-              <span className="text-[9px] text-zinc-600">~{task.estimatedMinutes} min</span>
+              <span className="text-xs text-zinc-600">~{task.estimatedMinutes} min</span>
             </div>
           )}
           {task.tags.length > 0 && (
@@ -142,7 +151,7 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
               {task.tags.map((tag) => {
                 const cfg = INCUP_TAGS.find((t) => t.tag === tag);
                 return (
-                  <span key={tag} className="text-[9px] px-2 py-0.5 rounded-lg font-medium"
+                  <span key={tag} className="text-[11px] px-2 py-0.5 rounded-lg font-medium"
                     style={{ color: cfg?.color, background: `${cfg?.color}12`, border: `1px solid ${cfg?.color}20` }}
                   >{tag}</span>
                 );
@@ -154,7 +163,7 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
               <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
                 <div className="h-full rounded-full transition-all" style={{ width: `${(doneCount / totalSteps) * 100}%`, background: "#4ade80" }} />
               </div>
-              <span className="text-[9px] text-zinc-600 font-mono">{doneCount}/{totalSteps}</span>
+              <span className="text-xs text-zinc-600 font-mono">{doneCount}/{totalSteps}</span>
             </div>
           )}
         </div>
@@ -173,7 +182,7 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
             value={task.status}
             onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
             onClick={(e) => e.stopPropagation()}
-            className="text-[9px] bg-transparent border text-zinc-500 rounded-lg px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            className="text-xs bg-transparent border text-zinc-500 rounded-lg px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
             style={{ borderColor: "rgba(255,255,255,0.06)" }}
           >
             {COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
@@ -187,12 +196,12 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
       <AnimatePresence>
         {task.expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="px-4 pb-3 pt-1 flex flex-col gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+            <div className="px-5 pb-4 pt-1.5 flex flex-col gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
               <div className="flex flex-wrap gap-1.5">
                 {INCUP_TAGS.map(({ tag, color }) => {
                   const active = task.tags.includes(tag);
                   return (
-                    <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-[9px] px-2 py-0.5 rounded-lg font-medium transition-all"
+                    <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-[11px] px-2 py-0.5 rounded-lg font-medium transition-all"
                       style={{ color: active ? color : "#52525b", background: active ? `${color}12` : "transparent", border: `1px solid ${active ? color + "25" : "rgba(255,255,255,0.04)"}` }}
                     >{tag}</button>
                   );
@@ -200,25 +209,25 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
               </div>
               {task.microSteps.map((ms) => (
                 <div key={ms.id} className="flex items-center gap-2 group/ms">
-                  <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-3.5 h-3.5 rounded-md border flex items-center justify-center transition-colors"
+                  <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-4 h-4 rounded-md border flex items-center justify-center transition-colors"
                     style={{ borderColor: ms.done ? "rgba(74,222,128,0.4)" : "rgba(255,255,255,0.08)", background: ms.done ? "rgba(74,222,128,0.1)" : "transparent" }}
                   >{ms.done && <Check size={7} style={{ color: "#4ade80" }} strokeWidth={3} />}</button>
-                  <span className="flex-1 text-[10px]" style={{ color: ms.done ? "#3f3f46" : "#a1a1aa", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
+                  <span className="flex-1 text-xs" style={{ color: ms.done ? "#3f3f46" : "#a1a1aa", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
                   <button onClick={() => deleteMicroStep(task.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-zinc-700 hover:text-zinc-400"><X size={9} /></button>
                 </div>
               ))}
               <form onSubmit={handleAddMicro} className="flex items-center gap-2">
                 <input value={microInput} onChange={(e) => setMicroInput(e.target.value)} placeholder="+ micro-étape"
-                  className="flex-1 text-[10px] bg-transparent border-b py-1 text-zinc-400 placeholder:text-zinc-700 focus:outline-none" style={{ borderColor: "rgba(255,255,255,0.04)" }} />
+                  className="flex-1 text-xs bg-transparent border-b py-1 text-zinc-400 placeholder:text-zinc-700 focus:outline-none" style={{ borderColor: "rgba(255,255,255,0.04)" }} />
               </form>
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => onOpenDetail(task)}
-                  className="text-[10px] text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
                 >
                   Ouvrir le détail →
                 </button>
-                <button onClick={() => deleteTask(task.id)} className="flex items-center gap-1.5 text-[10px] text-zinc-700 hover:text-red-300 transition-colors">
+                <button onClick={() => deleteTask(task.id)} className="flex items-center gap-1.5 text-xs text-zinc-700 hover:text-red-300 transition-colors">
                   <Trash2 size={9} /> Supprimer
                 </button>
               </div>
@@ -265,18 +274,18 @@ function KanbanColumnComponent({ column, tasks, dragOverCol, onDragOver, onDrop,
       style={{ background: isOver ? `${column.dotColor}08` : "transparent", borderRight: "1px solid rgba(255,255,255,0.03)" }}
     >
       <div className="flex items-center gap-3 px-6 pt-6 pb-4 shrink-0">
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.dotColor }} />
+        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: column.dotColor }} />
         <span className="text-sm font-medium text-zinc-300">{column.label}</span>
-        <span className="text-[10px] text-zinc-700 font-mono ml-auto">{tasks.length}</span>
+        <span className="text-[11px] text-zinc-700 font-mono ml-auto">{tasks.length}</span>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-2.5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-3.5">
         <AnimatePresence mode="popLayout">
           {tasks.map((task) => <KanbanCard key={task.id} task={task} onOpenDetail={onOpenDetail} />)}
         </AnimatePresence>
 
         {isOver && (
-          <div className="rounded-2xl border-2 border-dashed h-12 flex items-center justify-center text-[10px] transition-all"
+          <div className="rounded-2xl border-2 border-dashed h-12 flex items-center justify-center text-xs transition-all"
             style={{ borderColor: column.dotColor + "40", color: column.dotColor + "70", background: column.dotColor + "06" }}>
             Déposer ici
           </div>
@@ -286,16 +295,16 @@ function KanbanColumnComponent({ column, tasks, dragOverCol, onDragOver, onDrop,
           <form onSubmit={handleAdd} className="mt-1">
             <input value={input} onChange={(e) => setInput(e.target.value)} onBlur={() => { if (!input.trim()) setAdding(false); }} autoFocus
               placeholder="Nom de la tâche…"
-              className="w-full text-sm rounded-2xl px-4 py-3 text-zinc-200 placeholder:text-zinc-700 focus:outline-none transition-colors"
+              className="w-full text-sm rounded-2xl px-5 py-4 text-zinc-200 placeholder:text-zinc-700 focus:outline-none transition-colors"
               style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
             />
             <div className="flex gap-2 mt-2">
-              <button type="submit" className="text-[10px] px-3 py-1.5 rounded-lg font-medium" style={{ background: "rgba(74,222,128,0.08)", color: "#4ade80" }}>Créer</button>
-              <button type="button" onClick={() => setAdding(false)} className="text-[10px] px-3 py-1.5 text-zinc-600 hover:text-zinc-400">Annuler</button>
+              <button type="submit" className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: "rgba(74,222,128,0.08)", color: "#4ade80" }}>Créer</button>
+              <button type="button" onClick={() => setAdding(false)} className="text-xs px-3 py-1.5 text-zinc-600 hover:text-zinc-400">Annuler</button>
             </div>
           </form>
         ) : (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-4 py-3 rounded-2xl text-[11px] text-zinc-600 hover:text-zinc-400 transition-all mt-1"
+          <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-5 py-3.5 rounded-2xl text-[11px] text-zinc-600 hover:text-zinc-400 transition-all mt-1"
             style={{ border: "1px solid rgba(255,255,255,0.04)" }}>
             <Plus size={12} /> Nouveau
           </button>
