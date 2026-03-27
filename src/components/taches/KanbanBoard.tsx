@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, GripVertical, Check, Clock, Bookmark,
   ChevronDown, ChevronRight, X, Trash2,
-  Sparkles, Timer,
+  Sparkles, Timer, Flag,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Task, TaskStatus, IncupTag } from "@/store/useAppStore";
@@ -19,18 +19,17 @@ interface KanbanColumn {
 }
 
 const COLUMNS: KanbanColumn[] = [
-  { id: "todo",        label: "To Do",      dotColor: "#fca5a5", Icon: Plus     },
-  { id: "in_progress", label: "En cours",   dotColor: "#93c5fd", Icon: Clock    },
-  { id: "completed",   label: "Terminé",    dotColor: "#4ade80", Icon: Check    },
-  { id: "saved",       label: "Sauvegarde", dotColor: "#fbbf24", Icon: Bookmark },
+  { id: "todo",        label: "To Do",      dotColor: "var(--accent-red)", Icon: Plus     },
+  { id: "in_progress", label: "En cours",   dotColor: "var(--accent-blue)", Icon: Clock    },
+  { id: "completed",   label: "Terminé",    dotColor: "var(--accent-green)", Icon: Check    },
+  { id: "saved",       label: "Sauvegarde", dotColor: "var(--accent-orange)", Icon: Bookmark },
 ];
-
 const INCUP_TAGS: { tag: IncupTag; color: string }[] = [
-  { tag: "Intérêt",   color: "#67e8f9" },
-  { tag: "Nouveauté", color: "#a78bfa" },
-  { tag: "Challenge", color: "#fbbf24" },
-  { tag: "Urgence",   color: "#fca5a5" },
-  { tag: "Passion",   color: "#4ade80" },
+  { tag: "Intérêt",   color: "var(--accent-blue)" },
+  { tag: "Nouveauté", color: "var(--accent-blue)" },
+  { tag: "Challenge", color: "var(--accent-blue)" },
+  { tag: "Urgence",   color: "var(--accent-blue)" },
+  { tag: "Passion",   color: "var(--accent-blue)" },
 ];
 
 /* ─── AI Magic Breakup Placeholder ─────────────────────────────────── */
@@ -53,8 +52,7 @@ function generateMicroSteps(taskText: string): { id: string; text: string; done:
       { id: uid(), text: "Répondre aux 3 plus urgents (5 min)", done: false },
       { id: uid(), text: "Archiver le reste (1 min)", done: false },
     ];
-  }
-  if (lower.includes("rapport") || lower.includes("document") || lower.includes("rédiger")) {
+  }  if (lower.includes("rapport") || lower.includes("document") || lower.includes("rédiger")) {
     return [
       { id: uid(), text: "Ouvrir le document et relire le plan (2 min)", done: false },
       { id: uid(), text: "Écrire l'introduction (5 min)", done: false },
@@ -82,9 +80,8 @@ function estimateMinutes(taskText: string): number {
 }
 
 /* ─── Kanban Card ──────────────────────────────────────────────────── */
-
 function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: Task) => void }) {
-  const { updateTaskStatus, deleteTask, toggleTag, toggleExpand, addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps, updateTask, projects } = useAppStore();
+  const { updateTaskStatus, deleteTask, toggleTag, toggleExpand, addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps, updateTask } = useAppStore();
   const [microInput, setMicroInput] = useState("");
   const doneCount = task.microSteps.filter((ms) => ms.done).length;
   const totalSteps = task.microSteps.length;
@@ -111,59 +108,43 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.97 }}
       draggable
-      onDragStart={(e) => {
-        const de = e as unknown as DragEvent;
+      onDragStart={(e) => {        const de = e as unknown as DragEvent;
         if (de.dataTransfer) {
           de.dataTransfer.setData("text/plain", task.id);
           de.dataTransfer.effectAllowed = "move";
         }
       }}
-      className="rounded-2xl overflow-hidden group cursor-grab active:cursor-grabbing select-none transition-all"
-      style={{
-        border: `1px solid ${task.expanded ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}`,
-        background: task.expanded ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.02)",
-      }}
+      className="rounded-2xl overflow-hidden group cursor-grab active:cursor-grabbing select-none transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_24px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] bg-surface border border-b-primary"
     >
       <div className="flex items-start gap-2 px-5 py-4">
-        <GripVertical size={11} className="text-zinc-800 mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <GripVertical size={11} className="text-b-hover mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
         <div
           className="flex-1 min-w-0 cursor-pointer"
           onClick={(e) => { e.stopPropagation(); onOpenDetail(task); }}
         >
-          <p className="text-sm text-zinc-200 leading-snug hover:text-white transition-colors" style={{ fontWeight: 450 }}>{task.text}</p>
-          {task.projectId && (() => {
-            const project = projects.find(p => p.id === task.projectId);
-            return project ? (
-              <div className="flex items-center gap-1.5 mt-1">
-                <span className="text-[11px]">{project.emoji}</span>
-                <span className="text-[11px] font-medium" style={{ color: project.color }}>{project.name}</span>
-              </div>
-            ) : null;
-          })()}
+          <p className="text-[15px] text-t-primary leading-snug hover:text-[#000] transition-colors" style={{ fontWeight: 450 }}>{task.text}</p>
           {task.estimatedMinutes && (
             <div className="flex items-center gap-1 mt-1">
-              <Timer size={9} className="text-zinc-600" />
-              <span className="text-xs text-zinc-600">~{task.estimatedMinutes} min</span>
+              <Timer size={9} className="text-t-secondary" />
+              <span className="text-[9px] text-t-secondary">~{task.estimatedMinutes} min</span>
             </div>
           )}
           {task.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
               {task.tags.map((tag) => {
-                const cfg = INCUP_TAGS.find((t) => t.tag === tag);
                 return (
-                  <span key={tag} className="text-[11px] px-2 py-0.5 rounded-lg font-medium"
-                    style={{ color: cfg?.color, background: `${cfg?.color}12`, border: `1px solid ${cfg?.color}20` }}
+                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-[6px] font-medium"
+                    style={{ color: "var(--accent-blue)", background: "var(--accent-blue-light)" }}
                   >{tag}</span>
                 );
               })}
             </div>
-          )}
-          {totalSteps > 0 && (
+          )}          {totalSteps > 0 && (
             <div className="flex items-center gap-2 mt-2">
-              <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
-                <div className="h-full rounded-full transition-all" style={{ width: `${(doneCount / totalSteps) * 100}%`, background: "#4ade80" }} />
+              <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--border-b-primary)" }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${(doneCount / totalSteps) * 100}%`, background: "var(--accent-blue)" }} />
               </div>
-              <span className="text-xs text-zinc-600 font-mono">{doneCount}/{totalSteps}</span>
+              <span className="text-[9px] text-t-secondary font-mono">{doneCount}/{totalSteps}</span>
             </div>
           )}
         </div>
@@ -173,7 +154,7 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
             <button
               onClick={(e) => { e.stopPropagation(); handleMagicBreakup(); }}
               title="Magic Breakup — Découper en micro-étapes"
-              className="text-zinc-700 hover:text-amber-300 transition-colors opacity-0 group-hover:opacity-100"
+              className="text-accent-blue hover:text-accent-blue/70 transition-colors opacity-0 group-hover:opacity-100"
             >
               <Sparkles size={12} />
             </button>
@@ -182,52 +163,49 @@ function KanbanCard({ task, onOpenDetail }: { task: Task; onOpenDetail: (task: T
             value={task.status}
             onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
             onClick={(e) => e.stopPropagation()}
-            className="text-xs bg-transparent border text-zinc-500 rounded-lg px-1.5 py-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
-            style={{ borderColor: "rgba(255,255,255,0.06)" }}
+            className="text-[10px] bg-surface border text-t-secondary rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border-b-primary shadow-sm"
           >
             {COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
           </select>
-          <button onClick={(e) => { e.stopPropagation(); toggleExpand(task.id); }} className="text-zinc-700 hover:text-zinc-400 transition-colors">
+          <button onClick={(e) => { e.stopPropagation(); toggleExpand(task.id); }} className="text-t-secondary hover:text-t-primary transition-colors">
             {task.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
           </button>
         </div>
       </div>
-
       <AnimatePresence>
         {task.expanded && (
           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="px-5 pb-4 pt-1.5 flex flex-col gap-2.5" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+            <div className="px-4 pb-3 pt-1 flex flex-col gap-2.5 border-t-b-primary">
               <div className="flex flex-wrap gap-1.5">
-                {INCUP_TAGS.map(({ tag, color }) => {
+                {INCUP_TAGS.map(({ tag }) => {
                   const active = task.tags.includes(tag);
                   return (
-                    <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-[11px] px-2 py-0.5 rounded-lg font-medium transition-all"
-                      style={{ color: active ? color : "#52525b", background: active ? `${color}12` : "transparent", border: `1px solid ${active ? color + "25" : "rgba(255,255,255,0.04)"}` }}
+                    <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-[10px] px-2 py-1 rounded-[6px] font-medium transition-all"
+                      style={{ color: active ? "var(--accent-blue)" : "var(--text-t-secondary)", background: active ? "var(--accent-blue-light)" : "var(--surface)", border: `1px solid ${active ? "transparent" : "var(--border-b-primary)"}` }}
                     >{tag}</button>
                   );
                 })}
               </div>
               {task.microSteps.map((ms) => (
                 <div key={ms.id} className="flex items-center gap-2 group/ms">
-                  <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-4 h-4 rounded-md border flex items-center justify-center transition-colors"
-                    style={{ borderColor: ms.done ? "rgba(74,222,128,0.4)" : "rgba(255,255,255,0.08)", background: ms.done ? "rgba(74,222,128,0.1)" : "transparent" }}
-                  >{ms.done && <Check size={7} style={{ color: "#4ade80" }} strokeWidth={3} />}</button>
-                  <span className="flex-1 text-xs" style={{ color: ms.done ? "#3f3f46" : "#a1a1aa", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
-                  <button onClick={() => deleteMicroStep(task.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-zinc-700 hover:text-zinc-400"><X size={9} /></button>
+                  <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-3.5 h-3.5 rounded-md border flex items-center justify-center transition-colors"
+                    style={{ borderColor: ms.done ? "var(--accent-blue)" : "var(--border-b-hover)", background: ms.done ? "var(--accent-blue-light)" : "transparent" }}
+                  >{ms.done && <Check size={7} style={{ color: "var(--accent-blue)" }} strokeWidth={3} />}</button>
+                  <span className="flex-1 text-[10px]" style={{ color: ms.done ? "var(--text-t-secondary)" : "var(--text-t-primary)", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
+                  <button onClick={() => deleteMicroStep(task.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-t-secondary hover:text-accent-red"><X size={9} /></button>
                 </div>
-              ))}
-              <form onSubmit={handleAddMicro} className="flex items-center gap-2">
+              ))}              <form onSubmit={handleAddMicro} className="flex items-center gap-2">
                 <input value={microInput} onChange={(e) => setMicroInput(e.target.value)} placeholder="+ micro-étape"
-                  className="flex-1 text-xs bg-transparent border-b py-1 text-zinc-400 placeholder:text-zinc-700 focus:outline-none" style={{ borderColor: "rgba(255,255,255,0.04)" }} />
+                  className="flex-1 text-[10px] bg-transparent border-b py-1 text-t-primary placeholder:text-t-tertiary focus:outline-none border-b-primary" />
               </form>
               <div className="flex items-center justify-between">
                 <button
                   onClick={() => onOpenDetail(task)}
-                  className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+                  className="text-[10px] text-t-secondary hover:text-t-primary transition-colors"
                 >
                   Ouvrir le détail →
                 </button>
-                <button onClick={() => deleteTask(task.id)} className="flex items-center gap-1.5 text-xs text-zinc-700 hover:text-red-300 transition-colors">
+                <button onClick={() => deleteTask(task.id)} className="flex items-center gap-1.5 text-[10px] text-t-secondary hover:text-accent-red transition-colors">
                   <Trash2 size={9} /> Supprimer
                 </button>
               </div>
@@ -245,8 +223,7 @@ function KanbanColumnComponent({ column, tasks, dragOverCol, onDragOver, onDrop,
   column: KanbanColumn; tasks: Task[]; dragOverCol: TaskStatus | null;
   onDragOver: (colId: TaskStatus) => void; onDrop: (colId: TaskStatus, e: React.DragEvent) => void; onDragLeave: () => void;
   onOpenDetail: (task: Task) => void;
-}) {
-  const { addTask } = useAppStore();
+}) {  const { addTask } = useAppStore();
   const [adding, setAdding] = useState(false);
   const [input, setInput] = useState("");
   const isOver = dragOverCol === column.id;
@@ -271,22 +248,21 @@ function KanbanColumnComponent({ column, tasks, dragOverCol, onDragOver, onDrop,
           onDragLeave();
         }
       }}
-      style={{ background: isOver ? `${column.dotColor}08` : "transparent", borderRight: "1px solid rgba(255,255,255,0.03)" }}
+      style={{ background: isOver ? `color-mix(in srgb, ${column.dotColor} 10%, transparent)` : "transparent", borderRight: "1px solid var(--surface-4)" }}
     >
-      <div className="flex items-center gap-3 px-6 pt-6 pb-4 shrink-0">
-        <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: column.dotColor }} />
-        <span className="text-sm font-medium text-zinc-300">{column.label}</span>
-        <span className="text-[11px] text-zinc-700 font-mono ml-auto">{tasks.length}</span>
+      <div className="flex items-center gap-3 px-6 pt-8 pb-5 shrink-0">
+        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.dotColor }} />        <span className="text-[17px] font-medium text-t-primary">{column.label}</span>
+        <span className="text-[10px] text-t-secondary font-mono ml-auto">{tasks.length}</span>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-3.5">
+      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-2.5">
         <AnimatePresence mode="popLayout">
           {tasks.map((task) => <KanbanCard key={task.id} task={task} onOpenDetail={onOpenDetail} />)}
         </AnimatePresence>
 
         {isOver && (
-          <div className="rounded-2xl border-2 border-dashed h-12 flex items-center justify-center text-xs transition-all"
-            style={{ borderColor: column.dotColor + "40", color: column.dotColor + "70", background: column.dotColor + "06" }}>
+          <div className="rounded-3xl border-2 border-dashed h-12 flex items-center justify-center text-[10px] transition-all"
+            style={{ borderColor: column.dotColor, color: column.dotColor, background: `color-mix(in srgb, ${column.dotColor} 10%, transparent)` }}>
             Déposer ici
           </div>
         )}
@@ -295,19 +271,16 @@ function KanbanColumnComponent({ column, tasks, dragOverCol, onDragOver, onDrop,
           <form onSubmit={handleAdd} className="mt-1">
             <input value={input} onChange={(e) => setInput(e.target.value)} onBlur={() => { if (!input.trim()) setAdding(false); }} autoFocus
               placeholder="Nom de la tâche…"
-              className="w-full text-sm rounded-2xl px-5 py-4 text-zinc-200 placeholder:text-zinc-700 focus:outline-none transition-colors"
-              style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}
+              className="w-full text-sm rounded-2xl px-4 py-3 text-t-primary placeholder:text-t-tertiary focus:outline-none transition-all shadow-sm focus:shadow-md bg-surface border border-b-primary"
             />
             <div className="flex gap-2 mt-2">
-              <button type="submit" className="text-xs px-3 py-1.5 rounded-lg font-medium" style={{ background: "rgba(74,222,128,0.08)", color: "#4ade80" }}>Créer</button>
-              <button type="button" onClick={() => setAdding(false)} className="text-xs px-3 py-1.5 text-zinc-600 hover:text-zinc-400">Annuler</button>
+              <button type="submit" className="text-[10px] px-3 py-1.5 rounded-lg font-medium" style={{ background: "var(--accent-blue-light)", color: "var(--accent-blue)" }}>Créer</button>
+              <button type="button" onClick={() => setAdding(false)} className="text-[10px] px-3 py-1.5 text-t-secondary hover:text-t-primary">Annuler</button>
             </div>
           </form>
         ) : (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-5 py-3.5 rounded-2xl text-[11px] text-zinc-600 hover:text-zinc-400 transition-all mt-1"
-            style={{ border: "1px solid rgba(255,255,255,0.04)" }}>
-            <Plus size={12} /> Nouveau
-          </button>
+          <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-4 py-3 rounded-3xl text-[11px] text-t-secondary hover:text-t-primary transition-all mt-1 border-b-primary">
+            <Plus size={12} /> Nouvelle tâche          </button>
         )}
       </div>
     </div>
@@ -317,9 +290,11 @@ function KanbanColumnComponent({ column, tasks, dragOverCol, onDragOver, onDrop,
 /* ─── Main Board ───────────────────────────────────────────────────── */
 
 export default function KanbanBoard() {
-  const { tasks, updateTaskStatus } = useAppStore();
+  const { tasks, updateTaskStatus, addTask } = useAppStore();
   const [dragOverCol, setDragOverCol] = useState<TaskStatus | null>(null);
   const [detailTask, setDetailTask] = useState<Task | null>(null);
+  const [showPriorityAdd, setShowPriorityAdd] = useState(false);
+  const [priorityInput, setPriorityInput] = useState("");
 
   const handleDrop = useCallback((colId: TaskStatus, e: React.DragEvent) => {
     const taskId = e.dataTransfer.getData("text/plain");
@@ -330,15 +305,55 @@ export default function KanbanBoard() {
   }, [updateTaskStatus]);
 
   const kanbanTasks = tasks.filter((t) => ["todo", "in_progress", "completed", "saved"].includes(t.status));
+  const todayCount = tasks.filter((t) => t.status === "today").length;
+
+  const handleAddPriority = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!priorityInput.trim()) return;    addTask(priorityInput.trim(), "today");
+    setPriorityInput("");
+    setShowPriorityAdd(false);
+  };
 
   // Get fresh task data for the modal
   const currentDetailTask = detailTask ? tasks.find(t => t.id === detailTask.id) || null : null;
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="shrink-0 px-7 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <h1 className="text-lg font-semibold text-zinc-100 tracking-tight">Tâches</h1>
-        <p className="text-xs text-zinc-600 mt-1">{kanbanTasks.length} tâches · Glisse pour changer le statut</p>
+      <div className="shrink-0 px-10 pt-10 pb-6 border-b border-b-primary flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-t-primary tracking-tight">Tâches</h1>
+          <p className="text-xs text-t-secondary mt-1">{kanbanTasks.length} tâches · Glisse pour changer le statut</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {showPriorityAdd ? (
+            <form onSubmit={handleAddPriority} className="flex items-center gap-2">
+              <input
+                value={priorityInput}
+                onChange={(e) => setPriorityInput(e.target.value)}
+                placeholder="Nom de la tâche prioritaire…"
+                autoFocus
+                className="text-sm rounded-2xl px-4 py-2 text-t-primary placeholder:text-t-tertiary focus:outline-none bg-surface border-b-primary"
+                style={{ border: "1px solid var(--border-b-primary)", minWidth: 220 }}
+              />
+              <button type="submit" className="text-[11px] px-3 py-2 rounded-xl font-medium text-white" style={{ background: "var(--accent-red)" }}>
+                Ajouter
+              </button>
+              <button type="button" onClick={() => { setShowPriorityAdd(false); setPriorityInput(""); }} className="text-[11px] text-t-secondary hover:text-t-primary px-2 py-2">
+                Annuler              </button>
+              {todayCount >= 5 && (
+                <span className="text-[10px] text-accent-orange font-medium">5/5 max</span>
+              )}
+            </form>
+          ) : (
+            <button
+              onClick={() => setShowPriorityAdd(true)}
+              className="flex items-center gap-2 px-4 py-2 rounded-2xl text-[12px] font-medium transition-all hover:scale-[1.02]"
+              style={{ background: "color-mix(in srgb, var(--accent-red) 10%, transparent)", color: "var(--accent-red)", border: "1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)" }}
+            >
+              <Flag size={13} /> Ajout prioritaire
+            </button>
+          )}
+        </div>
       </div>
       <div className="flex-1 min-h-0 overflow-x-auto">
         <div className="grid grid-cols-4 gap-0 h-full">
@@ -353,8 +368,7 @@ export default function KanbanBoard() {
               onDragLeave={() => setDragOverCol(null)}
               onOpenDetail={(task) => setDetailTask(task)}
             />
-          ))}
-        </div>
+          ))}        </div>
       </div>
 
       {/* Task Detail Modal */}

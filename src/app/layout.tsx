@@ -3,7 +3,10 @@ import localFont from "next/font/local";
 import "./globals.css";
 import dynamic from "next/dynamic";
 
-const Sidebar = dynamic(() => import("@/components/sidebar/Sidebar"), {
+const AppShell = dynamic(() => import("@/components/AppShell"), {
+  ssr: false,
+});
+const ThemeProvider = dynamic(() => import("@/components/ThemeProvider"), {
   ssr: false,
 });
 
@@ -30,28 +33,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" className="dark">
+    <html lang="fr" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}
-        style={{ background: "var(--background)", color: "var(--foreground)" }}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-t-primary h-screen overflow-hidden min-w-[1400px]`}
       >
-        <div className="flex h-screen overflow-hidden relative">
-          {/* Global ambient mesh gradient */}
-          <div className="absolute inset-0 pointer-events-none mesh-gradient opacity-60" />
-
-          {/* Sidebar — Glass */}
-          <aside
-            className="glass-sidebar shrink-0 h-full overflow-hidden relative z-10"
-            style={{ width: "var(--sidebar-width)" }}
-          >
-            <Sidebar />
-          </aside>
-
-          {/* Main content */}
-          <div className="flex-1 h-full overflow-hidden relative z-10">
-            {children}
-          </div>
-        </div>
+        <ThemeProvider>
+          <AppShell>{children}</AppShell>
+        </ThemeProvider>
       </body>
     </html>
   );
