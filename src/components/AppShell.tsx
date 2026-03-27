@@ -24,7 +24,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden relative">
+        {/* Global ambient mesh gradient */}
+        <div className="absolute inset-0 pointer-events-none mesh-gradient opacity-60" />
+
+        {/* Sidebar — hidden in focus mode */}
         <AnimatePresence>
           {!focusMode && (
             <motion.aside
@@ -32,21 +36,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ width: "var(--sidebar-width)", opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="glass-sidebar shrink-0 h-full overflow-hidden"
+              className="glass-sidebar shrink-0 h-full overflow-hidden relative z-10"
             >
               <Sidebar />
             </motion.aside>
           )}
         </AnimatePresence>
 
-        <div className="flex-1 h-full overflow-hidden relative">
+        {/* Main content */}
+        <div className="flex-1 h-full overflow-hidden relative z-10">
           {children}
 
+          {/* Focus mode toggle button */}
           <button
             onClick={() => setFocusMode((prev) => !prev)}
             className="fixed bottom-5 left-5 z-40 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 shadow-sm"
             style={{
-              background: focusMode ? "color-mix(in srgb, var(--accent-blue) 10%, var(--surface))" : "var(--surface)",
+              background: focusMode
+                ? "color-mix(in srgb, var(--accent-blue) 10%, var(--surface))"
+                : "var(--surface)",
               border: "1px solid var(--border-b-primary)",
               color: focusMode ? "var(--accent-blue)" : "var(--text-t-secondary)",
             }}
@@ -57,6 +65,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </div>
 
+      {/* Global overlays */}
       <SpotlightSearch />
       <TodayRecap />
     </>
