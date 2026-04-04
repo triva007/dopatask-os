@@ -42,14 +42,6 @@ const INCUP_LIGHT_COLORS: Record<IncupTag, string> = {
 };
 
 type SortOption = "date" | "priority" | "time";
-type Priority = 1 | 2 | 3 | 4 | 5;
-
-/* ─── Utility: Calculate Priority Score ────────────────────────────── */
-function getPriorityScore(task: Task): number {
-  if (task.priority === undefined) return 0;
-  const priorityMap = { low: 1, medium: 2, high: 3 };
-  return priorityMap[task.priority];
-}
 
 /* ─── AI Magic Breakup Placeholder ─────────────────────────────────── */
 function generateMicroSteps(taskText: string): { id: string; text: string; done: boolean }[] {

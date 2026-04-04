@@ -3,8 +3,8 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Rocket, Plus, Calendar, Target, Check, X, ChevronDown, Play, Pause,
-  Flag, BarChart3, Trash2, Edit2, ChevronRight, AlertCircle,
+  Rocket, Plus, Calendar, Target, Check, X, ChevronDown, Play,
+  Flag, BarChart3, Trash2, Edit2, ChevronRight,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Sprint, Task } from "@/store/useAppStore";
@@ -753,13 +753,6 @@ export default function SprintsBoard() {
           {/* Sprints by Status */}
           {Object.entries(sprintsByStatus).map(([status, sprints]) => {
             if (sprints.length === 0) return null;
-
-            const statusColors: Record<string, { bg: string; text: string }> = {
-              planning: { bg: "from-blue-50", text: "text-accent-blue" },
-              active: { bg: "from-green-50", text: "text-accent-green" },
-              completed: { bg: "from-purple-50", text: "text-accent-purple" },
-              cancelled: { bg: "from-red-50", text: "text-accent-red" },
-            };
 
             return (
               <div key={status}>
