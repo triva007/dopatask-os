@@ -7,7 +7,7 @@ import {
   Flag, BarChart3, Trash2, Edit2, ChevronRight, AlertCircle,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import type { Sprint } from "@/store/useAppStore";
+import type { Sprint, Task } from "@/store/useAppStore";
 
 /* ─── Types ──────────────────────────────────────────────────────────────── */
 
@@ -173,7 +173,7 @@ function CreateSprintForm({ onSubmit, onCancel }: {
 
 function SprintStats({ sprint, tasksInSprint }: {
   sprint: Sprint;
-  tasksInSprint: any[];
+  tasksInSprint: Task[];
 }) {
   const completed = tasksInSprint.filter((t) => t.status === "done").length;
   const total = tasksInSprint.length;
@@ -236,7 +236,7 @@ function SprintStats({ sprint, tasksInSprint }: {
 
 function BurndownChart({ sprint, tasksInSprint }: {
   sprint: Sprint;
-  tasksInSprint: any[];
+  tasksInSprint: Task[];
 }) {
   const completed = tasksInSprint.filter((t) => t.status === "done").length;
   const total = tasksInSprint.length;
@@ -318,8 +318,9 @@ function BurndownChart({ sprint, tasksInSprint }: {
 
 /* ─── Task List in Sprint ────────────────────────────────────────────────── */
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
-  tasksInSprint: any[];
+  tasksInSprint: Task[];
   sprintId: string;
   onAssign: (taskId: string, sprintId: string | undefined) => void;
 }) {
@@ -397,7 +398,7 @@ function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
 /* ─── Assign Tasks to Sprint ─────────────────────────────────────────────── */
 
 function AssignTasksPanel({ unassignedTasks, sprintId, onAssign }: {
-  unassignedTasks: any[];
+  unassignedTasks: Task[];
   sprintId: string;
   onAssign: (taskId: string, sprintId: string) => void;
 }) {
@@ -450,7 +451,7 @@ function AssignTasksPanel({ unassignedTasks, sprintId, onAssign }: {
 
 function SprintCard({ sprint, tasksInSprint, onSelect, onEdit, onDelete }: {
   sprint: Sprint;
-  tasksInSprint: any[];
+  tasksInSprint: Task[];
   onSelect: () => void;
   onEdit: (s: Sprint) => void;
   onDelete: (id: string) => void;
@@ -622,7 +623,7 @@ export default function SprintsBoard() {
 
   // Handle sprint status change
   const handleStatusChange = (sprintId: string, newStatus: string) => {
-    store.updateSprint(sprintId, { status: newStatus as any });
+    store.updateSprint(sprintId, { status: newStatus as Sprint["status"] });
     if (newStatus !== "active" && activeSprint?.id === sprintId) {
       setActiveSprint(null);
       setViewMode("list");

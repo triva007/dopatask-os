@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Plus, GripVertical, Check, Clock, Bookmark,
   ChevronDown, ChevronRight, X, Trash2,
-  Sparkles, Timer, Flag, Search, Filter, ArrowUpDown,
+  Sparkles, Timer, Flag, Search, ArrowUpDown,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Task, TaskStatus, IncupTag } from "@/store/useAppStore";
