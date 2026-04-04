@@ -37,7 +37,6 @@ const getPriorityColor = (priority?: "low" | "medium" | "high"): string => {
 };
 
 const formatRelativeDate = (isoString: string): string => {
-  const date = new Date(isoString);
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const taskDate = new Date(isoString);

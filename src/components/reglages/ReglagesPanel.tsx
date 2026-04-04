@@ -3,8 +3,8 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Settings, Bell, Palette, Brain, Shield, Download, Upload, Trash2, ChevronRight,
-  Volume2, VolumeX, Users, Zap, Target, BarChart3, X, AlertCircle
+  Settings, Brain, Shield, Download, Upload, Trash2, ChevronRight,
+  Volume2, VolumeX, Users, Zap, Target, BarChart3, AlertCircle
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
@@ -187,7 +187,7 @@ export default function ReglagesPanel() {
 
           alert("Données importées avec succès!");
         }
-      } catch (error) {
+      } catch {
         alert("Erreur lors de l'import. Vérifiez le format du fichier JSON.");
       }
     };
@@ -374,7 +374,7 @@ export default function ReglagesPanel() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Body Doubling</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5">Afficher l'indicateur de productivité</p>
+                  <p className="text-[11px] text-t-secondary mt-0.5">Afficher l&apos;indicateur de productivité</p>
                 </div>
               </div>
               <button

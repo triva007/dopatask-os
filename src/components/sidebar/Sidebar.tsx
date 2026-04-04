@@ -24,7 +24,7 @@ import { useAppStore } from "@/store/useAppStore";
 type NavItem = {
   href: string;
   label: string;
-  Icon: React.ComponentType<any>;
+  Icon: React.ComponentType<{ size?: number; className?: string; strokeWidth?: number }>;
   badge?: "inbox_count" | "today_tasks" | "pending_tasks";
 };
 

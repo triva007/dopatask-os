@@ -65,6 +65,7 @@ export default function HyperfocusLab() {
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
   const tabVisibleRef = useRef(true);
   const sessionStartTimeRef = useRef<number | null>(null);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const pausedTimeRef = useRef<number | null>(null);
 
   const totalSeconds = duration * 60;

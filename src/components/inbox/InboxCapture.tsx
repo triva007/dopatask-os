@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Inbox, Plus, Mic, MicOff, ArrowRight, Trash2, Check,
-  ListTodo, StickyNote, Calendar, X, Brain, ChevronDown, Zap,
+  ListTodo, StickyNote, Calendar, X,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { InboxItemType } from "@/store/useAppStore";
@@ -16,11 +16,10 @@ const TYPE_CONFIG: { id: InboxItemType; label: string; icon: typeof ListTodo; co
 ];
 
 export default function InboxCapture() {
-  const { inboxItems, addInboxItem, convertInboxToTask, processInboxItem, deleteInboxItem, clearProcessedInbox } = useAppStore();
+  const { inboxItems, addInboxItem, convertInboxToTask, processInboxItem, deleteInboxItem } = useAppStore();
   const [input, setInput] = useState("");
   const [isRecording, setIsRecording] = useState(false);
   const [selectedType, setSelectedType] = useState<InboxItemType>("task");
-  const [processedExpanded, setProcessedExpanded] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null);
 
@@ -32,17 +31,6 @@ export default function InboxCapture() {
     if (!input.trim()) return;
     addInboxItem(input.trim(), selectedType);
     setInput("");
-  };
-
-  const handleBatchProcess = () => {
-    pendingItems.forEach((item) => {
-      processInboxItem(item.id);
-    });
-  };
-
-  const handleQuickConvert = (itemId: string) => {
-    convertInboxToTask(itemId);
-    processInboxItem(itemId);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

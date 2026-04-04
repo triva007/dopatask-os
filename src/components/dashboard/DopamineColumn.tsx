@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Zap, Flame, Trophy, Crown, Target, Sparkles, FlaskConical, Brain } from "lucide-react";
+import { Zap, Flame, Trophy, Crown, Target, Sparkles, FlaskConical } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
 /* ─── Level System ────────────────────────────────────────────────────────── */
