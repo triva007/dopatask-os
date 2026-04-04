@@ -11,47 +11,38 @@ export default function TodayRecap() {
   const { tasks, xp, totalFocusMinutes, addJournalEntry } = useAppStore();
 
   const todayCompleted = tasks.filter(
-    (t) =>
-      (t.status === "done" || t.status === "completed") &&
-      t.completedAt &&
-      new Date(t.completedAt).toDateString() === new Date().toDateString()
+    (t) => (t.status === "done" || t.status === "completed") && t.completedAt &&
+    new Date(t.completedAt).toDateString() === new Date().toDateString()
   ).length;
 
+  // Show recap at 20h or after 3+ tasks completed today
   useEffect(() => {
     if (dismissed) return;
 
-    let cleanup: (() => void) | undefined;
+    const checkTime = () => {
+      const now = new Date();
+      const hour = now.getHours();
+      if (hour >= 20 && todayCompleted > 0) {
+        setVisible(true);
+      }
+    };
 
-    if (todayCompleted >= 3) {
+    // Also show if user completed 3+ tasks today
+    if (todayCompleted >= 3 && !dismissed) {
       const timer = setTimeout(() => setVisible(true), 2000);
-      cleanup = () => clearTimeout(timer);
-    } else {
-      const checkTime = () => {
-        const now = new Date();
-        if (now.getHours() >= 20 && todayCompleted > 0) {
-          setVisible(true);
-        }
-      };
-      const interval = setInterval(checkTime, 60000);
-      checkTime();
-      cleanup = () => clearInterval(interval);
+      return () => clearTimeout(timer);
     }
 
-    return cleanup;
+    const interval = setInterval(checkTime, 60000);
+    checkTime();
+    return () => clearInterval(interval);
   }, [todayCompleted, dismissed]);
 
   const handleAddToJournal = () => {
     const now = new Date();
-    const dateStr = now.toLocaleDateString("fr-FR", {
-      weekday: "long",
-      day: "numeric",
-      month: "long",
-    });
+    const dateStr = now.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
     const entry = `${dateStr}\n${todayCompleted} tâche${todayCompleted > 1 ? "s" : ""} terminée${todayCompleted > 1 ? "s" : ""} · +${xp} XP · ${totalFocusMinutes} min de focus`;
-    addJournalEntry(
-      entry,
-      todayCompleted >= 3 ? "great" : todayCompleted >= 1 ? "good" : "neutral"
-    );
+    addJournalEntry(entry, todayCompleted >= 3 ? "great" : todayCompleted >= 1 ? "good" : "neutral");
     setDismissed(true);
     setVisible(false);
   };
@@ -73,15 +64,15 @@ export default function TodayRecap() {
         className="fixed bottom-6 right-6 z-50 w-80 rounded-2xl shadow-xl overflow-hidden bg-surface"
         style={{ border: "1px solid var(--border-b-primary)" }}
       >
+        {/* Header */}
         <div className="flex items-center justify-between px-5 pt-4 pb-2">
-          <span className="text-[11px] font-medium text-t-secondary uppercase tracking-widest">
-            Recap du jour
-          </span>
+          <span className="text-[11px] font-medium text-t-secondary uppercase tracking-widest">Recap du jour</span>
           <button onClick={handleDismiss} className="text-t-tertiary hover:text-t-primary transition-colors">
             <X size={14} />
           </button>
         </div>
 
+        {/* Stats */}
         <div className="px-5 pb-3">
           <div className="flex items-center gap-4 py-3">
             <div className="flex items-center gap-1.5">
@@ -102,6 +93,7 @@ export default function TodayRecap() {
           </div>
         </div>
 
+        {/* Action */}
         <div className="px-5 pb-4">
           <button
             onClick={handleAddToJournal}

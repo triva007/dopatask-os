@@ -5,11 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Play, Pause, RotateCcw, Volume2, VolumeX, FlaskConical,
   Clock, Zap, Trophy, Flame, ChevronDown, ChevronUp,
-  Check,
+  Check, Target, Coffee,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
-/* ─── Noise Config ──────────────────────────────────────────────────────── */
+/* ─── Presets & Noise Config ──────────────────────────────────────────────── */
+
+const PRESETS = [
+  { label: "25 min", minutes: 25, xp: 40, description: "Pomodoro", color: "var(--accent-green)" },
+  { label: "45 min", minutes: 45, xp: 80, description: "Deep Work", color: "var(--accent-blue)" },
+  { label: "90 min", minutes: 90, xp: 150, description: "Ultra Focus", color: "var(--accent-purple)" },
+];
 
 type NoiseType = "brown" | "white" | "pink" | "none";
 const NOISES: { type: NoiseType; label: string; emoji: string }[] = [
@@ -30,69 +36,45 @@ const FOCUS_QUOTES = [
   "Ta productivité n'a pas de limite.",
 ];
 
-/* ─── Flow Phase Info ───────────────────────────────────────────────────── */
-
-interface FlowPhase {
-  name: string;
-  minSeconds: number;
-  maxSeconds: number;
-  color: string;
-}
-
-const FLOW_PHASES: FlowPhase[] = [
-  { name: "Warming up", minSeconds: 0, maxSeconds: 300, color: "#fbbf24" },        // <5min
-  { name: "In the zone", minSeconds: 300, maxSeconds: 1500, color: "#4ade80" },    // 5-25min
-  { name: "Deep flow", minSeconds: 1500, maxSeconds: 3600, color: "#67e8f9" },     // 25-60min
-  { name: "Ultra focus", minSeconds: 3600, maxSeconds: Infinity, color: "#a78bfa" }, // 60+min
-];
-
-const RING_CYCLE_SECONDS = 3600; // 60 minute cycle
-
 /* ─── Main Component ──────────────────────────────────────────────────────── */
 
 export default function HyperfocusLab() {
   const {
-    addHyperfocusSession, addXp,
+    addHyperfocusSession, addXp, damageBoss,
     hyperfocusSessions, totalFocusMinutes, streak,
   } = useAppStore();
 
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
+  const [duration, setDuration] = useState(25);
+  const [customDuration, setCustomDuration] = useState<string>("");
+  const [timeLeft, setTimeLeft] = useState(25 * 60);
   const [running, setRunning] = useState(false);
+  const [paused, setPaused] = useState(false);
   const [noise, setNoise] = useState<NoiseType>("none");
+  const [noiseVolume, setNoiseVolume] = useState(12);
   const [taskName, setTaskName] = useState("");
   const [completed, setCompleted] = useState(false);
+  const [showBreakPrompt, setShowBreakPrompt] = useState(false);
+  const [breakRunning, setBreakRunning] = useState(false);
+  const [breakTimeLeft, setBreakTimeLeft] = useState(5 * 60);
   const [showHistory, setShowHistory] = useState(false);
   const [quote] = useState(() => FOCUS_QUOTES[Math.floor(Math.random() * FOCUS_QUOTES.length)]);
+
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const breakIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const audioRef = useRef<AudioContext | null>(null);
   const sourceRef = useRef<AudioBufferSourceNode | null>(null);
+  const tabVisibleRef = useRef(true);
+  const sessionStartTimeRef = useRef<number | null>(null);
+  const pausedTimeRef = useRef<number | null>(null);
 
-  // Get current flow phase
-  const currentPhase = FLOW_PHASES.find(
-    (p) => elapsedSeconds >= p.minSeconds && elapsedSeconds < p.maxSeconds
-  ) || FLOW_PHASES[FLOW_PHASES.length - 1];
+  const totalSeconds = duration * 60;
+  const progress = ((totalSeconds - timeLeft) / totalSeconds) * 100;
+  const minutes = Math.floor(timeLeft / 60);
+  const seconds = timeLeft % 60;
+  const currentPreset = PRESETS.find((p) => p.minutes === duration) || PRESETS[0];
 
-  // Calculate ring progress (0-100%)
-  const ringProgress = Math.min((elapsedSeconds / RING_CYCLE_SECONDS) * 100, 100);
-
-  // Format elapsed time: HH:MM:SS or MM:SS
-  const hours = Math.floor(elapsedSeconds / 3600);
-  const minutes = Math.floor((elapsedSeconds % 3600) / 60);
-  const seconds = elapsedSeconds % 60;
-
-  const timeDisplay = hours > 0
-    ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
-    : `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-
-  // Calculate XP based on elapsed time
-  const calculateXP = (elapsedSecs: number): number => {
-    if (elapsedSecs < 900) return 20;        // <15min
-    if (elapsedSecs < 1800) return 40;       // 15-30min
-    if (elapsedSecs < 3600) return 80;       // 30-60min
-    return 150;                               // 60+min
-  };
-
-  const earnedXP = calculateXP(elapsedSeconds);
+  const breakMinutes = Math.floor(breakTimeLeft / 60);
+  const breakSeconds = breakTimeLeft % 60;
 
   // Stats
   const todaySessions = hyperfocusSessions.filter((s) => {
@@ -105,170 +87,315 @@ export default function HyperfocusLab() {
   /* ─── Audio ─────────────────────────────────────────────────────────────── */
 
   const stopNoise = useCallback(() => {
-    if (sourceRef.current) { try { sourceRef.current.stop(); } catch { /* noop */ } sourceRef.current = null; }
+    if (sourceRef.current) {
+      try {
+        sourceRef.current.stop();
+      } catch {
+        /* noop */
+      }
+      sourceRef.current = null;
+    }
   }, []);
 
-  const playNoise = useCallback((type: NoiseType) => {
-    stopNoise();
-    if (type === "none") return;
-    if (!audioRef.current) audioRef.current = new AudioContext();
-    const ctx = audioRef.current;
-    const bufferSize = 2 * ctx.sampleRate;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+  const playNoise = useCallback(
+    (type: NoiseType) => {
+      stopNoise();
+      if (type === "none") return;
+      if (!audioRef.current) audioRef.current = new AudioContext();
+      const ctx = audioRef.current;
+      const bufferSize = 2 * ctx.sampleRate;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
 
-    if (type === "white") {
-      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
-    } else if (type === "pink") {
-      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-      for (let i = 0; i < bufferSize; i++) {
-        const w = Math.random() * 2 - 1;
-        b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759;
-        b2 = 0.96900 * b2 + w * 0.1538520; b3 = 0.86650 * b3 + w * 0.3104856;
-        b4 = 0.55000 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.0168980;
-        data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
-        b6 = w * 0.115926;
+      if (type === "white") {
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+      } else if (type === "pink") {
+        let b0 = 0,
+          b1 = 0,
+          b2 = 0,
+          b3 = 0,
+          b4 = 0,
+          b5 = 0,
+          b6 = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const w = Math.random() * 2 - 1;
+          b0 = 0.99886 * b0 + w * 0.0555179;
+          b1 = 0.99332 * b1 + w * 0.0750759;
+          b2 = 0.969 * b2 + w * 0.153852;
+          b3 = 0.8665 * b3 + w * 0.3104856;
+          b4 = 0.55 * b4 + w * 0.5329522;
+          b5 = -0.7616 * b5 - w * 0.016898;
+          data[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11;
+          b6 = w * 0.115926;
+        }
+      } else {
+        let last = 0;
+        for (let i = 0; i < bufferSize; i++) {
+          const w = Math.random() * 2 - 1;
+          data[i] = (last + 0.02 * w) / 1.02;
+          last = data[i];
+          data[i] *= 3.5;
+        }
       }
-    } else {
-      let last = 0;
-      for (let i = 0; i < bufferSize; i++) {
-        const w = Math.random() * 2 - 1;
-        data[i] = (last + 0.02 * w) / 1.02; last = data[i]; data[i] *= 3.5;
-      }
-    }
 
-    const src = ctx.createBufferSource();
-    src.buffer = buffer; src.loop = true;
-    const gain = ctx.createGain(); gain.gain.value = 0.12;
-    src.connect(gain).connect(ctx.destination);
-    src.start();
-    sourceRef.current = src;
-  }, [stopNoise]);
+      const src = ctx.createBufferSource();
+      src.buffer = buffer;
+      src.loop = true;
+      const gain = ctx.createGain();
+      gain.gain.value = noiseVolume / 100;
+      src.connect(gain).connect(ctx.destination);
+      src.start();
+      sourceRef.current = src;
+    },
+    [stopNoise, noiseVolume]
+  );
+
+  /* ─── Tab Visibility & Focus Time Tracking ──────────────────────────────── */
+
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      tabVisibleRef.current = !document.hidden;
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
+  }, []);
 
   /* ─── Timer Logic ───────────────────────────────────────────────────────── */
 
   useEffect(() => {
-    if (running) {
-      intervalRef.current = setInterval(() => setElapsedSeconds((t) => t + 1), 1000);
-    }
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, [running]);
-
-  const handleStart = () => { setRunning(true); setCompleted(false); if (noise !== "none") playNoise(noise); };
-
-  const handlePause = () => { setRunning(false); stopNoise(); };
-
-  const handleReset = () => {
-    setRunning(false);
-    stopNoise();
-    setElapsedSeconds(0);
-    setCompleted(false);
-  };
-
-  const handleStop = () => {
-    setRunning(false);
-    stopNoise();
-
-    if (elapsedSeconds > 0) {
-      const durationMinutes = Math.round(elapsedSeconds / 60);
-      const xpGain = calculateXP(elapsedSeconds);
-
+    if (running && !paused && timeLeft > 0) {
+      intervalRef.current = setInterval(() => setTimeLeft((t) => t - 1), 1000);
+    } else if (timeLeft === 0 && running) {
+      setRunning(false);
+      setPaused(false);
+      stopNoise();
+      setCompleted(true);
+      setShowBreakPrompt(true);
       addHyperfocusSession({
-        taskName: taskName || "Flow Session",
-        durationMinutes,
+        taskName: taskName || "Focus",
+        durationMinutes: duration,
         completedAt: Date.now(),
         noise: noise === "pink" ? "white" : noise,
       });
+      const xpGain = currentPreset.xp;
       addXp(xpGain);
-      setCompleted(true);
+      damageBoss(duration >= 45 ? 15 : 8);
+    }
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, [
+    running,
+    paused,
+    timeLeft,
+    duration,
+    noise,
+    taskName,
+    addHyperfocusSession,
+    addXp,
+    damageBoss,
+    stopNoise,
+    currentPreset.xp,
+  ]);
+
+  /* ─── Break Timer Logic ──────────────────────────────────────────────────── */
+
+  useEffect(() => {
+    if (breakRunning && breakTimeLeft > 0) {
+      breakIntervalRef.current = setInterval(() => setBreakTimeLeft((t) => t - 1), 1000);
+    } else if (breakTimeLeft === 0 && breakRunning) {
+      setBreakRunning(false);
+      setBreakTimeLeft(5 * 60);
+    }
+    return () => {
+      if (breakIntervalRef.current) clearInterval(breakIntervalRef.current);
+    };
+  }, [breakRunning, breakTimeLeft]);
+
+  /* ─── Audio Cleanup on Unmount ──────────────────────────────────────────── */
+
+  useEffect(() => {
+    return () => {
+      stopNoise();
+      if (audioRef.current && audioRef.current.state === "running") {
+        audioRef.current.close();
+      }
+    };
+  }, [stopNoise]);
+
+  const handleStart = () => {
+    setRunning(true);
+    setPaused(false);
+    setCompleted(false);
+    setShowBreakPrompt(false);
+    sessionStartTimeRef.current = Date.now();
+    if (noise !== "none") playNoise(noise);
+  };
+
+  const handlePause = () => {
+    setPaused(true);
+    stopNoise();
+  };
+
+  const handleResume = () => {
+    setPaused(false);
+    if (noise !== "none") playNoise(noise);
+  };
+
+  const handleReset = () => {
+    setRunning(false);
+    setPaused(false);
+    stopNoise();
+    setTimeLeft(duration * 60);
+    setCompleted(false);
+    setShowBreakPrompt(false);
+  };
+
+  const handlePreset = (m: number) => {
+    setDuration(m);
+    setTimeLeft(m * 60);
+    setCustomDuration("");
+    setRunning(false);
+    setPaused(false);
+    stopNoise();
+    setCompleted(false);
+  };
+
+  const handleCustomDuration = () => {
+    const customMins = parseInt(customDuration, 10);
+    if (customMins > 0 && customMins <= 480) {
+      setDuration(customMins);
+      setTimeLeft(customMins * 60);
+      setRunning(false);
+      setPaused(false);
+      stopNoise();
+      setCompleted(false);
     }
   };
 
   const handleNoiseToggle = (type: NoiseType) => {
     setNoise(type);
-    if (running) { if (type !== "none") { playNoise(type); } else { stopNoise(); } }
+    if (running && !paused) {
+      if (type !== "none") {
+        playNoise(type);
+      } else {
+        stopNoise();
+      }
+    }
+  };
+
+  const startBreak = () => {
+    setShowBreakPrompt(false);
+    setBreakTimeLeft(5 * 60);
+    setBreakRunning(true);
+  };
+
+  const skipBreak = () => {
+    setShowBreakPrompt(false);
+    setBreakTimeLeft(5 * 60);
   };
 
   /* ─── Ring SVG ──────────────────────────────────────────────────────────── */
-  const ringSize = 220;
-  const strokeWidth = 6;
-  const radius = (ringSize - strokeWidth) / 2;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference * (1 - ringProgress / 100);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <h1 className="text-lg font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
-          <FlaskConical size={18} className="text-zinc-400" /> Flow Timer
+      <div className="shrink-0 px-7 pt-6 pb-4 border-b-b-primary">
+        <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
+          <FlaskConical size={18} className="text-t-secondary" /> Focus Lab
         </h1>
-        <p className="text-xs text-zinc-600 mt-1">Track your focus sessions with real-time flow state</p>
+        <p className="text-xs text-t-secondary mt-1">Deep work avec bruit ambiant</p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 px-7 py-6">
 
         {/* Stats Bar */}
-        <div className="grid grid-cols-3 gap-4">
-          <div className="flex flex-col gap-1.5 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-            <span className="text-[11px] text-zinc-600 uppercase tracking-wider flex items-center gap-1">
-              <Clock size={9} /> Today
+        <div className="grid grid-cols-3 gap-3">
+          <div className="flex flex-col gap-1 p-5 rounded-3xl bg-surface border-b-primary" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <span className="text-[13px] text-t-secondary uppercase tracking-wider flex items-center gap-1">
+              <Clock size={9} /> Aujourd&apos;hui
             </span>
-            <span className="text-xl font-semibold text-zinc-200 tabular-nums">{todayMinutes}<span className="text-xs text-zinc-600 font-normal ml-0.5">min</span></span>
+            <span className="text-xl font-semibold text-t-primary tabular-nums">{todayMinutes}<span className="text-xs text-t-secondary font-normal ml-0.5">min</span></span>
           </div>
-          <div className="flex flex-col gap-1.5 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-            <span className="text-[11px] text-zinc-600 uppercase tracking-wider flex items-center gap-1">
+          <div className="flex flex-col gap-1 p-5 rounded-3xl bg-surface border-b-primary" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <span className="text-[13px] text-t-secondary uppercase tracking-wider flex items-center gap-1">
               <Trophy size={9} /> Total
             </span>
-            <span className="text-xl font-semibold text-zinc-200 tabular-nums">
+            <span className="text-xl font-semibold text-t-primary tabular-nums">
               {totalFocusMinutes >= 60 ? `${Math.floor(totalFocusMinutes / 60)}h${totalFocusMinutes % 60 > 0 ? String(totalFocusMinutes % 60).padStart(2, "0") : ""}` : `${totalFocusMinutes}min`}
             </span>
           </div>
-          <div className="flex flex-col gap-1.5 p-4 rounded-2xl" style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}>
-            <span className="text-[11px] text-zinc-600 uppercase tracking-wider flex items-center gap-1">
-              <Flame size={9} style={{ color: "#fbbf24" }} /> Sessions
+          <div className="flex flex-col gap-1 p-5 rounded-3xl bg-surface border-b-primary" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+            <span className="text-[13px] text-t-secondary uppercase tracking-wider flex items-center gap-1">
+              <Flame size={9} className="text-accent-orange" /> Sessions
             </span>
-            <span className="text-xl font-semibold text-zinc-200 tabular-nums">{hyperfocusSessions.length}</span>
+            <span className="text-xl font-semibold text-t-primary tabular-nums">{hyperfocusSessions.length}</span>
           </div>
         </div>
 
         {/* Timer Zone */}
-        <div className="flex flex-col items-center gap-6 py-4 rounded-3xl relative"
-          style={{ background: "rgba(255,255,255,0.015)", border: "1px solid rgba(255,255,255,0.04)" }}
+        <div className="flex flex-col items-center gap-6 py-4 rounded-3xl relative bg-surface border-b-primary"
+          style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}
         >
           {/* Ambient glow when running */}
           {running && (
             <div className="absolute inset-0 rounded-3xl pointer-events-none"
-              style={{ background: `radial-gradient(circle at center 40%, ${currentPhase.color}06 0%, transparent 70%)` }} />
+              style={{ background: `radial-gradient(circle at center 40%, ${currentPreset.color}10 0%, transparent 70%)` }} />
           )}
 
           {/* Quote */}
-          <p className="text-[11px] text-zinc-600 italic text-center px-8">&quot;{quote}&quot;</p>
+          <p className="text-[13px] text-t-secondary italic text-center px-8">&quot;{quote}&quot;</p>
 
           {/* Timer ring */}
-          <div className="relative flex items-center justify-center" style={{ width: ringSize, height: ringSize }}>
-            <svg width={ringSize} height={ringSize} className="transform -rotate-90">
-              <circle cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth={strokeWidth} />
+          <div
+            className="relative flex items-center justify-center transition-opacity duration-300"
+            style={{
+              width: 260,
+              height: 260,
+              opacity: paused ? 0.6 : 1,
+            }}
+          >
+            <svg width={260} height={260} className="transform -rotate-90">
+              <circle cx={130} cy={130} r={126} fill="none" stroke="var(--surface-4)" strokeWidth={8} />
               <motion.circle
-                cx={ringSize / 2} cy={ringSize / 2} r={radius} fill="none"
-                stroke={completed ? "#4ade80" : currentPhase.color}
-                strokeWidth={strokeWidth} strokeLinecap="round"
-                strokeDasharray={circumference}
-                animate={{ strokeDashoffset: offset }}
+                cx={130}
+                cy={130}
+                r={126}
+                fill="none"
+                stroke={completed ? "var(--accent-green)" : currentPreset.color}
+                strokeWidth={8}
+                strokeLinecap="round"
+                strokeDasharray={2 * Math.PI * 126}
+                animate={{ strokeDashoffset: 2 * Math.PI * 126 * (1 - progress / 100) }}
                 transition={{ duration: 0.5 }}
-                style={{ filter: running ? `drop-shadow(0 0 8px ${currentPhase.color}40)` : "none" }}
+                style={{
+                  filter:
+                    running && !paused
+                      ? `drop-shadow(0 0 12px ${currentPreset.color}30)`
+                      : "none",
+                }}
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-6xl font-extralight text-zinc-100 tabular-nums tracking-tighter">
-                {timeDisplay}
+              <span className="text-6xl font-extralight text-t-primary tabular-nums tracking-tighter">
+                {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
               </span>
+              {paused && (
+                <span className="text-xs font-medium text-t-secondary mt-1">En pause</span>
+              )}
               <div className="flex items-center gap-2 mt-2">
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-md"
-                  style={{ background: `${currentPhase.color}10`, color: currentPhase.color, border: `1px solid ${currentPhase.color}20` }}
-                >{currentPhase.name}</span>
-                <span className="text-[10px] text-zinc-600 flex items-center gap-1">
-                  <Zap size={8} style={{ color: "#fbbf24" }} /> +{earnedXP} XP
+                <span
+                  className="text-[13px] font-medium px-2 py-0.5 rounded-md"
+                  style={{
+                    background: `${currentPreset.color}15`,
+                    color: currentPreset.color,
+                    border: `1px solid ${currentPreset.color}25`,
+                  }}
+                >
+                  {currentPreset.description}
+                </span>
+                <span className="text-[13px] text-t-secondary flex items-center gap-1">
+                  <Zap size={8} className="text-accent-orange" /> +{currentPreset.xp} XP
                 </span>
               </div>
             </div>
@@ -278,64 +405,190 @@ export default function HyperfocusLab() {
           <input
             value={taskName}
             onChange={(e) => setTaskName(e.target.value)}
-            placeholder="What are you working on?"
+            placeholder="Sur quoi travailles-tu ?"
             disabled={running}
-            className="text-center text-sm bg-transparent text-zinc-300 placeholder:text-zinc-700 focus:outline-none w-64 border-b pb-2 disabled:opacity-50"
-            style={{ borderColor: "rgba(255,255,255,0.06)" }}
+            className="text-center text-sm bg-transparent text-t-primary placeholder:text-[#C7C7CC] focus:outline-none w-64 border-b-b-primary border-b pb-2 disabled:opacity-50"
           />
 
+          {/* Preset buttons */}
+          <div className="flex gap-2 flex-wrap justify-center">
+            {PRESETS.map((p) => (
+              <button
+                key={p.minutes}
+                onClick={() => handlePreset(p.minutes)}
+                disabled={running}
+                className="flex flex-col items-center gap-1 px-5 py-3 rounded-3xl font-medium transition-all disabled:opacity-30"
+                style={{
+                  background:
+                    duration === p.minutes ? "var(--accent-blue-light)" : "var(--surface)",
+                  border:
+                    duration === p.minutes
+                      ? "1px solid var(--accent-blue)"
+                      : "1px solid var(--border-primary)",
+                }}
+              >
+                <span
+                  className="text-xs"
+                  style={{
+                    color:
+                      duration === p.minutes
+                        ? "var(--accent-blue)"
+                        : "var(--text-secondary)",
+                  }}
+                >
+                  {p.label}
+                </span>
+                <span className="text-[9px] flex items-center gap-0.5 text-t-secondary">
+                  <Zap size={7} /> {p.xp} XP
+                </span>
+              </button>
+            ))}
+
+            {/* Custom duration input */}
+            <div className="flex items-center gap-1.5 px-3 py-2 rounded-3xl border-b-primary"
+              style={{ background: "var(--surface)" }}
+            >
+              <input
+                type="number"
+                value={customDuration}
+                onChange={(e) => setCustomDuration(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleCustomDuration()}
+                placeholder="min"
+                disabled={running}
+                min="1"
+                max="480"
+                className="w-12 text-xs text-center bg-transparent text-t-primary placeholder:text-t-secondary focus:outline-none disabled:opacity-50"
+              />
+              <button
+                onClick={handleCustomDuration}
+                disabled={running || !customDuration}
+                className="text-[9px] px-2 py-0.5 rounded-md font-medium transition-all disabled:opacity-30"
+                style={{
+                  background: customDuration ? "var(--accent-blue-light)" : "transparent",
+                  color: customDuration ? "var(--accent-blue)" : "var(--text-secondary)",
+                }}
+              >
+                Set
+              </button>
+            </div>
+          </div>
 
           {/* Controls */}
           <div className="flex items-center gap-4">
-            <button onClick={handleReset}
-              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
-              style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)" }}
+            <button
+              onClick={handleReset}
+              className="w-11 h-11 rounded-3xl flex items-center justify-center transition-all border-b-primary"
+              style={{ background: "var(--surface)" }}
             >
-              <RotateCcw size={16} className="text-zinc-400" />
+              <RotateCcw size={15} className="text-t-secondary" />
             </button>
 
             <motion.button
-              onClick={running ? handlePause : handleStart}
+              onClick={
+                running
+                  ? paused
+                    ? handleResume
+                    : handlePause
+                  : handleStart
+              }
               whileTap={{ scale: 0.95 }}
-              className="w-18 h-18 rounded-full flex items-center justify-center transition-all relative"
+              className="w-20 h-20 rounded-full flex items-center justify-center transition-all relative bg-accent-blue"
               style={{
-                background: running ? "rgba(255,255,255,0.06)" : `${currentPhase.color}15`,
-                border: `1px solid ${running ? "rgba(255,255,255,0.08)" : currentPhase.color + "30"}`,
+                border: "1px solid var(--accent-blue)",
               }}
             >
-              {running && (
-                <div className="absolute inset-0 rounded-full animate-ping pointer-events-none"
-                  style={{ background: `${currentPhase.color}08` }} />
+              {running && !paused && (
+                <div
+                  className="absolute inset-0 rounded-full animate-ping pointer-events-none"
+                  style={{ background: "rgba(0,113,227,0.15)" }}
+                />
               )}
-              {running
-                ? <Pause size={24} className="text-zinc-200 relative z-10" />
-                : <Play size={24} className="text-zinc-200 ml-0.5 relative z-10" />
-              }
+              {!running ? (
+                <Play size={22} className="text-white ml-0.5 relative z-10" />
+              ) : paused ? (
+                <Play size={22} className="text-white ml-0.5 relative z-10" />
+              ) : (
+                <Pause size={22} className="text-white relative z-10" />
+              )}
             </motion.button>
 
             <button
               onClick={() => handleNoiseToggle(noise === "none" ? "brown" : "none")}
-              className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
+              className="w-11 h-11 rounded-3xl flex items-center justify-center transition-all border-b-primary"
               style={{
-                background: noise !== "none" ? "rgba(167,139,250,0.06)" : "rgba(255,255,255,0.04)",
-                border: `1px solid ${noise !== "none" ? "rgba(167,139,250,0.15)" : "rgba(255,255,255,0.06)"}`,
+                background:
+                  noise !== "none" ? "var(--accent-blue-light)" : "var(--surface)",
+                border:
+                  noise !== "none"
+                    ? "1px solid var(--accent-blue)"
+                    : "1px solid var(--border-primary)",
               }}
             >
-              {noise === "none" ? <VolumeX size={16} className="text-zinc-500" /> : <Volume2 size={16} style={{ color: "#a78bfa" }} />}
+              {noise === "none" ? (
+                <VolumeX size={15} className="text-t-secondary" />
+              ) : (
+                <Volume2 size={15} className="text-accent-blue" />
+              )}
             </button>
           </div>
 
+          {/* Volume Slider */}
+          {noise !== "none" && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="flex items-center gap-3 px-6 py-3 rounded-3xl max-w-xs"
+              style={{ background: "var(--surface)" }}
+            >
+              <Volume2 size={14} className="text-t-secondary shrink-0" />
+              <input
+                type="range"
+                min="0"
+                max="30"
+                value={noiseVolume}
+                onChange={(e) => {
+                  const newVol = parseInt(e.target.value, 10);
+                  setNoiseVolume(newVol);
+                  if (running && !paused && (noise === "brown" || noise === "white" || noise === "pink")) {
+                    playNoise(noise);
+                  }
+                }}
+                className="flex-1 h-1.5 rounded-full accent-accent-blue"
+                style={{
+                  background:
+                    "linear-gradient(to right, var(--surface-4) 0%, var(--surface-4) calc(100% * " +
+                    noiseVolume / 30 +
+                    "), var(--border-primary) calc(100% * " +
+                    noiseVolume / 30 +
+                    "), var(--border-primary) 100%)",
+                }}
+              />
+              <span className="text-[11px] font-medium text-t-secondary w-6 text-right">
+                {noiseVolume}%
+              </span>
+            </motion.div>
+          )}
+
           {/* Noise selector */}
-          <div className="flex gap-3">
+          <div className="flex gap-2 flex-wrap justify-center">
             {NOISES.map((n) => (
               <button
                 key={n.type}
                 onClick={() => handleNoiseToggle(n.type)}
-                className="text-[11px] px-3.5 py-2 rounded-xl font-medium transition-all flex items-center gap-2"
+                className="text-[13px] px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 border-b-primary"
                 style={{
-                  background: noise === n.type ? "rgba(255,255,255,0.08)" : "transparent",
-                  border: `1px solid ${noise === n.type ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}`,
-                  color: noise === n.type ? "#e4e4e7" : "#52525b",
+                  background:
+                    noise === n.type ? "var(--accent-blue-light)" : "var(--surface)",
+                  border: `1px solid ${
+                    noise === n.type
+                      ? "var(--accent-blue)"
+                      : "var(--border-primary)"
+                  }`,
+                  color:
+                    noise === n.type
+                      ? "var(--accent-blue)"
+                      : "var(--text-secondary)",
                 }}
               >
                 <span>{n.emoji}</span> {n.label}
@@ -343,41 +596,121 @@ export default function HyperfocusLab() {
             ))}
           </div>
 
-          {/* Stop & Save button (only show if timer has elapsed) */}
-          {elapsedSeconds > 0 && (
-            <button
-              onClick={handleStop}
-              disabled={running}
-              className="px-8 py-2.5 rounded-xl font-medium text-sm transition-all disabled:opacity-50"
-              style={{
-                background: "rgba(74,222,128,0.08)",
-                border: "1px solid rgba(74,222,128,0.15)",
-                color: "#4ade80",
-              }}
-            >
-              Stop & Save Session
-            </button>
-          )}
-
           {/* Completed banner */}
           <AnimatePresence>
-            {completed && (
+            {completed && !breakRunning && (
               <motion.div
                 initial={{ opacity: 0, y: 10, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0 }}
-                className="px-6 py-4 rounded-2xl text-center mx-6"
-                style={{ background: "rgba(74,222,128,0.06)", border: "1px solid rgba(74,222,128,0.12)" }}
+                className="px-6 py-4 rounded-3xl text-center mx-6"
+                style={{
+                  background: "var(--accent-green-light)",
+                  border: "1px solid var(--accent-green-light)",
+                }}
               >
                 <div className="flex items-center justify-center gap-2 mb-1">
-                  <Check size={14} style={{ color: "#4ade80" }} />
-                  <p className="text-sm font-medium" style={{ color: "#4ade80" }}>Session saved!</p>
+                  <Check size={14} className="text-accent-green" />
+                  <p className="text-sm font-medium text-accent-green">
+                    Session terminée !
+                  </p>
                 </div>
-                <div className="flex items-center justify-center gap-3 text-[11px] text-zinc-500">
+                <div className="flex items-center justify-center gap-3 text-[13px] text-t-secondary">
                   <span className="flex items-center gap-1">
-                    <Zap size={10} style={{ color: "#fbbf24" }} /> +{earnedXP} XP
+                    <Zap size={10} className="text-accent-orange" /> +{currentPreset.xp} XP
+                  </span>
+                  <span>·</span>
+                  <span className="flex items-center gap-1">
+                    <Target size={10} className="text-accent-red" /> -{duration >= 45 ? 15 : 8}%
+                    Boss HP
                   </span>
                 </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Break prompt banner */}
+          <AnimatePresence>
+            {showBreakPrompt && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-6 py-4 rounded-3xl text-center mx-6"
+                style={{
+                  background: "var(--accent-orange-light)",
+                  border: "1px solid var(--accent-orange-light)",
+                }}
+              >
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Coffee size={14} className="text-accent-orange" />
+                  <p className="text-sm font-medium text-accent-orange">
+                    Prends une pause !
+                  </p>
+                </div>
+                <p className="text-xs text-t-secondary mb-3">
+                  5 minutes pour recharger tes batteries
+                </p>
+                <div className="flex gap-2 justify-center">
+                  <button
+                    onClick={startBreak}
+                    className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
+                    style={{
+                      background: "var(--accent-orange)",
+                      color: "white",
+                    }}
+                  >
+                    Démarrer la pause
+                  </button>
+                  <button
+                    onClick={skipBreak}
+                    className="px-4 py-2 rounded-xl text-xs font-medium transition-all border-b-primary"
+                    style={{
+                      background: "var(--surface)",
+                      color: "var(--text-secondary)",
+                    }}
+                  >
+                    Plus tard
+                  </button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Break timer */}
+          <AnimatePresence>
+            {breakRunning && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="px-6 py-6 rounded-3xl text-center mx-6"
+                style={{
+                  background: "var(--accent-orange-light)",
+                  border: "1px solid var(--accent-orange-light)",
+                }}
+              >
+                <div className="flex items-center justify-center gap-2 mb-3">
+                  <Coffee size={16} className="text-accent-orange" />
+                  <p className="text-sm font-medium text-accent-orange">
+                    Pause en cours
+                  </p>
+                </div>
+                <div className="text-4xl font-extralight text-accent-orange tabular-nums mb-3">
+                  {String(breakMinutes).padStart(2, "0")}:
+                  {String(breakSeconds).padStart(2, "0")}
+                </div>
+                <button
+                  onClick={() => setBreakRunning(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium transition-all"
+                  style={{
+                    background: "var(--surface)",
+                    color: "var(--text-secondary)",
+                    border: "1px solid var(--border-primary)",
+                  }}
+                >
+                  Terminer la pause
+                </button>
               </motion.div>
             )}
           </AnimatePresence>
@@ -387,12 +720,12 @@ export default function HyperfocusLab() {
         <div className="flex flex-col gap-2">
           <button
             onClick={() => setShowHistory(!showHistory)}
-            className="flex items-center justify-between w-full px-1 py-1.5"
+            className="flex items-center justify-between w-full px-1 py-1"
           >
-            <span className="text-[11px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-2">
-              <Clock size={11} /> History ({hyperfocusSessions.length})
+            <span className="text-[10px] font-medium text-t-secondary uppercase tracking-widest flex items-center gap-1.5">
+              <Clock size={10} /> Historique ({hyperfocusSessions.length})
             </span>
-            {showHistory ? <ChevronUp size={12} className="text-zinc-600" /> : <ChevronDown size={12} className="text-zinc-600" />}
+            {showHistory ? <ChevronUp size={12} className="text-t-secondary" /> : <ChevronDown size={12} className="text-t-secondary" />}
           </button>
 
           <AnimatePresence>
@@ -404,31 +737,29 @@ export default function HyperfocusLab() {
                 className="overflow-hidden flex flex-col gap-1.5"
               >
                 {hyperfocusSessions.length === 0 && (
-                  <p className="text-xs text-zinc-700 text-center py-4">No sessions yet</p>
+                  <p className="text-xs text-t-secondary text-center py-4">Aucune session pour le moment</p>
                 )}
                 {hyperfocusSessions.slice(0, 15).map((s) => (
                   <div
                     key={s.id}
-                    className="flex items-center gap-3 px-4 py-2.5 rounded-2xl"
-                    style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.03)" }}
+                    className="flex items-center gap-3 px-4 py-2.5 rounded-3xl bg-surface border-b-primary"
                   >
-                    <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0"
-                      style={{ background: "rgba(167,139,250,0.08)", border: "1px solid rgba(167,139,250,0.12)" }}
+                    <div className="w-7 h-7 rounded-xl flex items-center justify-center shrink-0 bg-accent-blue-light border-b-primary"
                     >
-                      <FlaskConical size={11} style={{ color: "#a78bfa" }} />
+                      <FlaskConical size={11} className="text-accent-blue" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-zinc-300 truncate">{s.taskName}</p>
-                      <p className="text-[11px] text-zinc-700">
-                        {new Date(s.completedAt).toLocaleDateString("en-US", { day: "numeric", month: "short" })}
+                      <p className="text-[13px] text-t-primary truncate">{s.taskName}</p>
+                      <p className="text-[12px] text-t-secondary">
+                        {new Date(s.completedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                         {" · "}{s.durationMinutes} min
                         {s.noise !== "none" && ` · ${s.noise}`}
                       </p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Zap size={9} style={{ color: "#fbbf24" }} />
-                      <span className="text-[10px] font-medium tabular-nums" style={{ color: "#fbbf24" }}>
-                        +{calculateXP(s.durationMinutes * 60)}
+                      <Zap size={9} className="text-accent-orange" />
+                      <span className="text-[12px] font-medium tabular-nums text-accent-orange">
+                        +{s.durationMinutes >= 45 ? (s.durationMinutes >= 90 ? 150 : 80) : 40}
                       </span>
                     </div>
                   </div>
@@ -440,13 +771,13 @@ export default function HyperfocusLab() {
 
         {/* Streak reminder */}
         {streak > 0 && (
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl"
-            style={{ background: "rgba(251,191,36,0.04)", border: "1px solid rgba(251,191,36,0.08)" }}
+          <div className="flex items-center gap-3 px-4 py-3 rounded-3xl"
+            style={{ background: "var(--accent-orange-light)", border: "1px solid var(--accent-orange-light)" }}
           >
-            <Flame size={14} style={{ color: "#fbbf24" }} />
+            <Flame size={14} className="text-accent-orange" />
             <div className="flex-1">
-              <p className="text-xs text-zinc-300">Active streak: <span style={{ color: "#fbbf24" }} className="font-semibold">{streak}</span></p>
-              <p className="text-[10px] text-zinc-600">Keep going, every session counts!</p>
+              <p className="text-xs text-t-primary">Streak actif : <span className="text-accent-orange font-semibold">{streak}</span></p>
+              <p className="text-[12px] text-t-secondary">Continue comme ça, chaque session compte !</p>
             </div>
           </div>
         )}

@@ -38,37 +38,36 @@ export default function ObjectivesTimeline() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between border-b-primary">
         <div>
-          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
-            <Target size={20} className="text-zinc-400" /> Objectifs
+          <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
+            <Target size={18} className="text-t-secondary" /> Objectifs
           </h1>
-          <p className="text-sm text-zinc-600 mt-1">{objectives.length} objectifs actifs</p>
+          <p className="text-xs text-t-secondary mt-1">{objectives.length} objectifs actifs</p>
         </div>
-        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-4 py-2.5 rounded-xl font-medium transition-all"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#d4d4d8" }}
+        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all bg-surface border-b-primary text-t-primary"
         ><Plus size={13} /> Nouveau</button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-7 py-6">
+      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5">
         <AnimatePresence>
           {adding && (
             <motion.form initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: "auto" }} exit={{ opacity: 0, height: 0 }}
-              onSubmit={handleAdd} className="mb-5 p-5 rounded-2xl flex flex-col gap-3"
-              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
+              onSubmit={handleAdd} className="mb-5 p-6 rounded-3xl flex flex-col gap-3 bg-surface border-b-primary"
+              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
             >
               <input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Titre de l'objectif"
-                className="text-sm bg-transparent text-zinc-200 placeholder:text-zinc-600 focus:outline-none border-b pb-2" style={{ borderColor: "rgba(255,255,255,0.06)" }} autoFocus />
+                className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none border-b border-b-primary pb-2" autoFocus />
               <div className="flex gap-2">
                 {HORIZONS.map((h) => (
                   <button key={h.key} type="button" onClick={() => setNewHorizon(h.key)} className="text-[10px] px-3 py-1.5 rounded-lg font-medium transition-all"
-                    style={{ background: newHorizon === h.key ? "rgba(255,255,255,0.08)" : "transparent", color: newHorizon === h.key ? "#e4e4e7" : "#52525b", border: `1px solid ${newHorizon === h.key ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}` }}
+                    style={{ background: newHorizon === h.key ? "var(--accent-blue-light)" : "var(--surface)", color: newHorizon === h.key ? "var(--accent-blue)" : "var(--text-primary)", border: `1px solid ${newHorizon === h.key ? "var(--accent-blue-light)" : "var(--border-b-primary)"}` }}
                   >{h.label}</button>
                 ))}
               </div>
               <div className="flex gap-2 justify-end">
-                <button type="button" onClick={() => setAdding(false)} className="text-xs text-zinc-600 hover:text-zinc-400 px-3 py-1.5">Annuler</button>
-                <button type="submit" className="text-xs px-4 py-1.5 rounded-xl font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "#e4e4e7" }}>Créer</button>
+                <button type="button" onClick={() => setAdding(false)} className="text-xs text-t-secondary hover:text-t-primary px-3 py-1.5">Annuler</button>
+                <button type="submit" className="text-xs px-4 py-1.5 rounded-xl font-medium bg-accent-blue text-white">Créer</button>
               </div>
             </motion.form>
           )}
@@ -80,45 +79,45 @@ export default function ObjectivesTimeline() {
             if (objs.length === 0) return null;
             return (
               <div key={key} className="flex flex-col gap-3">
-                <p className="text-xs font-medium text-zinc-600 uppercase tracking-widest px-1">{label}</p>
+                <p className="text-[10px] font-medium text-t-secondary uppercase tracking-widest px-1">{label}</p>
                 {objs.map((obj) => {
                   const isExpanded = expandedId === obj.id;
                   return (
-                    <motion.div key={obj.id} layout className="rounded-2xl overflow-hidden transition-all border-collapse"
-                      style={{ background: "rgba(255,255,255,0.02)", border: `1px solid ${isExpanded ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}` }}
+                    <motion.div key={obj.id} layout className="rounded-3xl overflow-hidden transition-all bg-surface border-b-primary"
+                      style={{ boxShadow: isExpanded ? "0 4px 12px rgba(0,0,0,0.12)" : "0 1px 3px rgba(0,0,0,0.08)" }}
                     >
-                      <div className="flex items-center gap-3 px-5 py-4 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : obj.id)}>
+                      <div className="flex items-center gap-3 px-4 py-3 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : obj.id)}>
                         <div className="w-3 h-3 rounded-full shrink-0" style={{ background: obj.color }} />
-                        <span className="flex-1 text-sm text-zinc-200 min-w-0 truncate" style={{ fontWeight: 450 }}>{obj.title}</span>
-                        <span className="text-[10px] font-mono text-zinc-600 shrink-0">{obj.progress}%</span>
-                        <div className="w-16 h-1.5 rounded-full overflow-hidden shrink-0" style={{ background: "rgba(255,255,255,0.04)" }}>
+                        <span className="flex-1 text-sm text-t-primary min-w-0 truncate" style={{ fontWeight: 450 }}>{obj.title}</span>
+                        <span className="text-[10px] font-mono text-t-secondary shrink-0">{obj.progress}%</span>
+                        <div className="w-16 h-1.5 rounded-full overflow-hidden shrink-0 bg-b-primary">
                           <div className="h-full rounded-full transition-all" style={{ width: `${obj.progress}%`, background: obj.color }} />
                         </div>
-                        {isExpanded ? <ChevronDown size={13} className="text-zinc-600" /> : <ChevronRight size={13} className="text-zinc-600" />}
+                        {isExpanded ? <ChevronDown size={13} className="text-t-secondary" /> : <ChevronRight size={13} className="text-t-secondary" />}
                       </div>
 
                       <AnimatePresence>
                         {isExpanded && (
                           <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-                            <div className="px-4 pb-3 pt-1 flex flex-col gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                            <div className="px-4 pb-3 pt-1 flex flex-col gap-2" style={{ borderTop: "1px solid var(--border-b-primary)" }}>
                               {obj.milestones.map((ms) => (
                                 <div key={ms.id} className="flex items-center gap-2.5 group/ms py-0.5">
                                   <button onClick={() => toggleMilestone(obj.id, ms.id)} className="shrink-0 w-4 h-4 rounded-md border flex items-center justify-center transition-all"
-                                    style={{ borderColor: ms.done ? `${obj.color}60` : "rgba(255,255,255,0.08)", background: ms.done ? `${obj.color}15` : "transparent" }}
+                                    style={{ borderColor: ms.done ? `${obj.color}60` : "var(--border-b-hover)", background: ms.done ? `${obj.color}15` : "transparent" }}
                                   >{ms.done && <Check size={8} style={{ color: obj.color }} strokeWidth={3} />}</button>
-                                  <span className="flex-1 text-xs" style={{ color: ms.done ? "#3f3f46" : "#a1a1aa", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
-                                  <button onClick={() => deleteMilestone(obj.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-zinc-700 hover:text-zinc-400"><Trash2 size={9} /></button>
+                                  <span className="flex-1 text-[11px]" style={{ color: ms.done ? "var(--accent-green)" : "var(--text-secondary)", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
+                                  <button onClick={() => deleteMilestone(obj.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-t-secondary hover:text-accent-red"><Trash2 size={9} /></button>
                                 </div>
                               ))}
 
                               <div className="flex items-center gap-2 mt-1">
                                 <input value={msInputs[obj.id] || ""} onChange={(e) => setMsInputs((p) => ({ ...p, [obj.id]: e.target.value }))}
                                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddMs(obj.id); } }}
-                                  placeholder="+ jalon" className="flex-1 text-xs bg-transparent border-b py-1 text-zinc-400 placeholder:text-zinc-700 focus:outline-none"
-                                  style={{ borderColor: "rgba(255,255,255,0.04)" }} />
+                                  placeholder="+ jalon" className="flex-1 text-[11px] bg-transparent border-b border-b-primary py-1 text-t-primary placeholder:text-t-tertiary focus:outline-none"
+                                />
                               </div>
 
-                              <button onClick={() => deleteObjective(obj.id)} className="flex items-center gap-1.5 text-[10px] text-zinc-700 hover:text-red-300 transition-colors self-end mt-1">
+                              <button onClick={() => deleteObjective(obj.id)} className="flex items-center gap-1.5 text-[10px] text-t-secondary hover:text-accent-red transition-colors self-end mt-1">
                                 <Trash2 size={9} /> Supprimer
                               </button>
                             </div>

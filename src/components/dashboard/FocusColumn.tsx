@@ -3,8 +3,8 @@
 import { useRef, useState, useEffect } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Check, Inbox,
-  ChevronDown, ChevronRight, X, Loader2, Search,
+  Check, Inbox, Clock, Calendar,
+  ChevronDown, ChevronRight, X, Loader2, Search, RotateCcw,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Task, IncupTag } from "@/store/useAppStore";
@@ -23,6 +23,36 @@ const cardVariants = {
   animate: { opacity: 1, y: 0, transition: { duration: 0.2 } },
   exit:    { opacity: 0, x: 30, transition: { duration: 0.15 } },
 };
+
+const getPriorityColor = (priority?: "low" | "medium" | "high"): string => {
+  switch (priority) {
+    case "high":
+      return "var(--accent-red, #fca5a5)";
+    case "medium":
+      return "var(--accent-orange, #fbbf24)";
+    case "low":
+    default:
+      return "var(--accent-green, #4ade80)";
+  }
+};
+
+const formatRelativeDate = (isoString: string): string => {
+  const date = new Date(isoString);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const taskDate = new Date(isoString);
+  taskDate.setHours(0, 0, 0, 0);
+
+  const diffTime = taskDate.getTime() - today.getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+  if (diffDays === 0) return "Aujourd'hui";
+  if (diffDays === 1) return "Demain";
+  if (diffDays === -1) return "Hier";
+  if (diffDays < 0) return `${Math.abs(diffDays)}j passé`;
+  return `${diffDays}j`;
+};
+
 function MicroStepRow({ step, taskId }: { step: { id: string; text: string; done: boolean }; taskId: string }) {
   const { toggleMicroStep, deleteMicroStep } = useAppStore();
   return (
@@ -46,7 +76,14 @@ function MicroStepRow({ step, taskId }: { step: { id: string; text: string; done
     </motion.div>
   );
 }
-function TaskCard({ task, index }: { task: Task; index: number }) {
+
+function TaskCard({ task, index, onDragStart, onDragOver, onDrop }: {
+  task: Task;
+  index: number;
+  onDragStart: (e: React.DragEvent, taskId: string) => void;
+  onDragOver: (e: React.DragEvent) => void;
+  onDrop: (e: React.DragEvent, taskId: string) => void;
+}) {
   const { completeTask, toggleExpand, addMicroStep, toggleTag, lastCritical, setLastActive } = useAppStore();
   const [checking, setChecking] = useState(false);
   const [microInput, setMicroInput] = useState("");
@@ -72,13 +109,28 @@ function TaskCard({ task, index }: { task: Task; index: number }) {
     addMicroStep(task.id, microInput.trim());
     setMicroInput("");
   };
+
   return (
     <motion.div
       layout variants={cardVariants} initial="initial" animate="animate" exit="exit"
-      className="rounded-2xl overflow-hidden transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_24px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] border border-b-primary bg-surface"
+      draggable
+      onDragStart={(e) => onDragStart(e as unknown as React.DragEvent, task.id)}
+      onDragOver={onDragOver}
+      onDrop={(e) => onDrop(e as unknown as React.DragEvent, task.id)}
+      className="rounded-2xl overflow-hidden transition-all duration-200 shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_24px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] border border-b-primary bg-surface cursor-grab active:cursor-grabbing"
     >
       <div className="flex items-center gap-3 px-6 py-4 group">
         <span className="text-[10px] text-t-secondary font-mono w-4 shrink-0 select-none text-center">{index + 1}</span>
+
+        {/* Priority Indicator */}
+        {task.priority && (
+          <div
+            className="shrink-0 w-2 h-2 rounded-full"
+            style={{ background: getPriorityColor(task.priority) }}
+            title={task.priority}
+          />
+        )}
+
         <button
           onClick={handleCheck} disabled={checking}
           className="shrink-0 w-5 h-5 rounded-full border-[1.5px] flex items-center justify-center transition-all border-b-hover"
@@ -87,16 +139,35 @@ function TaskCard({ task, index }: { task: Task; index: number }) {
           {checking ? <Loader2 size={10} className="animate-spin text-accent-blue" /> : null}
         </button>
         <span className="flex-1 text-[17px] text-t-primary leading-snug min-w-0 truncate" style={{ fontWeight: 450 }}>{task.text}</span>
+
         {totalSteps > 0 && (
           <span className="text-[10px] text-t-secondary font-mono shrink-0 px-1.5 py-0.5 rounded-md bg-background">
             {doneCount}/{totalSteps}
           </span>
         )}
+
+        {/* Estimated Time */}
+        {task.estimatedMinutes && (
+          <div className="flex items-center gap-1 shrink-0 px-2 py-1 rounded-md bg-background text-t-secondary text-[10px]">
+            <Clock size={9} />
+            <span className="font-mono">~{task.estimatedMinutes}m</span>
+          </div>
+        )}
+
+        {/* Due Date */}
+        {task.dueDate && (
+          <div className="flex items-center gap-1 shrink-0 px-2 py-1 rounded-md bg-background text-t-secondary text-[10px]">
+            <Calendar size={9} />
+            <span className="font-mono">{formatRelativeDate(task.dueDate)}</span>
+          </div>
+        )}
+
         <span className="text-[10px] font-mono opacity-0 group-hover:opacity-100 shrink-0 text-accent-blue">+25</span>
         <button onClick={() => toggleExpand(task.id)} className="shrink-0 w-6 h-6 rounded-lg flex items-center justify-center text-t-secondary hover:text-t-primary transition-all">
           {task.expanded ? <ChevronDown size={13} /> : <ChevronRight size={13} />}
         </button>
       </div>
+
       {totalSteps > 0 && (
         <div className="mx-5 h-[2px] rounded-full overflow-hidden mb-2 border-b-primary" style={{ background: "var(--border-b-primary)" }}>
           <motion.div className="h-full rounded-full bg-accent-blue" style={{}} animate={{ width: `${progress * 100}%` }} transition={{ type: "spring", stiffness: 120, damping: 18 }} />
@@ -125,7 +196,8 @@ function TaskCard({ task, index }: { task: Task; index: number }) {
                 <AnimatePresence>
                   {task.microSteps.map((ms) => <MicroStepRow key={ms.id} step={ms} taskId={task.id} />)}
                 </AnimatePresence>
-              </div>              <form onSubmit={handleAddMicro} className="flex items-center gap-2">
+              </div>
+              <form onSubmit={handleAddMicro} className="flex items-center gap-2">
                 <input value={microInput} onChange={(e) => setMicroInput(e.target.value)} placeholder="+ micro-étape"
                   className="flex-1 text-[11px] bg-transparent border-b py-1 text-[#3C3C43] placeholder:text-t-tertiary focus:outline-none transition-colors"
                   style={{ borderColor: "var(--border-b-primary)" }}
@@ -140,13 +212,18 @@ function TaskCard({ task, index }: { task: Task; index: number }) {
 }
 
 export default function FocusColumn() {
-  const { tasks, addInboxItem } = useAppStore();
+  const { tasks, addInboxItem, settings, newStart, reorderTasks } = useAppStore();
   const [input, setInput] = useState("");
+  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const todayTasks = tasks.filter((t) => t.status === "today");
   const inboxCount = tasks.filter((t) => t.status === "inbox").length;
-  const isFull = todayTasks.length >= 5;
+  const maxDailyTasks = settings.maxDailyTasks || 5;
+  const isFull = todayTasks.length >= maxDailyTasks;
+
+  const doneCount = tasks.filter((t) => t.status === "done" && t.completedAt && new Date(t.completedAt).toDateString() === new Date().toDateString()).length;
+  const progressPercent = todayTasks.length > 0 ? (doneCount / todayTasks.length) * 100 : 0;
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -155,6 +232,7 @@ export default function FocusColumn() {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -162,14 +240,65 @@ export default function FocusColumn() {
     setInput("");
   };
 
+  const handleDragStart = (e: React.DragEvent, taskId: string) => {
+    setDraggedTaskId(taskId);
+    e.dataTransfer.effectAllowed = "move";
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDrop = (e: React.DragEvent, targetTaskId: string) => {
+    e.preventDefault();
+    if (!draggedTaskId || draggedTaskId === targetTaskId) return;
+
+    const fromIndex = todayTasks.findIndex((t) => t.id === draggedTaskId);
+    const toIndex = todayTasks.findIndex((t) => t.id === targetTaskId);
+
+    if (fromIndex >= 0 && toIndex >= 0) {
+      const newOrder = [...todayTasks];
+      const [movedTask] = newOrder.splice(fromIndex, 1);
+      newOrder.splice(toIndex, 0, movedTask);
+
+      reorderTasks(newOrder.map((t) => t.id));
+    }
+
+    setDraggedTaskId(null);
+  };
+
   return (
     <div className="flex flex-col h-full px-6 py-6 gap-5">
       <div className="flex items-center justify-between shrink-0">
-        <div>
+        <div className="flex-1">
           <h2 className="text-2xl font-semibold text-t-primary tracking-tight">Focus du jour</h2>
-          <p className="text-[15px] text-t-secondary mt-1">{todayTasks.length}/5 actives · {inboxCount} en inbox</p>
+          <p className="text-[15px] text-t-secondary mt-1">{todayTasks.length}/{maxDailyTasks} actives · {inboxCount} en inbox</p>
         </div>
+        <button
+          onClick={newStart}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-t-secondary hover:text-t-primary hover:bg-surface transition-all"
+          title="Archive all today tasks to inbox"
+        >
+          <RotateCcw size={13} />
+          Nouveau Départ
+        </button>
       </div>
+
+      {/* Progression Bar */}
+      {todayTasks.length > 0 && (
+        <motion.div className="shrink-0 flex flex-col gap-1.5">
+          <div className="h-1.5 rounded-full overflow-hidden bg-background">
+            <motion.div
+              className="h-full rounded-full bg-accent-blue"
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPercent}%` }}
+              transition={{ type: "spring", stiffness: 120, damping: 18 }}
+            />
+          </div>
+          <span className="text-[10px] text-t-secondary font-mono">{doneCount} / {todayTasks.length} complétées</span>
+        </motion.div>
+      )}
 
       {/* Spotlight Omnibar */}
       <form onSubmit={handleSubmit} className="shrink-0">
@@ -179,7 +308,8 @@ export default function FocusColumn() {
             ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
             placeholder="Capturer une idée → Inbox...  (Ctrl+Shift+I)"
             className="w-full pl-11 pr-4 py-4 rounded-[20px] text-[15px] text-t-primary placeholder:text-t-tertiary focus:outline-none transition-all shadow-[0_2px_8px_rgba(0,0,0,0.02)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)] focus:shadow-[0_4px_24px_rgba(0,113,227,0.08)] bg-surface border border-b-primary"
-          />          <AnimatePresence>
+          />
+          <AnimatePresence>
             {input.trim() && (
               <motion.button type="submit" initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }}
                 className="absolute right-3 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors bg-accent-blue text-white"
@@ -204,9 +334,19 @@ export default function FocusColumn() {
               <p className="text-xs text-t-secondary">Aucune tâche pour aujourd&apos;hui</p>
             </motion.div>
           ) : (
-            todayTasks.map((task, i) => <TaskCard key={task.id} task={task} index={i} />)
+            todayTasks.map((task, i) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                index={i}
+                onDragStart={handleDragStart}
+                onDragOver={handleDragOver}
+                onDrop={handleDrop}
+              />
+            ))
           )}
         </AnimatePresence>
+
         <AnimatePresence>
           {isFull && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center py-2 px-3 rounded-xl mt-1 bg-accent-orange-light" style={{ border: "1px solid rgba(255,149,0,0.2)" }}>
