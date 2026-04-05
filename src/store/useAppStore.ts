@@ -9,9 +9,6 @@ export type ObjectiveHorizon = "week" | "month" | "quarter" | "year";
 export type ProjectStatus = "active" | "paused" | "completed" | "archived";
 export type LifeGoalHorizon = "court_terme" | "moyen_terme" | "long_terme";
 export type InboxItemType = "task" | "note" | "event";
-export type ThemeMode = "light" | "dark";
-export type SprintStatus = "planning" | "active" | "completed" | "cancelled";
-export type RecurrenceType = "none" | "daily" | "weekdays" | "weekly" | "monthly";
 
 export interface MicroStep {
   id: string;
@@ -25,7 +22,6 @@ export interface Task {
   description?: string;
   status: TaskStatus;
   projectId?: string;
-  sprintId?: string;
   createdAt: number;
   completedAt?: number;
   tags: IncupTag[];
@@ -34,8 +30,6 @@ export interface Task {
   estimatedMinutes?: number;
   dueDate?: string;
   priority?: "low" | "medium" | "high";
-  recurrence?: RecurrenceType;
-  order?: number;
 }
 
 export interface Project {
@@ -100,40 +94,7 @@ export interface HyperfocusSession {
   noise: "brown" | "white" | "none";
 }
 
-export interface TimelineEvent {
-  id: string;
-  hour: number;
-  duration: number;
-  label: string;
-  color: string;
-  day?: string; // ISO date string, defaults to today
-}
-
-export interface Sprint {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: SprintStatus;
-  goal: string;
-  retroNotes?: string;
-  createdAt: number;
-}
-
-export interface Toast {
-  id: string;
-  message: string;
-  type: "success" | "error" | "info" | "xp" | "achievement" | "boss";
-  duration?: number;
-  createdAt: number;
-}
-
 interface AppState {
-  // ── Theme ─────────────────────────────────────────────────────────────
-  theme: ThemeMode;
-  setTheme: (theme: ThemeMode) => void;
-  toggleTheme: () => void;
-
   // ── Onboarding ──────────────────────────────────────────────────────────
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (v: boolean) => void;
@@ -141,7 +102,7 @@ interface AppState {
   // ── Tâches ──────────────────────────────────────────────────────────────
   tasks: Task[];
   addTask: (text: string, status?: TaskStatus, projectId?: string) => void;
-  updateTask: (id: string, updates: Partial<Pick<Task, "text" | "description" | "status" | "projectId" | "sprintId" | "tags" | "estimatedMinutes" | "dueDate" | "priority" | "recurrence" | "order">>) => void;
+  updateTask: (id: string, updates: Partial<Pick<Task, "text" | "description" | "status" | "projectId" | "tags" | "estimatedMinutes" | "dueDate" | "priority">>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   completeTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -153,7 +114,6 @@ interface AppState {
   assignTaskToProject: (taskId: string, projectId: string | undefined) => void;
   setMicroSteps: (taskId: string, steps: MicroStep[]) => void;
   newStart: () => void;
-  reorderTasks: (taskIds: string[]) => void;
 
   // ── Projets ─────────────────────────────────────────────────────────────
   projects: Project[];
@@ -191,27 +151,22 @@ interface AppState {
   processInboxItem: (id: string) => void;
   convertInboxToTask: (id: string) => void;
   deleteInboxItem: (id: string) => void;
-  clearProcessedInbox: () => void;
 
   // ── Gamification ────────────────────────────────────────────────────────
   xp: number;
   streak: number;
   bossHp: number;
-  bossLevel: number;
   lastCritical: boolean;
   totalTasksCompleted: number;
   totalFocusMinutes: number;
   unlockedAchievements: string[];
   dailyChallengeId: string | null;
   dailyChallengeCompleted: boolean;
-  lastStreakDate: string | null;
   addXp: (amount: number) => void;
   damageBoss: (dmg: number) => void;
-  respawnBoss: () => void;
   unlockAchievement: (id: string) => void;
   completeDailyChallenge: () => void;
   setDailyChallenge: (id: string) => void;
-  checkAndResetStreak: () => void;
 
   // ── Hyperfocus Sessions ─────────────────────────────────────────────────
   hyperfocusSessions: HyperfocusSession[];
@@ -221,39 +176,10 @@ interface AppState {
   purchasedRewards: string[];
   buyReward: (rewardId: string, cost: number) => void;
 
-  // ── Timeline Events ─────────────────────────────────────────────────────
-  timelineEvents: TimelineEvent[];
-  addTimelineEvent: (event: Omit<TimelineEvent, "id">) => void;
-  updateTimelineEvent: (id: string, updates: Partial<Omit<TimelineEvent, "id">>) => void;
-  deleteTimelineEvent: (id: string) => void;
-
-  // ── Sprints ─────────────────────────────────────────────────────────────
-  sprints: Sprint[];
-  addSprint: (sprint: Omit<Sprint, "id" | "createdAt">) => void;
-  updateSprint: (id: string, updates: Partial<Omit<Sprint, "id" | "createdAt">>) => void;
-  deleteSprint: (id: string) => void;
-  assignTaskToSprint: (taskId: string, sprintId: string | undefined) => void;
-
-  // ── Toasts ──────────────────────────────────────────────────────────────
-  toasts: Toast[];
-  addToast: (message: string, type?: Toast["type"], duration?: number) => void;
-  removeToast: (id: string) => void;
-
   // ── Fil d'Ariane ────────────────────────────────────────────────────────
   lastActiveAt: number;
   lastActiveTaskId: string | null;
   setLastActive: (taskId?: string) => void;
-
-  // ── Settings ────────────────────────────────────────────────────────────
-  settings: {
-    pomodoroDefault: number;
-    noiseDefault: string;
-    maxDailyTasks: number;
-    showBodyDoubling: boolean;
-    enableSounds: boolean;
-    tdahSubtype: "inattentif" | "hyperactif" | "mixte";
-  };
-  updateSettings: (updates: Partial<AppState["settings"]>) => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -272,18 +198,11 @@ const PROJECT_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "
 const PROJECT_EMOJIS = ["📁", "🚀", "💡", "🎯", "⚡", "🔥"];
 const GOAL_COLORS = ["#7c3aed", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#3b82f6", "#10b981"];
 
-const todayStr = () => new Date().toISOString().slice(0, 10);
-
 // ─── Store ───────────────────────────────────────────────────────────────────
 
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      // ── Theme ───────────────────────────────────────────────────────────
-      theme: "dark",
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
-
       // ── Onboarding ──────────────────────────────────────────────────────
       hasSeenTutorial: false,
       setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
@@ -292,26 +211,26 @@ export const useAppStore = create<AppState>()(
       tasks: [
         {
           id: uid(), text: "Finir le rapport Q1", status: "today",
-          createdAt: Date.now() - 3600000, tags: ["Urgence"], microSteps: [], expanded: false, priority: "high",
+          createdAt: Date.now() - 3600000, tags: ["Urgence"], microSteps: [], expanded: false,
         },
         {
           id: uid(), text: "Répondre aux emails urgents", status: "today",
           createdAt: Date.now() - 7200000, tags: ["Urgence", "Challenge"], microSteps: [
             { id: uid(), text: "Trier les emails non-lus", done: false },
             { id: uid(), text: "Répondre aux clients prioritaires", done: false },
-          ], expanded: false, priority: "high",
+          ], expanded: false,
         },
         {
           id: uid(), text: "Préparer la réunion de 14h", status: "today",
-          createdAt: Date.now() - 900000, tags: ["Passion"], microSteps: [], expanded: false, priority: "medium",
+          createdAt: Date.now() - 900000, tags: ["Passion"], microSteps: [], expanded: false,
         },
         {
           id: uid(), text: "Faire SEO site web", status: "todo",
-          createdAt: Date.now() - 86400000, tags: ["Challenge", "Urgence"], microSteps: [], expanded: false, estimatedMinutes: 40,
+          createdAt: Date.now() - 86400000, tags: ["Challenge", "Urgence"], microSteps: [], expanded: false,
         },
         {
           id: uid(), text: "Montage vidéo client", status: "in_progress",
-          createdAt: Date.now() - 43200000, tags: ["Passion"], microSteps: [], expanded: false, estimatedMinutes: 60,
+          createdAt: Date.now() - 43200000, tags: ["Passion"], microSteps: [], expanded: false,
         },
         {
           id: uid(), text: "Copyrighting page d'accueil", status: "completed",
@@ -324,15 +243,14 @@ export const useAppStore = create<AppState>()(
       ],
 
       addTask: (text, status, projectId) => {
-        const { tasks, settings } = get();
-        const targetStatus = status ?? (tasks.filter((t) => t.status === "today").length < settings.maxDailyTasks ? "today" : "inbox");
+        const { tasks } = get();
+        const targetStatus = status ?? "inbox";
         const newTask: Task = {
           id: uid(), text: text.trim(), status: targetStatus, projectId,
           createdAt: Date.now(), tags: [], microSteps: [], expanded: false,
         };
         set({ tasks: [...tasks, newTask] });
         get().setLastActive(newTask.id);
-        get().addToast(`Tâche ajoutée${targetStatus === "inbox" ? " → Inbox" : ""}`, "info");
       },
 
       updateTask: (id, updates) =>
@@ -350,37 +268,22 @@ export const useAppStore = create<AppState>()(
         })),
 
       completeTask: (id) => {
-        const { tasks, bossHp, xp, streak, totalTasksCompleted, bossLevel, lastStreakDate } = get();
+        const { tasks, bossHp, xp, streak, totalTasksCompleted } = get();
         const isCritical = Math.random() < CRITICAL_RATE;
         const dmg  = isCritical ? BOSS_DMG_CRITICAL : BOSS_DMG_NORMAL;
         const gain = isCritical ? XP_CRITICAL       : XP_NORMAL;
         const newHp = Math.max(0, bossHp - dmg);
-        const today = todayStr();
-        const isNewDay = lastStreakDate !== today;
-
         set({
           tasks: tasks.map((t) =>
             t.id === id ? { ...t, status: "done", completedAt: Date.now() } : t
           ),
           bossHp: newHp,
           xp: xp + gain,
-          streak: isNewDay ? streak + 1 : streak,
-          lastStreakDate: today,
+          streak: streak + 1,
           lastCritical: isCritical,
           lastActiveAt: Date.now(),
           totalTasksCompleted: totalTasksCompleted + 1,
         });
-
-        if (isCritical) {
-          get().addToast(`COUP CRITIQUE ! +${XP_CRITICAL} XP !`, "xp");
-        } else {
-          get().addToast(`+${XP_NORMAL} XP`, "xp");
-        }
-
-        if (newHp === 0) {
-          get().addToast(`Boss Niv.${bossLevel} vaincu ! Le boss respawn plus fort...`, "boss");
-          setTimeout(() => get().respawnBoss(), 1500);
-        }
       },
 
       deleteTask: (id) =>
@@ -449,16 +352,7 @@ export const useAppStore = create<AppState>()(
           tasks: tasks.map((t) => t.status === "today" ? { ...t, status: "inbox" } : t),
           lastActiveTaskId: null,
         });
-        get().addToast("Nouveau Départ ! Ardoise effacée.", "info");
       },
-
-      reorderTasks: (taskIds) =>
-        set((s) => ({
-          tasks: s.tasks.map((t) => {
-            const idx = taskIds.indexOf(t.id);
-            return idx >= 0 ? { ...t, order: idx } : t;
-          }),
-        })),
 
       // ── Projets ─────────────────────────────────────────────────────────
       projects: [
@@ -707,11 +601,6 @@ export const useAppStore = create<AppState>()(
           inboxItems: s.inboxItems.filter((i) => i.id !== id),
         })),
 
-      clearProcessedInbox: () =>
-        set((s) => ({
-          inboxItems: s.inboxItems.filter((i) => !i.processed),
-        })),
-
       // ── Hyperfocus Sessions ──────────────────────────────────────────────
       hyperfocusSessions: [],
       addHyperfocusSession: (session) =>
@@ -728,89 +617,18 @@ export const useAppStore = create<AppState>()(
           return { xp: s.xp - cost, purchasedRewards: [...s.purchasedRewards, rewardId + "_" + Date.now()] };
         }),
 
-      // ── Timeline Events ───────────────────────────────────────────────────
-      timelineEvents: [
-        { id: uid(), hour: 8,  duration: 1,   label: "Routine matinale", color: "orange" },
-        { id: uid(), hour: 9,  duration: 2.5, label: "Deep Work",        color: "purple" },
-        { id: uid(), hour: 12, duration: 1,   label: "Déjeuner",         color: "green" },
-        { id: uid(), hour: 14, duration: 1.5, label: "Emails & admin",   color: "blue" },
-        { id: uid(), hour: 16, duration: 2,   label: "Focus session",    color: "purple" },
-        { id: uid(), hour: 19, duration: 1,   label: "Récompense",       color: "orange" },
-      ],
-      addTimelineEvent: (event) =>
-        set((s) => ({
-          timelineEvents: [...s.timelineEvents, { ...event, id: uid() }],
-        })),
-      updateTimelineEvent: (id, updates) =>
-        set((s) => ({
-          timelineEvents: s.timelineEvents.map((e) =>
-            e.id === id ? { ...e, ...updates } : e
-          ),
-        })),
-      deleteTimelineEvent: (id) =>
-        set((s) => ({
-          timelineEvents: s.timelineEvents.filter((e) => e.id !== id),
-        })),
-
-      // ── Sprints ─────────────────────────────────────────────────────────
-      sprints: [],
-      addSprint: (sprint) =>
-        set((s) => ({
-          sprints: [...s.sprints, { ...sprint, id: uid(), createdAt: Date.now() }],
-        })),
-      updateSprint: (id, updates) =>
-        set((s) => ({
-          sprints: s.sprints.map((sp) =>
-            sp.id === id ? { ...sp, ...updates } : sp
-          ),
-        })),
-      deleteSprint: (id) =>
-        set((s) => ({
-          sprints: s.sprints.filter((sp) => sp.id !== id),
-          tasks: s.tasks.map((t) => t.sprintId === id ? { ...t, sprintId: undefined } : t),
-        })),
-      assignTaskToSprint: (taskId, sprintId) =>
-        set((s) => ({
-          tasks: s.tasks.map((t) =>
-            t.id === taskId ? { ...t, sprintId } : t
-          ),
-        })),
-
-      // ── Toasts ──────────────────────────────────────────────────────────
-      toasts: [],
-      addToast: (message, type = "info", duration = 3000) =>
-        set((s) => ({
-          toasts: [...s.toasts, { id: uid(), message, type, duration, createdAt: Date.now() }],
-        })),
-      removeToast: (id) =>
-        set((s) => ({
-          toasts: s.toasts.filter((t) => t.id !== id),
-        })),
-
       // ── Gamification ────────────────────────────────────────────────────
       xp: 0,
       streak: 0,
       bossHp: 100,
-      bossLevel: 1,
       lastCritical: false,
       totalTasksCompleted: 0,
       totalFocusMinutes: 0,
       unlockedAchievements: [],
       dailyChallengeId: null,
       dailyChallengeCompleted: false,
-      lastStreakDate: null,
       addXp: (amount) => set((s) => ({ xp: s.xp + amount })),
       damageBoss: (dmg) => set((s) => ({ bossHp: Math.max(0, s.bossHp - dmg) })),
-      respawnBoss: () =>
-        set((s) => {
-          const newLevel = s.bossLevel + 1;
-          const bonusXp = 50 * s.bossLevel;
-          return {
-            bossHp: 100,
-            bossLevel: newLevel,
-            xp: s.xp + bonusXp,
-          };
-        }),
       unlockAchievement: (id) =>
         set((s) => ({
           unlockedAchievements: s.unlockedAchievements.includes(id)
@@ -824,17 +642,6 @@ export const useAppStore = create<AppState>()(
         })),
       setDailyChallenge: (id) =>
         set({ dailyChallengeId: id, dailyChallengeCompleted: false }),
-      checkAndResetStreak: () => {
-        const { lastStreakDate } = get();
-        if (!lastStreakDate) return;
-        const last = new Date(lastStreakDate);
-        const now = new Date();
-        const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays > 1) {
-          set({ streak: 0 });
-          get().addToast("Streak perdu ! Recommence aujourd'hui.", "info");
-        }
-      },
 
       // ── Fil d'Ariane ────────────────────────────────────────────────────
       lastActiveAt: Date.now(),
@@ -843,20 +650,6 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           lastActiveAt: Date.now(),
           lastActiveTaskId: taskId ?? s.lastActiveTaskId,
-        })),
-
-      // ── Settings ────────────────────────────────────────────────────────
-      settings: {
-        pomodoroDefault: 25,
-        noiseDefault: "brown",
-        maxDailyTasks: 5,
-        showBodyDoubling: true,
-        enableSounds: true,
-        tdahSubtype: "mixte",
-      },
-      updateSettings: (updates) =>
-        set((s) => ({
-          settings: { ...s.settings, ...updates },
         })),
     }),
     {

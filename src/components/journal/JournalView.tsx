@@ -1,79 +1,36 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Plus, Trash2, X, Search, Flame, RefreshCw, BarChart3 } from "lucide-react";
+import { BookOpen, Plus, Trash2, X, Search } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { JournalEntry } from "@/store/useAppStore";
 
 const MOODS: { id: JournalEntry["mood"]; emoji: string; label: string; color: string }[] = [
-  { id: "great", emoji: "🔥", label: "Super", color: "var(--accent-green)" },
-  { id: "good", emoji: "😊", label: "Bien", color: "var(--accent-blue)" },
-  { id: "neutral", emoji: "😐", label: "Neutre", color: "var(--text-t-secondary)" },
-  { id: "bad", emoji: "😔", label: "Bof", color: "var(--accent-orange)" },
-  { id: "terrible", emoji: "😫", label: "Dur", color: "var(--accent-red)" },
-];
-
-const WRITING_PROMPTS = [
-  "Qu'est-ce qui t'a rendu fier aujourd'hui ?",
-  "Quel petit pas as-tu fait aujourd'hui ?",
-  "Une chose qui t'a fait sourire ?",
-  "Ce qui a été difficile et comment tu l'as géré ?",
-  "Trois choses pour lesquelles tu es reconnaissant(e) ?",
-  "Ton mood en ce moment et pourquoi ?",
-  "Un défi que tu aimerais relever demain ?",
-  "Une habitude positive que tu as remarquée chez toi ?",
-  "Si tu avais 24h de plus dans la journée, tu ferais quoi ?",
-  "Un moment où tu t'es accordé du repos aujourd'hui ?",
-  "Qu'est-ce que tu ferais si tu n'avais pas peur ?",
-  "Quelle est la chose la plus gentille qu'on t'a dite récemment ?",
-];
-
-const ENTRY_TEMPLATES = [
-  { id: "gratitude", label: "Gratitude", icon: "✨", content: "3 choses pour lesquelles je suis reconnaissant(e) :\n\n1. \n2. \n3. " },
-  { id: "reflection", label: "Réflexion du soir", icon: "🌙", content: "Aujourd'hui j'ai…\n\nCe qui s'est bien passé :\n\nCe que j'aurais pu faire différemment :\n\nCe que j'ai appris :" },
-  { id: "braindump", label: "Brain Dump", icon: "🧠", content: "" },
-  { id: "wins", label: "Mes victoires", icon: "🏆", content: "Victoires du jour (même les petites comptent) :\n\n- " },
+  { id: "great", emoji: "🔥", label: "Super", color: "#4ade80" },
+  { id: "good", emoji: "😊", label: "Bien", color: "#67e8f9" },
+  { id: "neutral", emoji: "😐", label: "Neutre", color: "#a1a1aa" },
+  { id: "bad", emoji: "😔", label: "Bof", color: "#fbbf24" },
+  { id: "terrible", emoji: "😫", label: "Dur", color: "#fca5a5" },
 ];
 
 function formatDate(ts: number): string {
   const d = new Date(ts);
   const now = new Date();
+  const diffMs = now.getTime() - ts;
+  const diffH = Math.floor(diffMs / 3600000);
+
+  if (diffH < 1) return "Il y a quelques minutes";
+  if (diffH < 24) return `Il y a ${diffH}h`;
+
   const isToday = d.toDateString() === now.toDateString();
   if (isToday) return "Aujourd'hui";
+
   const yesterday = new Date(now);
   yesterday.setDate(yesterday.getDate() - 1);
   if (d.toDateString() === yesterday.toDateString()) return "Hier";
-  const diffDays = Math.floor((now.getTime() - ts) / 86400000);
-  if (diffDays < 7) return d.toLocaleDateString("fr-FR", { weekday: "long" });
+
   return d.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" });
-}
-
-function countWords(text: string): number {
-  return text.trim().split(/\s+/).filter((w) => w.length > 0).length;
-}
-
-function getWritingStreak(entries: JournalEntry[]): number {
-  if (entries.length === 0) return 0;
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const dates = new Set(entries.map((e) => new Date(e.createdAt).toDateString()));
-  let streak = 0;
-  const check = new Date(today);
-  // Check today first
-  if (dates.has(check.toDateString())) {
-    streak = 1;
-    check.setDate(check.getDate() - 1);
-  } else {
-    // Maybe they haven't written today yet, check from yesterday
-    check.setDate(check.getDate() - 1);
-    if (!dates.has(check.toDateString())) return 0;
-  }
-  while (dates.has(check.toDateString())) {
-    streak++;
-    check.setDate(check.getDate() - 1);
-  }
-  return streak;
 }
 
 export default function JournalView() {
@@ -84,23 +41,6 @@ export default function JournalView() {
   const [searchQuery, setSearchQuery] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
-  const [showStats, setShowStats] = useState(false);
-  const [randomPrompt, setRandomPrompt] = useState(() => WRITING_PROMPTS[Math.floor(Math.random() * WRITING_PROMPTS.length)]);
-
-  const writingStreak = useMemo(() => getWritingStreak(journalEntries), [journalEntries]);
-  const totalWords = useMemo(() => journalEntries.reduce((sum, e) => sum + countWords(e.content), 0), [journalEntries]);
-
-  // Mood stats for last 30 days
-  const moodStats = useMemo(() => {
-    const thirtyDaysAgo = Date.now() - 30 * 86400000;
-    const recent = journalEntries.filter((e) => e.createdAt > thirtyDaysAgo && e.mood);
-    const counts: Record<string, number> = {};
-    for (const e of recent) {
-      if (e.mood) counts[e.mood] = (counts[e.mood] || 0) + 1;
-    }
-    const total = recent.length || 1;
-    return MOODS.map((m) => ({ ...m, count: counts[m.id!] || 0, pct: Math.round(((counts[m.id!] || 0) / total) * 100) }));
-  }, [journalEntries]);
 
   const handleSubmit = () => {
     if (!content.trim()) return;
@@ -115,19 +55,6 @@ export default function JournalView() {
       updateJournalEntry(id, { content: editContent.trim() });
     }
     setEditingId(null);
-  };
-
-  const handleTemplate = (template: typeof ENTRY_TEMPLATES[0]) => {
-    setContent(template.content);
-    setComposing(true);
-  };
-
-  const refreshPrompt = () => {
-    let next = randomPrompt;
-    while (next === randomPrompt) {
-      next = WRITING_PROMPTS[Math.floor(Math.random() * WRITING_PROMPTS.length)];
-    }
-    setRandomPrompt(next);
   };
 
   const filteredEntries = searchQuery
@@ -152,52 +79,31 @@ export default function JournalView() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border-b-primary)" }}>
+      <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         <div>
-          <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-            <BookOpen size={18} className="text-t-secondary" /> Journal
+          <h1 className="text-xl font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
+            <BookOpen size={20} className="text-zinc-400" /> Journal
           </h1>
-          <div className="flex items-center gap-3 mt-1">
-            <p className="text-xs text-t-secondary">{journalEntries.length} entrées</p>
-            <span className="text-xs text-t-tertiary">·</span>
-            <p className="text-xs text-t-secondary">{totalWords.toLocaleString()} mots</p>
-            {writingStreak > 0 && (
-              <>
-                <span className="text-xs text-t-tertiary">·</span>
-                <p className="text-xs flex items-center gap-1" style={{ color: "var(--accent-orange)" }}>
-                  <Flame size={11} /> {writingStreak}j streak
-                </p>
-              </>
-            )}
-          </div>
+          <p className="text-[15px] text-zinc-600 mt-1">Vide-toi la tête · {journalEntries.length} entrées</p>
         </div>
-        <div className="flex items-center gap-2">
-          {journalEntries.length > 2 && (
-            <button
-              onClick={() => setShowStats(!showStats)}
-              className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
-              style={{ background: showStats ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)" : "var(--surface)", color: showStats ? "var(--accent-purple)" : "var(--text-t-secondary)", border: "1px solid var(--border-b-primary)" }}
-            ><BarChart3 size={13} /> Stats</button>
-          )}
-          <button onClick={() => setComposing(!composing)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
-            style={{ background: "var(--surface)", color: "var(--text-t-primary)", border: "1px solid var(--border-b-primary)" }}
-          ><Plus size={13} /> Écrire</button>
-        </div>
+        <button onClick={() => setComposing(!composing)} className="flex items-center gap-1.5 text-[15px] px-3 py-2 rounded-xl font-medium transition-all"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#d4d4d8" }}
+        ><Plus size={13} /> Écrire</button>
       </div>
 
       {/* Search */}
       {journalEntries.length > 0 && (
-        <div className="shrink-0 px-7 py-3" style={{ borderBottom: "1px solid var(--border-b-primary)" }}>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl" style={{ background: "var(--surface)" }}>
-            <Search size={13} className="text-t-secondary shrink-0" />
+        <div className="shrink-0 px-7 py-3" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.04)" }}>
+            <Search size={13} className="text-zinc-600 shrink-0" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher dans ton journal…"
-              className="flex-1 text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none"
+              className="flex-1 text-[15px] bg-transparent text-zinc-300 placeholder:text-zinc-700 focus:outline-none"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="text-t-secondary hover:text-t-primary">
+              <button onClick={() => setSearchQuery("")} className="text-zinc-600 hover:text-zinc-400">
                 <X size={12} />
               </button>
             )}
@@ -205,66 +111,7 @@ export default function JournalView() {
         </div>
       )}
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 flex flex-col gap-5">
-
-        {/* Mood Stats Panel */}
-        <AnimatePresence>
-          {showStats && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="rounded-2xl p-5 flex flex-col gap-3"
-              style={{ background: "var(--surface)", border: "1px solid var(--border-b-primary)" }}
-            >
-              <p className="text-[11px] font-medium text-t-secondary uppercase tracking-widest">Humeur · 30 derniers jours</p>
-              <div className="flex flex-col gap-2">
-                {moodStats.map((m) => (
-                  <div key={m.id} className="flex items-center gap-3">
-                    <span className="text-sm w-6 text-center">{m.emoji}</span>
-                    <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--border-b-primary)" }}>
-                      <div className="h-full rounded-full transition-all" style={{ width: `${m.pct}%`, background: m.color, minWidth: m.count > 0 ? "4px" : "0" }} />
-                    </div>
-                    <span className="text-[10px] text-t-tertiary w-8 text-right">{m.count}</span>
-                  </div>
-                ))}
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Writing Prompt */}
-        {!composing && (
-          <div className="rounded-2xl px-5 py-4 flex items-center gap-3" style={{ background: "color-mix(in srgb, var(--accent-blue) 5%, var(--surface))", border: "1px solid color-mix(in srgb, var(--accent-blue) 15%, var(--border-b-primary))" }}>
-            <p className="flex-1 text-[13px] italic" style={{ color: "var(--accent-blue)" }}>
-              &ldquo;{randomPrompt}&rdquo;
-            </p>
-            <button onClick={refreshPrompt} className="shrink-0 p-1.5 rounded-lg transition-colors hover:bg-surface-3" style={{ color: "var(--accent-blue)" }}>
-              <RefreshCw size={13} />
-            </button>
-            <button
-              onClick={() => { setContent(randomPrompt + "\n\n"); setComposing(true); }}
-              className="shrink-0 text-[10px] font-medium px-2.5 py-1.5 rounded-lg transition-all"
-              style={{ background: "color-mix(in srgb, var(--accent-blue) 10%, transparent)", color: "var(--accent-blue)" }}
-            >Écrire</button>
-          </div>
-        )}
-
-        {/* Templates */}
-        {!composing && (
-          <div className="flex gap-2 flex-wrap">
-            {ENTRY_TEMPLATES.map((t) => (
-              <button
-                key={t.id}
-                onClick={() => handleTemplate(t)}
-                className="flex items-center gap-1.5 text-[11px] font-medium px-3 py-2 rounded-xl transition-all"
-                style={{ background: "var(--surface)", border: "1px solid var(--border-b-primary)", color: "var(--text-t-secondary)" }}
-              >
-                <span>{t.icon}</span> {t.label}
-              </button>
-            ))}
-          </div>
-        )}
+      <div className="flex-1 min-h-0 overflow-y-auto px-7 py-6 flex flex-col gap-6">
 
         {/* Compose Area */}
         <AnimatePresence>
@@ -273,36 +120,30 @@ export default function JournalView() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="rounded-3xl p-6 flex flex-col gap-4"
-              style={{ background: "var(--surface)", border: "1px solid var(--border-b-primary)", boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
+              className="rounded-2xl p-6 flex flex-col gap-4"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <textarea
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Qu'est-ce qui se passe dans ta tête ? Écris librement, sans filtre…"
-                rows={6}
+                rows={5}
                 autoFocus
-                className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none resize-none leading-relaxed"
-                onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(); }}
+                className="text-[15px] bg-transparent text-zinc-200 placeholder:text-zinc-600 focus:outline-none resize-none leading-relaxed"
               />
-
-              {/* Word count */}
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] text-t-tertiary">{countWords(content)} mots</span>
-              </div>
 
               {/* Mood picker */}
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-t-secondary uppercase tracking-widest font-medium">Humeur</span>
+                <span className="text-xs text-zinc-600 uppercase tracking-widest font-medium">Humeur</span>
                 <div className="flex gap-1.5">
                   {MOODS.map((m) => (
                     <button
                       key={m.id}
                       onClick={() => setMood(mood === m.id ? undefined : m.id)}
-                      className="text-lg px-2 py-1 rounded-xl transition-all"
+                      className="text-xl px-2 py-1 rounded-xl transition-all"
                       style={{
-                        background: mood === m.id ? `color-mix(in srgb, ${m.color} 12%, transparent)` : "transparent",
-                        border: `1px solid ${mood === m.id ? m.color : "transparent"}`,
+                        background: mood === m.id ? `${m.color}12` : "transparent",
+                        border: `1px solid ${mood === m.id ? m.color + "30" : "transparent"}`,
                         transform: mood === m.id ? "scale(1.15)" : "scale(1)",
                       }}
                       title={m.label}
@@ -313,17 +154,14 @@ export default function JournalView() {
                 </div>
               </div>
 
-              <div className="flex gap-2 justify-between items-center">
-                <span className="text-[10px] text-t-tertiary">Ctrl+Enter pour sauvegarder</span>
-                <div className="flex gap-2">
-                  <button onClick={() => { setComposing(false); setContent(""); setMood(undefined); }} className="text-xs text-t-secondary hover:text-t-primary px-3 py-1.5">Annuler</button>
-                  <button
-                    onClick={handleSubmit}
-                    disabled={!content.trim()}
-                    className="text-xs px-4 py-2 rounded-xl font-medium transition-all disabled:opacity-30"
-                    style={{ background: "var(--accent-blue)", color: "white" }}
-                  >Sauvegarder</button>
-                </div>
+              <div className="flex gap-2 justify-end">
+                <button onClick={() => { setComposing(false); setContent(""); setMood(undefined); }} className="text-[15px] text-zinc-600 hover:text-zinc-400 px-3 py-1.5">Annuler</button>
+                <button
+                  onClick={handleSubmit}
+                  disabled={!content.trim()}
+                  className="text-[15px] px-4 py-2 rounded-xl font-medium transition-all disabled:opacity-30"
+                  style={{ background: "rgba(255,255,255,0.08)", color: "#e4e4e7" }}
+                >Sauvegarder</button>
               </div>
             </motion.div>
           )}
@@ -332,18 +170,17 @@ export default function JournalView() {
         {/* Entries */}
         {grouped.map((group, gi) => (
           <div key={gi} className="flex flex-col gap-3">
-            <p className="text-[10px] font-medium text-t-secondary uppercase tracking-widest px-1">{group.label}</p>
+            <p className="text-xs font-medium text-zinc-600 uppercase tracking-widest px-1">{group.label}</p>
             {group.entries.map((entry) => {
               const moodCfg = MOODS.find((m) => m.id === entry.mood);
               const isEditing = editingId === entry.id;
-              const words = countWords(entry.content);
 
               return (
                 <motion.div
                   key={entry.id}
                   layout
-                  className="rounded-2xl px-5 py-4 group transition-all"
-                  style={{ background: "var(--surface)", border: "1px solid var(--border-b-primary)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
+                  className="rounded-2xl px-6 py-5 group transition-all"
+                  style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
@@ -352,14 +189,14 @@ export default function JournalView() {
                           value={editContent}
                           onChange={(e) => setEditContent(e.target.value)}
                           onBlur={() => handleEditSave(entry.id)}
-                          onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleEditSave(entry.id); }}
+                          onKeyDown={(e) => { if (e.key === "Enter" && e.metaKey) handleEditSave(entry.id); }}
                           autoFocus
                           rows={4}
-                          className="w-full text-sm bg-transparent text-t-primary focus:outline-none resize-none leading-relaxed"
+                          className="w-full text-[15px] bg-transparent text-zinc-200 focus:outline-none resize-none leading-relaxed"
                         />
                       ) : (
                         <p
-                          className="text-[14px] text-t-primary leading-relaxed whitespace-pre-wrap cursor-pointer"
+                          className="text-[15px] text-zinc-300 leading-relaxed whitespace-pre-wrap cursor-pointer"
                           onClick={() => { setEditingId(entry.id); setEditContent(entry.content); }}
                         >
                           {entry.content}
@@ -367,27 +204,26 @@ export default function JournalView() {
                       )}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
-                      {moodCfg && <span className="text-sm" title={moodCfg.label}>{moodCfg.emoji}</span>}
+                      {moodCfg && <span className="text-[15px]" title={moodCfg.label}>{moodCfg.emoji}</span>}
                       <button
                         onClick={() => deleteJournalEntry(entry.id)}
-                        className="opacity-0 group-hover:opacity-100 text-t-secondary hover:text-accent-red transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-zinc-700 hover:text-red-300 transition-all"
                       >
                         <Trash2 size={11} />
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] text-t-tertiary">
+                    <span className="text-xs text-zinc-700">
                       {new Date(entry.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    <span className="text-[10px] text-t-tertiary">· {words} mot{words > 1 ? "s" : ""}</span>
                     {/* Mood change */}
                     <div className="flex gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-all">
                       {MOODS.map((m) => (
                         <button
                           key={m.id}
                           onClick={() => updateJournalEntry(entry.id, { mood: entry.mood === m.id ? undefined : m.id })}
-                          className="text-[10px] px-1 rounded transition-all"
+                          className="text-xs px-1 rounded transition-all"
                           style={{ opacity: entry.mood === m.id ? 1 : 0.4 }}
                         >
                           {m.emoji}
@@ -403,18 +239,15 @@ export default function JournalView() {
 
         {journalEntries.length === 0 && !composing && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--empty-bg)" }}>
-              <BookOpen size={22} className="text-t-secondary" />
+            <div className="w-16 h-16 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <BookOpen size={22} className="text-zinc-600" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-t-primary">Ton journal est vide</p>
-              <p className="text-xs text-t-secondary mt-1">Écris ce qui se passe dans ta journée. C&apos;est ton espace, sans jugement.</p>
+              <p className="text-[15px] text-zinc-400">Ton journal est vide</p>
+              <p className="text-[15px] text-zinc-600 mt-1">Écris ce qui se passe dans ta journée. C&apos;est ton espace, sans jugement.</p>
             </div>
-            <button
-              onClick={() => setComposing(true)}
-              className="text-xs px-4 py-2 rounded-xl font-medium transition-all"
-              style={{ background: "var(--surface)", color: "var(--text-t-primary)", border: "1px solid var(--border-b-primary)" }}
-            >
+            <button onClick={() => setComposing(true)} className="text-[15px] px-4 py-2 rounded-xl font-medium transition-all"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#d4d4d8", border: "1px solid rgba(255,255,255,0.08)" }}>
               <Plus size={12} className="inline mr-1" /> Commencer à écrire
             </button>
           </div>

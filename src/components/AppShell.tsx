@@ -6,27 +6,17 @@ import { Maximize2, Minimize2 } from "lucide-react";
 import Sidebar from "@/components/sidebar/Sidebar";
 import SpotlightSearch from "@/components/spotlight/SpotlightSearch";
 import TodayRecap from "@/components/recap/TodayRecap";
-import ToastSystem from "@/components/toast/ToastSystem";
-import { useAppStore } from "@/store/useAppStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [focusMode, setFocusMode] = useState(false);
-  const checkAndResetStreak = useAppStore((s) => s.checkAndResetStreak);
 
-  // Check streak on mount
-  useEffect(() => {
-    checkAndResetStreak();
-  }, [checkAndResetStreak]);
-
-  // Keyboard shortcuts
+  // Keyboard shortcut: Ctrl+Shift+F for focus mode
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      // Ctrl+Shift+F for focus mode
       if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "f") {
         e.preventDefault();
         setFocusMode((prev) => !prev);
       }
-      // Cmd+K or Ctrl+K to trigger spotlight (SpotlightSearch listens too)
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -34,7 +24,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className="flex h-screen overflow-hidden">
+      <div className="flex h-screen overflow-hidden relative">
+        {/* Global ambient mesh gradient */}
+        <div className="absolute inset-0 pointer-events-none mesh-gradient opacity-60" />
+
         {/* Sidebar — hidden in focus mode */}
         <AnimatePresence>
           {!focusMode && (
@@ -43,7 +36,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               animate={{ width: "var(--sidebar-width)", opacity: 1 }}
               exit={{ width: 0, opacity: 0 }}
               transition={{ type: "spring", damping: 28, stiffness: 300 }}
-              className="glass-sidebar shrink-0 h-full overflow-hidden"
+              className="glass-sidebar shrink-0 h-full overflow-hidden relative z-10"
             >
               <Sidebar />
             </motion.aside>
@@ -51,7 +44,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </AnimatePresence>
 
         {/* Main content */}
-        <div className="flex-1 h-full overflow-hidden relative">
+        <div className="flex-1 h-full overflow-hidden relative z-10">
           {children}
 
           {/* Focus mode toggle button */}
@@ -59,7 +52,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             onClick={() => setFocusMode((prev) => !prev)}
             className="fixed bottom-5 left-5 z-40 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 shadow-sm"
             style={{
-              background: focusMode ? "color-mix(in srgb, var(--accent-blue) 10%, var(--surface))" : "var(--surface)",
+              background: focusMode
+                ? "color-mix(in srgb, var(--accent-blue) 10%, var(--surface))"
+                : "var(--surface)",
               border: "1px solid var(--border-b-primary)",
               color: focusMode ? "var(--accent-blue)" : "var(--text-t-secondary)",
             }}
@@ -73,7 +68,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       {/* Global overlays */}
       <SpotlightSearch />
       <TodayRecap />
-      <ToastSystem />
     </>
   );
 }

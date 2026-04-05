@@ -10,9 +10,9 @@ import { useAppStore } from "@/store/useAppStore";
 import type { LifeGoalHorizon } from "@/store/useAppStore";
 
 const HORIZONS: { id: LifeGoalHorizon; label: string; icon: typeof Clock; color: string; description: string }[] = [
-  { id: "court_terme", label: "Court terme", icon: Clock, color: "var(--accent-green)", description: "3-6 mois" },
-  { id: "moyen_terme", label: "Moyen terme", icon: Target, color: "var(--accent-blue)", description: "1-3 ans" },
-  { id: "long_terme", label: "Long terme", icon: Rocket, color: "var(--accent-purple)", description: "5-10 ans" },
+  { id: "court_terme", label: "Court terme", icon: Clock, color: "#4ade80", description: "3-6 mois" },
+  { id: "moyen_terme", label: "Moyen terme", icon: Target, color: "#67e8f9", description: "1-3 ans" },
+  { id: "long_terme", label: "Long terme", icon: Rocket, color: "#a78bfa", description: "5-10 ans" },
 ];
 
 const CATEGORIES = [
@@ -89,26 +89,27 @@ export default function VisionBoard() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between border-b-primary">
+      <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
         <div>
-          <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-            <Eye size={18} className="text-t-secondary" /> Vision Board
+          <h1 className="text-lg font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
+            <Eye size={18} className="text-zinc-400" /> Vision Board
           </h1>
-          <p className="text-xs text-t-secondary mt-1">Tes objectifs de vie · Visualise ton futur</p>
+          <p className="text-xs text-zinc-600 mt-1">Tes objectifs de vie · Visualise ton futur</p>
         </div>
-        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all bg-surface border-b-primary text-t-primary"
+        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all"
+          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#d4d4d8" }}
         ><Plus size={13} /> Nouvel objectif</button>
       </div>
 
       {/* Horizon filter */}
-      <div className="shrink-0 px-7 py-3 flex gap-2 border-b-primary" style={{ borderBottom: "1px solid var(--border-b-primary)" }}>
+      <div className="shrink-0 px-7 py-3 flex gap-2" style={{ borderBottom: "1px solid rgba(255,255,255,0.03)" }}>
         <button
           onClick={() => setActiveHorizon("all")}
           className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
           style={{
-            background: activeHorizon === "all" ? "var(--accent-blue-light)" : "var(--surface)",
-            color: activeHorizon === "all" ? "var(--accent-blue)" : "var(--text-primary)",
-            border: `1px solid ${activeHorizon === "all" ? "var(--accent-blue-light)" : "var(--border-b-primary)"}`,
+            background: activeHorizon === "all" ? "rgba(255,255,255,0.08)" : "transparent",
+            color: activeHorizon === "all" ? "#e4e4e7" : "#52525b",
+            border: `1px solid ${activeHorizon === "all" ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}`,
           }}
         >Tout</button>
         {HORIZONS.map((h) => (
@@ -117,9 +118,9 @@ export default function VisionBoard() {
             onClick={() => setActiveHorizon(h.id)}
             className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all"
             style={{
-              background: activeHorizon === h.id ? `${h.color}12` : "var(--surface)",
-              color: activeHorizon === h.id ? h.color : "var(--text-primary)",
-              border: `1px solid ${activeHorizon === h.id ? h.color + "30" : "var(--border-b-primary)"}`,
+              background: activeHorizon === h.id ? `${h.color}12` : "transparent",
+              color: activeHorizon === h.id ? h.color : "#52525b",
+              border: `1px solid ${activeHorizon === h.id ? h.color + "30" : "rgba(255,255,255,0.04)"}`,
             }}
           >{h.label}</button>
         ))}
@@ -135,14 +136,15 @@ export default function VisionBoard() {
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
               onSubmit={handleAdd}
-              className="rounded-3xl p-6 flex flex-col gap-4 bg-surface border-b-primary"
-              style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.08)" }}
+              className="rounded-2xl p-5 flex flex-col gap-4"
+              style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.06)" }}
             >
               <input
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 placeholder="Mon objectif de vie…"
-                className="text-base bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none border-b border-b-primary pb-2"
+                className="text-base bg-transparent text-zinc-200 placeholder:text-zinc-600 focus:outline-none border-b pb-2"
+                style={{ borderColor: "rgba(255,255,255,0.06)" }}
                 autoFocus
               />
 
@@ -151,11 +153,12 @@ export default function VisionBoard() {
                 onChange={(e) => setFormDesc(e.target.value)}
                 placeholder="Décris en détail ce que tu veux accomplir, pourquoi c'est important pour toi…"
                 rows={3}
-                className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary rounded-xl p-3 focus:outline-none resize-none bg-empty-bg border-b-primary"
+                className="text-sm bg-transparent text-zinc-300 placeholder:text-zinc-700 rounded-xl p-3 focus:outline-none resize-none"
+                style={{ background: "rgba(255,255,255,0.02)", border: "1px solid rgba(255,255,255,0.04)" }}
               />
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest">Horizon</label>
+                <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest">Horizon</label>
                 <div className="flex gap-2">
                   {HORIZONS.map((h) => (
                     <button
@@ -163,9 +166,9 @@ export default function VisionBoard() {
                       onClick={() => setFormHorizon(h.id)}
                       className="text-[11px] px-3 py-1.5 rounded-xl font-medium transition-all flex-1 text-center"
                       style={{
-                        background: formHorizon === h.id ? `${h.color}12` : "var(--surface)",
-                        color: formHorizon === h.id ? h.color : "var(--text-primary)",
-                        border: `1px solid ${formHorizon === h.id ? h.color + "30" : "var(--border-b-primary)"}`,
+                        background: formHorizon === h.id ? `${h.color}12` : "rgba(255,255,255,0.02)",
+                        color: formHorizon === h.id ? h.color : "#52525b",
+                        border: `1px solid ${formHorizon === h.id ? h.color + "30" : "rgba(255,255,255,0.04)"}`,
                       }}
                     >{h.label} ({h.description})</button>
                   ))}
@@ -173,7 +176,7 @@ export default function VisionBoard() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest">Catégorie</label>
+                <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest">Catégorie</label>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.map((c) => (
                     <button
@@ -181,9 +184,9 @@ export default function VisionBoard() {
                       onClick={() => setFormCategory(c.id)}
                       className="text-[11px] px-2.5 py-1 rounded-lg transition-all"
                       style={{
-                        background: formCategory === c.id ? "var(--accent-blue-light)" : "var(--surface)",
-                        color: formCategory === c.id ? "var(--accent-blue)" : "var(--text-primary)",
-                        border: `1px solid ${formCategory === c.id ? "var(--accent-blue-light)" : "var(--border-b-primary)"}`,
+                        background: formCategory === c.id ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.02)",
+                        color: formCategory === c.id ? "#e4e4e7" : "#71717a",
+                        border: `1px solid ${formCategory === c.id ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}`,
                       }}
                     >{c.emoji} {c.label}</button>
                   ))}
@@ -191,14 +194,15 @@ export default function VisionBoard() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest flex items-center gap-1.5">
+                <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest flex items-center gap-1.5">
                   <Image size={10} /> Image d&apos;inspiration (URL)
                 </label>
                 <input
                   value={formImageUrl}
                   onChange={(e) => setFormImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/…"
-                  className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none border-b border-b-primary pb-1"
+                  className="text-sm bg-transparent text-zinc-400 placeholder:text-zinc-700 focus:outline-none border-b pb-1"
+                  style={{ borderColor: "rgba(255,255,255,0.04)" }}
                 />
                 <div className="flex gap-2 flex-wrap">
                   {INSPIRATIONAL_IMAGES.map((url, i) => (
@@ -208,7 +212,7 @@ export default function VisionBoard() {
                       onClick={() => setFormImageUrl(url)}
                       className="w-14 h-10 rounded-lg overflow-hidden transition-all"
                       style={{
-                        border: formImageUrl === url ? "2px solid var(--accent-blue)" : "1px solid var(--border-b-primary)",
+                        border: formImageUrl === url ? "2px solid rgba(255,255,255,0.3)" : "1px solid rgba(255,255,255,0.06)",
                         opacity: formImageUrl === url ? 1 : 0.5,
                       }}
                     >
@@ -220,8 +224,8 @@ export default function VisionBoard() {
               </div>
 
               <div className="flex gap-2 justify-end pt-2">
-                <button type="button" onClick={() => setAdding(false)} className="text-xs text-t-secondary hover:text-t-primary px-3 py-1.5">Annuler</button>
-                <button type="submit" className="text-xs px-4 py-2 rounded-xl font-medium bg-accent-blue text-white">Créer l&apos;objectif</button>
+                <button type="button" onClick={() => setAdding(false)} className="text-xs text-zinc-600 hover:text-zinc-400 px-3 py-1.5">Annuler</button>
+                <button type="submit" className="text-xs px-4 py-2 rounded-xl font-medium" style={{ background: "rgba(255,255,255,0.08)", color: "#e4e4e7" }}>Créer l&apos;objectif</button>
               </div>
             </motion.form>
           )}
@@ -235,11 +239,11 @@ export default function VisionBoard() {
               <p className="text-[11px] font-medium uppercase tracking-widest" style={{ color: group.color }}>
                 {group.label}
               </p>
-              <span className="text-[10px] text-t-secondary ml-1">{group.description}</span>
+              <span className="text-[10px] text-zinc-700 ml-1">{group.description}</span>
             </div>
 
             {group.goals.length === 0 && (
-              <p className="text-[11px] text-t-secondary px-2 py-4">Aucun objectif pour cet horizon. Ajoutes-en un !</p>
+              <p className="text-[11px] text-zinc-700 px-2 py-4">Aucun objectif pour cet horizon. Ajoutes-en un !</p>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -253,9 +257,10 @@ export default function VisionBoard() {
                   <motion.div
                     key={goal.id}
                     layout
-                    className="rounded-3xl overflow-hidden transition-all bg-surface border-b-primary"
+                    className="rounded-2xl overflow-hidden transition-all"
                     style={{
-                      boxShadow: isExpanded ? "0 4px 12px rgba(0,0,0,0.12)" : "0 1px 3px rgba(0,0,0,0.08)",
+                      background: "rgba(255,255,255,0.02)",
+                      border: `1px solid ${isExpanded ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.04)"}`,
                     }}
                   >
                     {/* Image */}
@@ -263,9 +268,9 @@ export default function VisionBoard() {
                       <div className="h-32 overflow-hidden relative">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={goal.imageUrl} alt="" className="w-full h-full object-cover" />
-                        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(255,255,255,0.7) 0%, transparent 60%)" }} />
+                        <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(10,10,10,0.8) 0%, transparent 60%)" }} />
                         <div className="absolute bottom-3 left-4 right-4">
-                          <p className="text-sm font-semibold text-t-primary">{goal.title}</p>
+                          <p className="text-sm font-semibold text-white">{goal.title}</p>
                         </div>
                       </div>
                     )}
@@ -277,18 +282,18 @@ export default function VisionBoard() {
                       {!goal.imageUrl && (
                         <div className="flex items-center gap-2 mb-1">
                           <Star size={12} style={{ color: goal.color }} />
-                          <p className="text-sm font-medium text-t-primary">{goal.title}</p>
+                          <p className="text-sm font-medium text-zinc-200">{goal.title}</p>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-[10px] text-t-secondary">
+                      <div className="flex items-center gap-2 text-[10px] text-zinc-600">
                         {cat && <span>{cat.emoji} {cat.label}</span>}
                         {totalSteps > 0 && <span>· {doneSteps}/{totalSteps} étapes</span>}
                       </div>
                       {goal.description && !isExpanded && (
-                        <p className="text-[11px] text-t-secondary mt-2 line-clamp-2">{goal.description}</p>
+                        <p className="text-[11px] text-zinc-500 mt-2 line-clamp-2">{goal.description}</p>
                       )}
                       {totalSteps > 0 && (
-                        <div className="mt-2 h-1 rounded-full overflow-hidden bg-b-primary">
+                        <div className="mt-2 h-1 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
                           <div className="h-full rounded-full transition-all" style={{ width: `${totalSteps > 0 ? (doneSteps / totalSteps) * 100 : 0}%`, background: goal.color }} />
                         </div>
                       )}
@@ -302,17 +307,17 @@ export default function VisionBoard() {
                           exit={{ height: 0, opacity: 0 }}
                           className="overflow-hidden"
                         >
-                          <div className="px-4 pb-4 flex flex-col gap-3" style={{ borderTop: "1px solid var(--border-b-primary)" }}>
+                          <div className="px-4 pb-4 flex flex-col gap-3" style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
                             {/* Full description */}
                             {goal.description && (
-                              <p className="text-[12px] text-t-primary mt-2 leading-relaxed whitespace-pre-wrap">{goal.description}</p>
+                              <p className="text-[12px] text-zinc-400 mt-2 leading-relaxed whitespace-pre-wrap">{goal.description}</p>
                             )}
 
                             {/* Action Plan */}
                             <div className="flex flex-col gap-2 mt-1">
                               <div className="flex items-center gap-1.5">
-                                <Heart size={10} className="text-t-secondary" />
-                                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest">Plan d&apos;action</label>
+                                <Heart size={10} className="text-zinc-600" />
+                                <label className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest">Plan d&apos;action</label>
                               </div>
 
                               {goal.actionSteps.map((step) => (
@@ -320,43 +325,43 @@ export default function VisionBoard() {
                                   <button
                                     onClick={() => toggleLifeGoalStep(goal.id, step.id)}
                                     className="shrink-0 w-3.5 h-3.5 rounded-md border flex items-center justify-center transition-colors"
-                                    style={{ borderColor: step.done ? `${goal.color}60` : "var(--border-b-hover)", background: step.done ? `${goal.color}15` : "transparent" }}
+                                    style={{ borderColor: step.done ? `${goal.color}60` : "rgba(255,255,255,0.08)", background: step.done ? `${goal.color}15` : "transparent" }}
                                   >
                                     {step.done && <Check size={7} style={{ color: goal.color }} strokeWidth={3} />}
                                   </button>
-                                  <span className="flex-1 text-[11px]" style={{ color: step.done ? "var(--accent-green)" : "var(--text-secondary)", textDecoration: step.done ? "line-through" : "none" }}>{step.text}</span>
-                                  <button onClick={() => deleteLifeGoalStep(goal.id, step.id)} className="opacity-0 group-hover/step:opacity-100 text-t-secondary hover:text-accent-red">
+                                  <span className="flex-1 text-[11px]" style={{ color: step.done ? "#3f3f46" : "#a1a1aa", textDecoration: step.done ? "line-through" : "none" }}>{step.text}</span>
+                                  <button onClick={() => deleteLifeGoalStep(goal.id, step.id)} className="opacity-0 group-hover/step:opacity-100 text-zinc-700 hover:text-zinc-400">
                                     <X size={9} />
                                   </button>
                                 </div>
                               ))}
 
                               <div className="flex items-center gap-2">
-                                <Plus size={10} className="text-t-secondary shrink-0" />
+                                <Plus size={10} className="text-zinc-700 shrink-0" />
                                 <input
                                   value={expandedId === goal.id ? stepInput : ""}
                                   onChange={(e) => setStepInput(e.target.value)}
                                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddStep(goal.id); } }}
                                   placeholder="Ajouter une étape…"
-                                  className="flex-1 text-[11px] bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none py-0.5"
+                                  className="flex-1 text-[11px] bg-transparent text-zinc-500 placeholder:text-zinc-700 focus:outline-none py-0.5"
                                 />
                               </div>
                             </div>
 
                             {/* Image URL edit */}
                             <div className="flex items-center gap-2 mt-1">
-                              <Image size={10} className="text-t-secondary" />
+                              <Image size={10} className="text-zinc-700" />
                               <input
                                 value={goal.imageUrl || ""}
                                 onChange={(e) => updateLifeGoal(goal.id, { imageUrl: e.target.value || undefined })}
                                 placeholder="URL image d'inspiration"
-                                className="flex-1 text-[10px] bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none"
+                                className="flex-1 text-[10px] bg-transparent text-zinc-500 placeholder:text-zinc-700 focus:outline-none"
                               />
                             </div>
 
                             <button
                               onClick={() => deleteLifeGoal(goal.id)}
-                              className="flex items-center gap-1.5 text-[10px] text-t-secondary hover:text-accent-red transition-colors self-end mt-1"
+                              className="flex items-center gap-1.5 text-[10px] text-zinc-700 hover:text-red-300 transition-colors self-end mt-1"
                             >
                               <Trash2 size={9} /> Supprimer
                             </button>
@@ -373,14 +378,15 @@ export default function VisionBoard() {
 
         {lifeGoals.length === 0 && !adding && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-empty-bg border-b-primary">
-              <Eye size={22} className="text-t-secondary" />
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <Eye size={22} className="text-zinc-600" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-t-primary">Ton Vision Board est vide</p>
-              <p className="text-xs text-t-secondary mt-1">Commence à écrire tes objectifs de vie pour te projeter et te motiver.</p>
+              <p className="text-sm text-zinc-400">Ton Vision Board est vide</p>
+              <p className="text-xs text-zinc-600 mt-1">Commence à écrire tes objectifs de vie pour te projeter et te motiver.</p>
             </div>
-            <button onClick={() => setAdding(true)} className="text-xs px-4 py-2 rounded-xl font-medium transition-all bg-surface text-t-primary border-b-primary">
+            <button onClick={() => setAdding(true)} className="text-xs px-4 py-2 rounded-xl font-medium transition-all"
+              style={{ background: "rgba(255,255,255,0.06)", color: "#d4d4d8", border: "1px solid rgba(255,255,255,0.08)" }}>
               <Plus size={12} className="inline mr-1" /> Créer mon premier objectif
             </button>
           </div>

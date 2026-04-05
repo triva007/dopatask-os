@@ -6,9 +6,6 @@ import dynamic from "next/dynamic";
 const AppShell = dynamic(() => import("@/components/AppShell"), {
   ssr: false,
 });
-const ThemeProvider = dynamic(() => import("@/components/ThemeProvider"), {
-  ssr: false,
-});
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -33,13 +30,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className="dark">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-t-primary h-screen overflow-hidden min-w-[1400px]`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased h-screen overflow-hidden`}
+        style={{ background: "var(--background)", color: "var(--foreground)" }}
       >
-        <ThemeProvider>
-          <AppShell>{children}</AppShell>
-        </ThemeProvider>
+        <AppShell>{children}</AppShell>
       </body>
     </html>
   );

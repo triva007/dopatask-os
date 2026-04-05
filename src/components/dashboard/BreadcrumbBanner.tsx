@@ -29,27 +29,45 @@ export default function BreadcrumbBanner() {
     <AnimatePresence>
       {visible && (
         <motion.div
-          initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }}
+          initial={{ opacity: 0, y: -30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -30, scale: 0.95 }}
           transition={{ type: "spring", stiffness: 300, damping: 28 }}
-          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-4 py-3 rounded-2xl bg-surface/95 border-b-primary"
+          className="fixed top-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 px-5 py-3.5 rounded-2xl"
           style={{
-            backdropFilter: "blur(20px)",
-            border: "1px solid var(--border-b-primary)",
-            boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+            background: "linear-gradient(135deg, rgba(24,24,30,0.96), rgba(20,20,26,0.99))",
+            backdropFilter: "blur(24px) saturate(150%)",
+            border: "1px solid rgba(255,255,255,0.10)",
+            boxShadow: "0 12px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.04), inset 0 1px 0 rgba(255,255,255,0.06)",
           }}
         >
-          <div className="w-1.5 h-1.5 rounded-full bg-accent-blue animate-pulse shrink-0" />
-          <div className="flex flex-col gap-0.5">
-            <span className="text-[10px] text-t-secondary">Reprendre ?</span>
-            <span className="text-xs font-medium text-t-primary">&ldquo;{lastTask.text}&rdquo;</span>
+          {/* Pulsing dot */}
+          <div className="relative">
+            <div className="w-2 h-2 rounded-full" style={{ background: "#22d3ee", boxShadow: "0 0 8px rgba(34,211,238,0.4)" }} />
+            <div className="absolute inset-0 w-2 h-2 rounded-full bg-dopa-cyan animate-ping opacity-30" />
           </div>
-          <button onClick={() => { setLastActive(lastTask.id); setVisible(false); }}
-            className="flex items-center gap-1.5 ml-2 px-3 py-1.5 rounded-xl text-xs font-medium transition-colors bg-accent-blue text-white"
-            style={{}}
+
+          <div className="flex flex-col gap-0.5">
+            <span className="text-[10px] text-zinc-400">Reprendre ?</span>
+            <span className="text-[12px] font-medium text-zinc-100">&ldquo;{lastTask.text}&rdquo;</span>
+          </div>
+
+          <motion.button
+            onClick={() => { setLastActive(lastTask.id); setVisible(false); }}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            className="flex items-center gap-1.5 ml-2 px-3.5 py-1.5 rounded-xl text-[11px] font-medium transition-all"
+            style={{
+              background: "linear-gradient(135deg, rgba(34,211,238,0.12), rgba(34,211,238,0.06))",
+              border: "1px solid rgba(34,211,238,0.2)",
+              color: "#22d3ee",
+              boxShadow: "0 0 12px rgba(34,211,238,0.08)",
+            }}
           >
             <RotateCcw size={10} /> Reprendre
-          </button>
-          <button onClick={() => setVisible(false)} className="text-t-secondary hover:text-t-primary ml-1">
+          </motion.button>
+
+          <button onClick={() => setVisible(false)} className="text-zinc-500 hover:text-zinc-300 ml-1 transition-colors">
             <X size={12} />
           </button>
         </motion.div>
