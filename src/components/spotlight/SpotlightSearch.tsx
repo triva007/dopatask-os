@@ -23,6 +23,7 @@ const TYPE_CONFIG = {
   journal:   { Icon: BookOpen,     label: "Journal",   color: "var(--accent-orange)" },
   inbox:     { Icon: Inbox,        label: "Inbox",     color: "var(--accent-cyan)" },
 };
+
 export default function SpotlightSearch() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -54,6 +55,7 @@ export default function SpotlightSearch() {
       setTimeout(() => inputRef.current?.focus(), 50);
     }
   }, [open]);
+
   // Search results
   const results = useMemo(() => {
     if (!query.trim()) return [];
@@ -84,6 +86,7 @@ export default function SpotlightSearch() {
         });
       }
     });
+
     // Objectives
     objectives.forEach((o) => {
       if (o.title.toLowerCase().includes(q) || o.milestones.some((m) => m.text.toLowerCase().includes(q))) {
@@ -122,6 +125,7 @@ export default function SpotlightSearch() {
 
     return r.slice(0, 12);
   }, [query, tasks, projects, objectives, journalEntries, inboxItems]);
+
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "ArrowDown") {
@@ -149,17 +153,18 @@ export default function SpotlightSearch() {
         className="fixed inset-0 z-[60] flex items-start justify-center pt-[15vh]"
         style={{ backgroundColor: "var(--backdrop-bg)", backdropFilter: "blur(8px)" }}
         onClick={() => setOpen(false)}
-      >        <motion.div
+      >
+        <motion.div
           initial={{ opacity: 0, scale: 0.97, y: -8 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.97, y: -8 }}
           transition={{ type: "spring", damping: 28, stiffness: 300 }}
           className="w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden bg-surface"
-          style={{ border: "1px solid var(--border-b-primary)" }}
+          style={{ border: "1px solid var(--border-primary)" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Search input */}
-          <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--border-b-primary)" }}>
+          <div className="flex items-center gap-3 px-5 py-4" style={{ borderBottom: "1px solid var(--border-primary)" }}>
             <Search size={16} className="text-t-secondary shrink-0" />
             <input
               ref={inputRef}
@@ -173,6 +178,7 @@ export default function SpotlightSearch() {
               ESC
             </span>
           </div>
+
           {/* Results */}
           {query.trim() && (
             <div className="max-h-[50vh] overflow-y-auto">
@@ -201,7 +207,8 @@ export default function SpotlightSearch() {
                           <Icon size={13} style={{ color: config.color }} />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <p className="text-[13px] text-t-primary truncate" style={{ fontWeight: 450 }}>{result.title}</p>                          {result.subtitle && (
+                          <p className="text-[13px] text-t-primary truncate" style={{ fontWeight: 450 }}>{result.title}</p>
+                          {result.subtitle && (
                             <p className="text-[10px] text-t-secondary truncate">{result.subtitle}</p>
                           )}
                         </div>

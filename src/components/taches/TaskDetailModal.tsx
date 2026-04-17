@@ -1,19 +1,19 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import {
   X, Check, Trash2, Plus, Clock, Tag, FolderKanban,
-  Flag, FileText, Sparkles, Timer, ChevronDown,
+  Flag, FileText, Sparkles, Timer, ChevronDown, Calendar, Repeat,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
-import type { Task, TaskStatus, IncupTag } from "@/store/useAppStore";
+import type { Task, TaskStatus, IncupTag, RecurrenceType } from "@/store/useAppStore";
 
 const STATUS_CONFIG: { id: TaskStatus; label: string; color: string; dot: string }[] = [
-  { id: "todo", label: "To Do", color: "var(--accent-red)", dot: "#ef4444" },
-  { id: "in_progress", label: "En cours", color: "var(--accent-blue)", dot: "#3b82f6" },
-  { id: "completed", label: "Terminé", color: "var(--accent-green)", dot: "#22c55e" },
-  { id: "saved", label: "Sauvegarde", color: "var(--accent-orange)", dot: "#f59e0b" },
+  { id: "todo", label: "To Do", color: "var(--accent-red)", dot: "var(--accent-red)" },
+  { id: "in_progress", label: "En cours", color: "var(--accent-blue)", dot: "var(--accent-blue)" },
+  { id: "completed", label: "Terminé", color: "var(--accent-green)", dot: "var(--accent-green)" },
+  { id: "saved", label: "Sauvegarde", color: "var(--accent-orange)", dot: "var(--accent-orange)" },
 ];
 
 const INCUP_TAGS: { tag: IncupTag; emoji: string }[] = [
@@ -29,11 +29,20 @@ const PRIORITY_CONFIG = [
   { id: "medium" as const, label: "Moyenne", color: "var(--accent-orange)" },
   { id: "high" as const, label: "Haute", color: "var(--accent-red)" },
 ];
+
+const RECURRENCE_OPTIONS: { id: RecurrenceType; label: string }[] = [
+  { id: "none", label: "Aucune" },
+  { id: "daily", label: "Quotidien" },
+  { id: "weekdays", label: "Jours ouvrés" },
+  { id: "weekly", label: "Hebdo" },
+  { id: "monthly", label: "Mensuel" },
+];
+
 export default function TaskDetailModal({ task, onClose }: { task: Task; onClose: () => void }) {
   const {
     updateTask, updateTaskStatus, deleteTask, toggleTag,
     addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps,
-    projects,
+    projects, sprints,
   } = useAppStore();
   const [microInput, setMicroInput] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
@@ -41,6 +50,15 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
   const [descDraft, setDescDraft] = useState(task.description || "");
   const [showDesc, setShowDesc] = useState(!!task.description);
   const [showMetaSection, setShowMetaSection] = useState(false);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") { onClose(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   const doneSteps = task.microSteps.filter((ms) => ms.done).length;
   const totalSteps = task.microSteps.length;
@@ -61,6 +79,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
     }
     setEditingTitle(false);
   };
+
   const handleSaveDesc = () => {
     updateTask(task.id, { description: descDraft.trim() || undefined });
   };
@@ -92,7 +111,8 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
         { id: uid(), text: "Finaliser et vérifier (3 min)", done: false },
       ];
     }
-    setMicroSteps(task.id, steps);    const est = lower.includes("email") ? 15 : lower.includes("rapport") ? 45 : 20;
+    setMicroSteps(task.id, steps);
+    const est = lower.includes("email") ? 15 : lower.includes("rapport") ? 45 : 20;
     updateTask(task.id, { estimatedMinutes: est });
   };
 
@@ -111,7 +131,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={{ type: "spring", damping: 30, stiffness: 300 }}
         className="w-full max-w-xl max-h-[85vh] overflow-y-auto rounded-3xl shadow-xl bg-surface"
-        style={{ border: "1px solid var(--border-b-primary)" }}
+        style={{ border: "1px solid var(--border-primary)" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header compact */}
@@ -122,10 +142,11 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 <input
                   value={titleDraft}
                   onChange={(e) => setTitleDraft(e.target.value)}
-                  onBlur={handleSaveTitle}                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); }}
+                  onBlur={handleSaveTitle}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSaveTitle(); }}
                   autoFocus
                   className="text-xl font-semibold text-t-primary bg-transparent focus:outline-none w-full border-b pb-1"
-                  style={{ borderColor: "var(--border-b-primary)" }}
+                  style={{ borderColor: "var(--border-primary)" }}
                 />
               ) : (
                 <h2
@@ -152,6 +173,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 {currentStatus.label}
               </span>
             )}
+
             {/* Priority pill */}
             {currentPriority && (
               <span className="inline-flex items-center gap-1 text-[10px] font-medium px-2.5 py-1 rounded-lg"
@@ -166,7 +188,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               const tagConfig = INCUP_TAGS.find((t) => t.tag === tag);
               return (
                 <span key={tag} className="inline-flex items-center gap-1 text-[10px] font-medium px-2 py-1 rounded-lg"
-                  style={{ background: "var(--empty-bg)", color: "var(--text-t-secondary)" }}
+                  style={{ background: "var(--empty-bg)", color: "var(--text-secondary)" }}
                 >
                   {tagConfig?.emoji} {tag}
                 </span>
@@ -181,6 +203,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 {taskProject.emoji} {taskProject.name}
               </span>
             )}
+
             {/* Time estimate */}
             {task.estimatedMinutes && (
               <span className="inline-flex items-center gap-1 text-[10px] text-t-secondary px-2 py-1">
@@ -196,7 +219,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
         </div>
 
         {/* Divider */}
-        <div className="h-px mx-6" style={{ background: "var(--border-b-primary)" }} />
+        <div className="h-px mx-6" style={{ background: "var(--border-primary)" }} />
 
         {/* Content area */}
         <div className="px-6 py-4 flex flex-col gap-4">
@@ -212,7 +235,8 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                 rows={3}
                 className="w-full text-[13px] text-t-primary placeholder:text-t-tertiary rounded-2xl p-3.5 focus:outline-none resize-none"
                 style={{ background: "var(--empty-bg)" }}
-              />            ) : (
+              />
+            ) : (
               <button onClick={() => setShowDesc(true)} className="text-[12px] text-t-tertiary hover:text-t-secondary transition-colors flex items-center gap-1.5">
                 <FileText size={11} /> Ajouter une description…
               </button>
@@ -237,17 +261,18 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
             </div>
 
             {totalSteps > 0 && (
-              <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--border-b-primary)" }}>
+              <div className="h-1 rounded-full overflow-hidden" style={{ background: "var(--border-primary)" }}>
                 <div className="h-full rounded-full transition-all" style={{ width: `${(doneSteps / totalSteps) * 100}%`, background: "var(--accent-blue)" }} />
               </div>
             )}
+
             <div className="flex flex-col gap-0.5">
               {task.microSteps.map((ms) => (
                 <div key={ms.id} className="flex items-center gap-2.5 group/ms px-2 py-1.5 rounded-xl hover:bg-empty-bg transition-colors">
                   <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-4 h-4 rounded-md border flex items-center justify-center transition-all"
-                    style={{ borderColor: ms.done ? "var(--accent-blue)" : "var(--border-b-hover)", background: ms.done ? "var(--accent-blue-light)" : "transparent" }}
+                    style={{ borderColor: ms.done ? "var(--accent-blue)" : "var(--border-hover)", background: ms.done ? "var(--accent-blue-light)" : "transparent" }}
                   >{ms.done && <Check size={9} style={{ color: "var(--accent-blue)" }} strokeWidth={3} />}</button>
-                  <span className="flex-1 text-[12px]" style={{ color: ms.done ? "var(--text-t-secondary)" : "var(--text-t-primary)", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
+                  <span className="flex-1 text-[12px]" style={{ color: ms.done ? "var(--text-secondary)" : "var(--text-primary)", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
                   <button onClick={() => deleteMicroStep(task.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-t-secondary hover:text-accent-red transition-all">
                     <X size={10} />
                   </button>
@@ -270,7 +295,8 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
           <div>
             <button
               onClick={() => setShowMetaSection(!showMetaSection)}
-              className="flex items-center gap-1.5 text-[11px] text-t-secondary hover:text-t-primary transition-colors"            >
+              className="flex items-center gap-1.5 text-[11px] text-t-secondary hover:text-t-primary transition-colors"
+            >
               <ChevronDown size={12} className={`transition-transform ${showMetaSection ? "" : "-rotate-90"}`} />
               Modifier les propriétés
             </button>
@@ -286,8 +312,8 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                         className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
                         style={{
                           background: task.status === s.id ? `color-mix(in srgb, ${s.color} 10%, transparent)` : "transparent",
-                          color: task.status === s.id ? s.color : "var(--text-t-secondary)",
-                          border: `1px solid ${task.status === s.id ? s.color : "var(--border-b-primary)"}`,
+                          color: task.status === s.id ? s.color : "var(--text-secondary)",
+                          border: `1px solid ${task.status === s.id ? s.color : "var(--border-primary)"}`,
                         }}
                       >{s.label}</button>
                     ))}
@@ -299,11 +325,12 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                   <Flag size={10} className="text-t-tertiary shrink-0" />
                   <div className="flex gap-1.5">
                     {PRIORITY_CONFIG.map((p) => (
-                      <button key={p.id} onClick={() => updateTask(task.id, { priority: task.priority === p.id ? undefined : p.id })}                        className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
+                      <button key={p.id} onClick={() => updateTask(task.id, { priority: task.priority === p.id ? undefined : p.id })}
+                        className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
                         style={{
                           background: task.priority === p.id ? `color-mix(in srgb, ${p.color} 10%, transparent)` : "transparent",
-                          color: task.priority === p.id ? p.color : "var(--text-t-secondary)",
-                          border: `1px solid ${task.priority === p.id ? p.color : "var(--border-b-primary)"}`,
+                          color: task.priority === p.id ? p.color : "var(--text-secondary)",
+                          border: `1px solid ${task.priority === p.id ? p.color : "var(--border-primary)"}`,
                         }}
                       >{p.label}</button>
                     ))}
@@ -320,15 +347,16 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                         <button key={tag} onClick={() => toggleTag(task.id, tag)}
                           className="text-[10px] px-2 py-1 rounded-lg font-medium transition-all"
                           style={{
-                            color: active ? "var(--accent-blue)" : "var(--text-t-secondary)",
+                            color: active ? "var(--accent-blue)" : "var(--text-secondary)",
                             background: active ? "var(--accent-blue-light)" : "transparent",
-                            border: `1px solid ${active ? "var(--accent-blue)" : "var(--border-b-primary)"}`,
+                            border: `1px solid ${active ? "var(--accent-blue)" : "var(--border-primary)"}`,
                           }}
                         >{emoji} {tag}</button>
                       );
                     })}
                   </div>
                 </div>
+
                 {/* Project */}
                 <div className="flex items-center gap-2">
                   <FolderKanban size={10} className="text-t-tertiary shrink-0" />
@@ -336,8 +364,8 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                     <button onClick={() => updateTask(task.id, { projectId: undefined })}
                       className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
                       style={{
-                        color: !task.projectId ? "var(--text-t-primary)" : "var(--text-t-secondary)",
-                        border: `1px solid ${!task.projectId ? "var(--accent-blue)" : "var(--border-b-primary)"}`,
+                        color: !task.projectId ? "var(--text-primary)" : "var(--text-secondary)",
+                        border: `1px solid ${!task.projectId ? "var(--accent-blue)" : "var(--border-primary)"}`,
                       }}
                     >Aucun</button>
                     {projects.filter(p => p.status === "active").map((p) => (
@@ -345,20 +373,101 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                         className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
                         style={{
                           background: task.projectId === p.id ? `color-mix(in srgb, ${p.color} 10%, transparent)` : "transparent",
-                          color: task.projectId === p.id ? p.color : "var(--text-t-secondary)",
-                          border: `1px solid ${task.projectId === p.id ? p.color : "var(--border-b-primary)"}`,
+                          color: task.projectId === p.id ? p.color : "var(--text-secondary)",
+                          border: `1px solid ${task.projectId === p.id ? p.color : "var(--border-primary)"}`,
                         }}
                       >{p.emoji} {p.name}</button>
                     ))}
                   </div>
                 </div>
+
+                {/* Due Date */}
+                <div className="flex items-center gap-2">
+                  <Calendar size={10} className="text-t-tertiary shrink-0" />
+                  <input
+                    type="date"
+                    value={task.dueDate || ""}
+                    onChange={(e) => updateTask(task.id, { dueDate: e.target.value || undefined })}
+                    className="text-[10px] px-2.5 py-1 rounded-lg font-medium bg-transparent focus:outline-none"
+                    style={{
+                      color: "var(--text-secondary)",
+                      border: "1px solid var(--border-primary)",
+                    }}
+                  />
+                  {task.dueDate && (
+                    <button onClick={() => updateTask(task.id, { dueDate: undefined })}
+                      className="text-[10px] text-t-tertiary hover:text-accent-red transition-colors"
+                    ><X size={9} /></button>
+                  )}
+                </div>
+
+                {/* Estimated Time */}
+                <div className="flex items-center gap-2">
+                  <Timer size={10} className="text-t-tertiary shrink-0" />
+                  <div className="flex gap-1.5">
+                    {[5, 10, 15, 25, 45, 60, 90].map((min) => (
+                      <button key={min} onClick={() => updateTask(task.id, { estimatedMinutes: task.estimatedMinutes === min ? undefined : min })}
+                        className="text-[10px] px-2 py-1 rounded-lg font-medium transition-all"
+                        style={{
+                          background: task.estimatedMinutes === min ? "color-mix(in srgb, var(--accent-blue) 10%, transparent)" : "transparent",
+                          color: task.estimatedMinutes === min ? "var(--accent-blue)" : "var(--text-secondary)",
+                          border: `1px solid ${task.estimatedMinutes === min ? "var(--accent-blue)" : "var(--border-primary)"}`,
+                        }}
+                      >{min}m</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Recurrence */}
+                <div className="flex items-center gap-2">
+                  <Repeat size={10} className="text-t-tertiary shrink-0" />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <button key={r.id} onClick={() => updateTask(task.id, { recurrence: r.id === "none" ? undefined : r.id })}
+                        className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
+                        style={{
+                          background: (task.recurrence || "none") === r.id ? "color-mix(in srgb, var(--accent-purple) 10%, transparent)" : "transparent",
+                          color: (task.recurrence || "none") === r.id ? "var(--accent-purple)" : "var(--text-secondary)",
+                          border: `1px solid ${(task.recurrence || "none") === r.id ? "var(--accent-purple)" : "var(--border-primary)"}`,
+                        }}
+                      >{r.label}</button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sprint Assignment */}
+                {sprints.length > 0 && (
+                  <div className="flex items-center gap-2">
+                    <Sparkles size={10} className="text-t-tertiary shrink-0" />
+                    <div className="flex gap-1.5 flex-wrap">
+                      <button onClick={() => updateTask(task.id, { sprintId: undefined })}
+                        className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
+                        style={{
+                          color: !task.sprintId ? "var(--text-primary)" : "var(--text-secondary)",
+                          border: `1px solid ${!task.sprintId ? "var(--accent-orange)" : "var(--border-primary)"}`,
+                        }}
+                      >Aucun sprint</button>
+                      {sprints.map((sp) => (
+                        <button key={sp.id} onClick={() => updateTask(task.id, { sprintId: sp.id })}
+                          className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
+                          style={{
+                            background: task.sprintId === sp.id ? "color-mix(in srgb, var(--accent-orange) 10%, transparent)" : "transparent",
+                            color: task.sprintId === sp.id ? "var(--accent-orange)" : "var(--text-secondary)",
+                            border: `1px solid ${task.sprintId === sp.id ? "var(--accent-orange)" : "var(--border-primary)"}`,
+                          }}
+                        >{sp.name}</button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
         </div>
 
         {/* Footer */}
-        <div className="px-6 py-3 flex items-center justify-end" style={{ borderTop: "1px solid var(--border-b-primary)" }}>          <button
+        <div className="px-6 py-3 flex items-center justify-end" style={{ borderTop: "1px solid var(--border-primary)" }}>
+          <button
             onClick={() => { deleteTask(task.id); onClose(); }}
             className="flex items-center gap-1.5 text-[11px] text-t-secondary hover:text-accent-red transition-colors px-3 py-1.5 rounded-xl"
           >

@@ -21,10 +21,10 @@ interface Reward {
 }
 
 const RARITY_COLORS = {
-  common: "#a1a1aa",
-  rare: "#67e8f9",
-  epic: "#a78bfa",
-  legendary: "#fbbf24",
+  common: "var(--text-secondary)",
+  rare: "var(--accent-blue)",
+  epic: "var(--accent-purple)",
+  legendary: "var(--accent-orange)",
 };
 
 const REWARDS: Reward[] = [
@@ -54,17 +54,17 @@ interface Achievement {
 }
 
 const ACHIEVEMENTS: Achievement[] = [
-  { id: "first_task", name: "Premier Pas", description: "Complète ta première tâche", icon: Star, color: "#4ade80", condition: (s) => s.totalTasksCompleted >= 1 },
-  { id: "task_10", name: "Machine", description: "10 tâches complétées", icon: Zap, color: "#67e8f9", condition: (s) => s.totalTasksCompleted >= 10 },
-  { id: "task_50", name: "Inarrêtable", description: "50 tâches complétées", icon: Flame, color: "#fbbf24", condition: (s) => s.totalTasksCompleted >= 50 },
-  { id: "task_100", name: "Centurion", description: "100 tâches complétées", icon: Crown, color: "#a78bfa", condition: (s) => s.totalTasksCompleted >= 100 },
-  { id: "streak_3", name: "Momentum", description: "Streak de 3", icon: Flame, color: "#fbbf24", condition: (s) => s.streak >= 3 },
-  { id: "streak_7", name: "Semaine en Feu", description: "Streak de 7", icon: Flame, color: "#ef4444", condition: (s) => s.streak >= 7 },
-  { id: "focus_60", name: "Deep Worker", description: "60 min de focus total", icon: Target, color: "#67e8f9", condition: (s) => s.totalFocusMinutes >= 60 },
-  { id: "focus_300", name: "Zone Master", description: "5h de focus total", icon: Target, color: "#a78bfa", condition: (s) => s.totalFocusMinutes >= 300 },
-  { id: "xp_1000", name: "XP Hunter", description: "Atteins 1000 XP", icon: Sparkles, color: "#fbbf24", condition: (s) => s.xp >= 1000 },
-  { id: "xp_5000", name: "Légende", description: "Atteins 5000 XP", icon: Medal, color: "#fbbf24", condition: (s) => s.xp >= 5000 },
-  { id: "session_5", name: "Focus Addict", description: "5 sessions focus", icon: Target, color: "#4ade80", condition: (s) => s.hyperfocusSessions >= 5 },
+  { id: "first_task", name: "Premier Pas", description: "Complète ta première tâche", icon: Star, color: "var(--accent-green)", condition: (s) => s.totalTasksCompleted >= 1 },
+  { id: "task_10", name: "Machine", description: "10 tâches complétées", icon: Zap, color: "var(--accent-cyan)", condition: (s) => s.totalTasksCompleted >= 10 },
+  { id: "task_50", name: "Inarrêtable", description: "50 tâches complétées", icon: Flame, color: "var(--accent-orange)", condition: (s) => s.totalTasksCompleted >= 50 },
+  { id: "task_100", name: "Centurion", description: "100 tâches complétées", icon: Crown, color: "var(--accent-purple)", condition: (s) => s.totalTasksCompleted >= 100 },
+  { id: "streak_3", name: "Momentum", description: "Streak de 3", icon: Flame, color: "var(--accent-orange)", condition: (s) => s.streak >= 3 },
+  { id: "streak_7", name: "Semaine en Feu", description: "Streak de 7", icon: Flame, color: "var(--accent-red)", condition: (s) => s.streak >= 7 },
+  { id: "focus_60", name: "Deep Worker", description: "60 min de focus total", icon: Target, color: "var(--accent-cyan)", condition: (s) => s.totalFocusMinutes >= 60 },
+  { id: "focus_300", name: "Zone Master", description: "5h de focus total", icon: Target, color: "var(--accent-purple)", condition: (s) => s.totalFocusMinutes >= 300 },
+  { id: "xp_1000", name: "XP Hunter", description: "Atteins 1000 XP", icon: Sparkles, color: "var(--accent-orange)", condition: (s) => s.xp >= 1000 },
+  { id: "xp_5000", name: "Légende", description: "Atteins 5000 XP", icon: Medal, color: "var(--accent-orange)", condition: (s) => s.xp >= 5000 },
+  { id: "session_5", name: "Focus Addict", description: "5 sessions focus", icon: Target, color: "var(--accent-green)", condition: (s) => s.hyperfocusSessions >= 5 },
 ];
 
 const DAILY_CHALLENGES = [
@@ -76,10 +76,10 @@ const DAILY_CHALLENGES = [
 ];
 
 const CATEGORY_LABELS: Record<string, { label: string; color: string }> = {
-  pause: { label: "Pauses", color: "#4ade80" },
-  plaisir: { label: "Plaisirs", color: "#67e8f9" },
-  productivite: { label: "Productivité", color: "#a78bfa" },
-  premium: { label: "Premium", color: "#fbbf24" },
+  pause: { label: "Pauses", color: "var(--accent-green)" },
+  plaisir: { label: "Plaisirs", color: "var(--accent-cyan)" },
+  productivite: { label: "Productivité", color: "var(--accent-purple)" },
+  premium: { label: "Premium", color: "var(--accent-orange)" },
 };
 
 const LEVEL_TITLES = [
@@ -102,45 +102,45 @@ function RewardCard({ reward, xp, onBuy }: { reward: Reward; xp: number; onBuy: 
       layout
       initial={{ opacity: 0, scale: 0.97 }}
       animate={{ opacity: 1, scale: 1 }}
-      whileHover={{ y: -3, transition: { duration: 0.2 } }}
-      className="flex flex-col rounded-2xl overflow-hidden transition-all relative"
+      whileHover={{ scale: 1.015, transition: { duration: 0.2 } }}
+      className="flex flex-col rounded-3xl overflow-hidden transition-all relative bg-surface border border-b-primary"
       style={{
-        background: "rgba(255,255,255,0.02)",
-        border: `1px solid ${canAfford ? rarityColor + "25" : "rgba(255,255,255,0.04)"}`,
+        border: `1px solid ${canAfford ? `${rarityColor}30` : "var(--border-primary)"}`,
+        boxShadow: "0 1px 3px rgba(0,0,0,0.05)",
       }}
     >
       {/* Rarity indicator */}
       <div className="absolute top-3 right-3">
-        <div className="w-1.5 h-1.5 rounded-full" style={{ background: rarityColor, boxShadow: `0 0 6px ${rarityColor}40` }} />
+        <div className="w-1.5 h-1.5 rounded-full" style={{ background: rarityColor, boxShadow: `0 0 6px ${rarityColor}50` }} />
       </div>
 
       <div className="flex items-center justify-center py-6 text-3xl relative">
         {reward.rarity === "legendary" && (
           <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div className="w-16 h-16 rounded-full" style={{ background: `radial-gradient(circle, ${rarityColor}08 0%, transparent 70%)` }} />
+            <div className="w-16 h-16 rounded-full" style={{ background: `radial-gradient(circle, ${rarityColor}12 0%, transparent 70%)` }} />
           </div>
         )}
         <span className="relative z-10">{reward.emoji}</span>
       </div>
 
       <div className="flex flex-col gap-1.5 px-4 py-2 flex-1">
-        <p className="text-sm text-zinc-200" style={{ fontWeight: 450 }}>{reward.name}</p>
-        <p className="text-[11px] text-zinc-600 leading-relaxed flex-1">{reward.description}</p>
+        <p className="text-sm text-t-primary" style={{ fontWeight: 450 }}>{reward.name}</p>
+        <p className="text-[12px] text-t-secondary leading-relaxed flex-1">{reward.description}</p>
       </div>
 
       <div className="px-4 pb-4 flex items-center justify-between">
         <div className="flex items-center gap-1.5">
-          <Zap size={10} style={{ color: "#fbbf24" }} />
-          <span className="text-xs font-medium tabular-nums" style={{ color: "#fbbf24" }}>{reward.cost}</span>
+          <Zap size={10} className="text-accent-orange" />
+          <span className="text-xs font-medium tabular-nums text-accent-orange">{reward.cost}</span>
         </div>
         <button
           onClick={() => canAfford && onBuy(reward)}
           disabled={!canAfford}
           className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-xl font-medium transition-all disabled:opacity-20 disabled:cursor-not-allowed"
           style={{
-            background: canAfford ? `${rarityColor}10` : "transparent",
-            border: `1px solid ${canAfford ? rarityColor + "25" : "rgba(255,255,255,0.04)"}`,
-            color: canAfford ? rarityColor : "#3f3f46",
+            background: canAfford ? "var(--accent-blue-light)" : "transparent",
+            border: `1px solid ${canAfford ? "var(--accent-blue)" : "var(--border-primary)"}`,
+            color: canAfford ? "var(--accent-blue)" : "var(--text-tertiary)",
           }}
         >
           {canAfford ? "Acheter" : <Lock size={10} />}
@@ -215,22 +215,21 @@ export default function BoutiqueDopamine() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4" style={{ borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
-        <h1 className="text-lg font-semibold text-zinc-100 tracking-tight flex items-center gap-2.5">
-          <ShoppingBag size={18} className="text-zinc-400" /> Boutique Dopamine
+      <div className="shrink-0 px-7 pt-6 pb-4 border-b-b-primary">
+        <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
+          <ShoppingBag size={18} className="text-t-secondary" /> Boutique Dopamine
         </h1>
-        <p className="text-xs text-zinc-600 mt-1">Échange tes XP contre des récompenses</p>
+        <p className="text-xs text-t-secondary mt-1">Échange tes XP contre des récompenses</p>
       </div>
 
       {/* XP Status Bar — Premium */}
-      <div className="shrink-0 px-7 py-4 flex items-center gap-4" style={{ background: "rgba(255,255,255,0.01)", borderBottom: "1px solid rgba(255,255,255,0.04)" }}>
+      <div className="shrink-0 px-7 py-4 flex items-center gap-4 bg-surface border-b-b-primary">
         <div className="relative">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-base"
-            style={{ background: "rgba(251,191,36,0.08)", color: "#fbbf24", border: "1px solid rgba(251,191,36,0.15)" }}
+          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-base bg-accent-blue-light text-accent-blue border border-b-primary"
           >{level}</div>
           {streak > 0 && (
-            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold"
-              style={{ background: "#ef4444", color: "white", border: "2px solid #0a0a0a" }}>
+            <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold bg-accent-red text-white border border-b-primary"
+            >
               {streak}
             </div>
           )}
@@ -238,22 +237,22 @@ export default function BoutiqueDopamine() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-zinc-300">{levelTitle}</span>
-              <span className="text-[10px] px-1.5 py-0.5 rounded-md" style={{ background: "rgba(167,139,250,0.08)", color: "#a78bfa" }}>Niv. {level}</span>
+              <span className="text-xs font-medium text-t-primary">{levelTitle}</span>
+              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent-blue-light text-accent-blue">Niv. {level}</span>
             </div>
-            <span className="text-xs font-medium tabular-nums" style={{ color: "#fbbf24" }}>{xp.toLocaleString()} XP</span>
+            <span className="text-xs font-medium tabular-nums text-accent-orange">{xp.toLocaleString()} XP</span>
           </div>
-          <div className="h-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
+          <div className="h-2 rounded-full overflow-hidden bg-b-primary">
             <motion.div
               className="h-full rounded-full"
-              style={{ background: "linear-gradient(90deg, #fbbf24, #f59e0b)" }}
+              style={{ background: "linear-gradient(90deg, var(--accent-blue), var(--accent-blue))" }}
               animate={{ width: `${progress}%` }}
               transition={{ type: "spring", stiffness: 80, damping: 20 }}
             />
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-zinc-700">{nextLevelXp - xp} XP pour le niveau {level + 1}</span>
-            <span className="text-[10px] text-zinc-700">{totalTasksCompleted} tâches · {totalFocusMinutes} min focus</span>
+            <span className="text-[10px] text-t-secondary">{nextLevelXp - xp} XP pour le niveau {level + 1}</span>
+            <span className="text-[10px] text-t-secondary">{totalTasksCompleted} tâches · {totalFocusMinutes} min focus</span>
           </div>
         </div>
       </div>
@@ -270,9 +269,9 @@ export default function BoutiqueDopamine() {
             onClick={() => setActiveTab(tab.id)}
             className="text-xs px-3.5 py-2 rounded-xl font-medium whitespace-nowrap transition-all flex items-center gap-1.5"
             style={{
-              background: activeTab === tab.id ? "rgba(255,255,255,0.08)" : "transparent",
-              border: `1px solid ${activeTab === tab.id ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}`,
-              color: activeTab === tab.id ? "#e4e4e7" : "#71717a",
+              background: activeTab === tab.id ? "var(--accent-blue-light)" : "white",
+              border: `1px solid ${activeTab === tab.id ? "var(--accent-blue)" : "var(--border-primary)"}`,
+              color: activeTab === tab.id ? "var(--accent-blue)" : "var(--text-secondary)",
             }}
           >
             <tab.icon size={12} /> {tab.label}
@@ -289,11 +288,11 @@ export default function BoutiqueDopamine() {
               <div className="flex items-center gap-2 py-3 overflow-x-auto">
                 <button
                   onClick={() => setActiveCategory(null)}
-                  className="text-[11px] px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all"
+                  className="text-[13px] px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all"
                   style={{
-                    background: activeCategory === null ? "rgba(255,255,255,0.08)" : "transparent",
-                    border: `1px solid ${activeCategory === null ? "rgba(255,255,255,0.12)" : "rgba(255,255,255,0.04)"}`,
-                    color: activeCategory === null ? "#e4e4e7" : "#71717a",
+                    background: activeCategory === null ? "var(--accent-blue-light)" : "white",
+                    border: `1px solid ${activeCategory === null ? "var(--accent-blue)" : "var(--border-primary)"}`,
+                    color: activeCategory === null ? "var(--accent-blue)" : "var(--text-secondary)",
                   }}
                 >Tous ({REWARDS.length})</button>
                 {categories.map((cat) => {
@@ -303,11 +302,11 @@ export default function BoutiqueDopamine() {
                     <button
                       key={cat}
                       onClick={() => setActiveCategory(activeCategory === cat ? null : cat)}
-                      className="text-[11px] px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all"
+                      className="text-[13px] px-3 py-1.5 rounded-xl font-medium whitespace-nowrap transition-all"
                       style={{
-                        background: activeCategory === cat ? `${cfg.color}10` : "transparent",
-                        border: `1px solid ${activeCategory === cat ? cfg.color + "25" : "rgba(255,255,255,0.04)"}`,
-                        color: activeCategory === cat ? cfg.color : "#71717a",
+                        background: activeCategory === cat ? `${cfg.color}15` : "white",
+                        border: `1px solid ${activeCategory === cat ? cfg.color + "30" : "var(--border-primary)"}`,
+                        color: activeCategory === cat ? cfg.color : "var(--text-secondary)",
                       }}
                     >{cfg.label} ({count})</button>
                   );
@@ -323,9 +322,9 @@ export default function BoutiqueDopamine() {
           {activeTab === "achievements" && (
             <motion.div key="achievements" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3 pt-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[11px] text-zinc-500">{unlockedAchievements.length}/{ACHIEVEMENTS.length} débloqués</span>
-                <div className="h-1.5 w-24 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.04)" }}>
-                  <div className="h-full rounded-full" style={{ width: `${(unlockedAchievements.length / ACHIEVEMENTS.length) * 100}%`, background: "linear-gradient(90deg, #4ade80, #67e8f9)" }} />
+                <span className="text-[12px] text-t-secondary">{unlockedAchievements.length}/{ACHIEVEMENTS.length} débloqués</span>
+                <div className="h-1.5 w-24 rounded-full overflow-hidden bg-b-primary">
+                  <div className="h-full rounded-full" style={{ width: `${(unlockedAchievements.length / ACHIEVEMENTS.length) * 100}%`, background: "linear-gradient(90deg, var(--accent-green), var(--accent-blue))" }} />
                 </div>
               </div>
 
@@ -335,25 +334,25 @@ export default function BoutiqueDopamine() {
                   <motion.div
                     key={a.id}
                     layout
-                    className="flex items-center gap-4 px-4 py-3.5 rounded-2xl transition-all"
+                    className="flex items-center gap-4 px-4 py-3.5 rounded-3xl transition-all"
                     style={{
-                      background: unlocked ? `${a.color}06` : "rgba(255,255,255,0.02)",
-                      border: `1px solid ${unlocked ? a.color + "20" : "rgba(255,255,255,0.04)"}`,
+                      background: unlocked ? `${a.color}12` : "white",
+                      border: `1px solid ${unlocked ? a.color + "30" : "var(--border-primary)"}`,
                       opacity: unlocked ? 1 : 0.5,
                     }}
                   >
                     <div
                       className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
                       style={{
-                        background: unlocked ? `${a.color}12` : "rgba(255,255,255,0.03)",
-                        border: `1px solid ${unlocked ? a.color + "25" : "rgba(255,255,255,0.06)"}`,
+                        background: unlocked ? `${a.color}15` : "var(--surface-4)",
+                        border: `1px solid ${unlocked ? a.color + "30" : "var(--border-primary)"}`,
                       }}
                     >
-                      <a.icon size={16} style={{ color: unlocked ? a.color : "#3f3f46" }} />
+                      <a.icon size={16} style={{ color: unlocked ? a.color : "var(--text-tertiary)" }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium" style={{ color: unlocked ? "#e4e4e7" : "#52525b" }}>{a.name}</p>
-                      <p className="text-[11px]" style={{ color: unlocked ? "#71717a" : "#3f3f46" }}>{a.description}</p>
+                      <p className="text-sm font-medium" style={{ color: unlocked ? "var(--text-primary)" : "var(--text-secondary)" }}>{a.name}</p>
+                      <p className="text-[12px]" style={{ color: unlocked ? "var(--text-secondary)" : "var(--text-tertiary)" }}>{a.description}</p>
                     </div>
                     {unlocked && (
                       <CheckCircle2 size={16} style={{ color: a.color }} className="shrink-0" />
@@ -368,29 +367,28 @@ export default function BoutiqueDopamine() {
             <motion.div key="challenges" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-4 pt-3">
               {/* Daily challenge */}
               {currentChallenge && (
-                <div className="rounded-2xl p-5 flex flex-col gap-3 relative overflow-hidden"
-                  style={{ background: "rgba(251,191,36,0.04)", border: "1px solid rgba(251,191,36,0.12)" }}>
-                  <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle at top right, rgba(251,191,36,0.06), transparent 70%)" }} />
+                <div className="rounded-3xl p-6 flex flex-col gap-3 relative overflow-hidden"
+                  style={{ background: "var(--accent-orange-light)", border: "1px solid var(--accent-orange-light)" }}>
+                  <div className="absolute top-0 right-0 w-32 h-32 pointer-events-none" style={{ background: "radial-gradient(circle at top right, var(--accent-orange), transparent 70%)" }} />
                   <div className="flex items-center gap-2">
-                    <Sparkles size={14} style={{ color: "#fbbf24" }} />
-                    <span className="text-[10px] font-medium uppercase tracking-widest" style={{ color: "#fbbf24" }}>Défi du jour</span>
+                    <Sparkles size={14} className="text-accent-orange" />
+                    <span className="text-[12px] font-medium uppercase tracking-widest text-accent-orange">Défi du jour</span>
                   </div>
-                  <p className="text-base font-medium text-zinc-200">{currentChallenge.name}</p>
-                  <p className="text-[12px] text-zinc-500">{currentChallenge.description}</p>
+                  <p className="text-base font-medium text-t-primary">{currentChallenge.name}</p>
+                  <p className="text-[13px] text-t-secondary">{currentChallenge.description}</p>
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-1.5">
-                      <Zap size={11} style={{ color: "#fbbf24" }} />
-                      <span className="text-xs font-medium" style={{ color: "#fbbf24" }}>+{currentChallenge.xpReward} XP</span>
+                      <Zap size={11} className="text-accent-orange" />
+                      <span className="text-xs font-medium text-accent-orange">+{currentChallenge.xpReward} XP</span>
                     </div>
                     {dailyChallengeCompleted ? (
-                      <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "#4ade80" }}>
+                      <span className="flex items-center gap-1.5 text-xs font-medium text-accent-green">
                         <CheckCircle2 size={13} /> Complété
                       </span>
                     ) : (
                       <button
                         onClick={() => completeDailyChallenge()}
-                        className="text-xs px-4 py-2 rounded-xl font-medium transition-all"
-                        style={{ background: "rgba(251,191,36,0.1)", border: "1px solid rgba(251,191,36,0.2)", color: "#fbbf24" }}
+                        className="text-xs px-4 py-2 rounded-xl font-medium transition-all bg-accent-blue-light border border-b-primary text-accent-blue"
                       >Valider</button>
                     )}
                   </div>
@@ -398,32 +396,32 @@ export default function BoutiqueDopamine() {
               )}
 
               {/* All challenges list */}
-              <p className="text-[10px] font-medium text-zinc-600 uppercase tracking-widest px-1">Défis disponibles</p>
+              <p className="text-[12px] font-medium text-t-secondary uppercase tracking-widest px-1">Défis disponibles</p>
               {DAILY_CHALLENGES.map((c) => {
                 const isActive = c.id === dailyChallengeId;
                 const isCompleted = isActive && dailyChallengeCompleted;
                 return (
                   <div
                     key={c.id}
-                    className="flex items-center gap-3 px-4 py-3 rounded-2xl transition-all"
+                    className="flex items-center gap-3 px-4 py-3 rounded-3xl transition-all"
                     style={{
-                      background: isActive ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.01)",
-                      border: `1px solid ${isActive ? "rgba(255,255,255,0.08)" : "rgba(255,255,255,0.03)"}`,
+                      background: isActive ? "white" : "var(--surface-4)",
+                      border: `1px solid var(--border-primary)`,
                       opacity: isActive ? 1 : 0.5,
                     }}
                   >
-                    <div className="w-8 h-8 rounded-xl flex items-center justify-center" style={{ background: "rgba(255,255,255,0.04)" }}>
-                      <Target size={13} className="text-zinc-500" />
+                    <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-b-primary">
+                      <Target size={13} className="text-t-secondary" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-zinc-300">{c.name}</p>
-                      <p className="text-[10px] text-zinc-600">{c.description}</p>
+                      <p className="text-sm text-t-primary">{c.name}</p>
+                      <p className="text-[12px] text-t-secondary">{c.description}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
-                      <Zap size={9} style={{ color: "#fbbf24" }} />
-                      <span className="text-[10px] font-medium" style={{ color: "#fbbf24" }}>+{c.xpReward}</span>
+                      <Zap size={9} className="text-accent-orange" />
+                      <span className="text-[12px] font-medium text-accent-orange">+{c.xpReward}</span>
                     </div>
-                    {isCompleted && <CheckCircle2 size={14} style={{ color: "#4ade80" }} className="shrink-0" />}
+                    {isCompleted && <CheckCircle2 size={14} className="text-accent-green shrink-0" />}
                   </div>
                 );
               })}
@@ -439,8 +437,8 @@ export default function BoutiqueDopamine() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium z-50"
-            style={{ background: "rgba(20,20,20,0.95)", backdropFilter: "blur(20px)", border: "1px solid rgba(74,222,128,0.2)", color: "#4ade80", boxShadow: "0 8px 32px rgba(0,0,0,0.5)" }}
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium z-50 bg-surface border border-b-primary text-accent-green"
+            style={{ backdropFilter: "blur(20px)", boxShadow: "0 8px 32px rgba(0,0,0,0.1)" }}
           ><CheckCircle2 size={14} /> {toast}</motion.div>
         )}
       </AnimatePresence>

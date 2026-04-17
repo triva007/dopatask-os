@@ -23,7 +23,8 @@ const STEPS = [
     subtitle: "3 tâches max pour aujourd'hui.",
     body: "Trop de tâches = cerveau qui freeze. DopaTask t'oblige à choisir seulement 3 à 5 priorités. Le reste attend dans l'Inbox.",
     hint: "Moins tu vois, plus tu agis.",
-  },  {
+  },
+  {
     icon: Swords,
     accent: "var(--accent-purple)",
     tag: "Loi n°3 — Dopamine & Challenge",
@@ -54,6 +55,7 @@ const modalVariants = {
   visible: { opacity: 1, scale: 1, y: 0, transition: { type: "spring" as const, stiffness: 320, damping: 28 } },
   exit:    { opacity: 0, scale: 0.96, y: 16, transition: { duration: 0.2, ease: "easeIn" as const } },
 };
+
 const stepVariants = {
   enter:  (dir: number) => ({ opacity: 0, x: dir > 0 ? 32 : -32 }),
   center: { opacity: 1, x: 0, transition: { duration: 0.28, ease: "easeOut" as const } },
@@ -82,6 +84,7 @@ export default function OnboardingModal() {
   };
 
   if (hasSeenTutorial) return null;
+
   return (
     <AnimatePresence>
       <motion.div
@@ -98,7 +101,7 @@ export default function OnboardingModal() {
           variants={modalVariants}
           initial="hidden" animate="visible" exit="exit"
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-lg mx-4 rounded-3xl border-b-primary bg-surface shadow-2xl overflow-hidden"
+          className="relative w-full max-w-lg mx-4 rounded-3xl border border-b-primary bg-surface shadow-2xl overflow-hidden"
         >
           <motion.div
             key={`glow-${stepIndex}`}
@@ -112,6 +115,7 @@ export default function OnboardingModal() {
             className="pointer-events-none absolute inset-x-0 top-0 h-40 rounded-3xl"
             style={{ background: `radial-gradient(ellipse at 50% 0%, ${step.accent}, transparent 70%)` }}
           />
+
           <div className="relative z-10 px-8 pt-10 pb-8 flex flex-col gap-8">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -141,13 +145,14 @@ export default function OnboardingModal() {
                 <div className="flex flex-col gap-1.5">
                   <span className="text-xs font-semibold tracking-wider uppercase" style={{ color: step.accent }}>
                     {step.tag}
-                  </span>                  <h2 className="text-2xl font-bold text-t-primary leading-tight tracking-tight">{step.title}</h2>
+                  </span>
+                  <h2 className="text-2xl font-bold text-t-primary leading-tight tracking-tight">{step.title}</h2>
                   <p className="text-base font-medium text-t-secondary">{step.subtitle}</p>
                 </div>
 
                 <p className="text-sm text-t-secondary leading-relaxed">{step.body}</p>
 
-                <div className="inline-flex self-start items-center gap-2 px-3 py-1.5 rounded-full border-b-primary bg-empty-bg">
+                <div className="inline-flex self-start items-center gap-2 px-3 py-1.5 rounded-full border border-b-primary bg-empty-bg">
                   <span className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: step.accent }} />
                   <span className="text-xs text-t-secondary italic">{step.hint}</span>
                 </div>
@@ -160,13 +165,14 @@ export default function OnboardingModal() {
                   <motion.button
                     key={i}
                     onClick={() => handleDotClick(i)}
-                    animate={{ width: i === stepIndex ? 20 : 6, backgroundColor: i === stepIndex ? step.accent : "var(--border-b-hover)" }}
+                    animate={{ width: i === stepIndex ? 20 : 6, backgroundColor: i === stepIndex ? step.accent : "var(--border-hover)" }}
                     transition={{ type: "spring", stiffness: 400, damping: 24 }}
                     className="h-1.5 rounded-full"
                     aria-label={`Étape ${i + 1}`}
                   />
                 ))}
               </div>
+
               <motion.button
                 onClick={handleNext}
                 whileHover={{ scale: 1.03 }}
