@@ -1,27 +1,33 @@
 import dynamic from "next/dynamic";
 
-const TimelineColumn = dynamic(() => import("@/components/dashboard/TimelineColumn"), { ssr: false });
-const FocusColumn = dynamic(() => import("@/components/dashboard/FocusColumn"), { ssr: false });
-const DopamineColumn = dynamic(() => import("@/components/dashboard/DopamineColumn"), { ssr: false });
+const FocusHero = dynamic(() => import("@/components/dashboard/FocusHero"), { ssr: false });
+const DayPanel = dynamic(() => import("@/components/dashboard/DayPanel"), { ssr: false });
+const ProgressPanel = dynamic(() => import("@/components/dashboard/ProgressPanel"), { ssr: false });
 const OnboardingWrapper = dynamic(() => import("@/components/onboarding/OnboardingWrapper"), { ssr: false });
 
 export default function Home() {
   return (
     <>
-      <div className="flex h-screen overflow-hidden select-none bg-background">
-        {/* Timeline — 22% */}
-        <aside className="h-full overflow-hidden border-r border-b-primary" style={{ width: "24%", minWidth: 260 }}>
-          <TimelineColumn />
+      <div className="flex h-screen overflow-hidden select-none bg-background ambient-bg">
+        {/* Jour — panneau gauche discret */}
+        <aside
+          className="h-full overflow-hidden relative z-10"
+          style={{ width: 300, minWidth: 280 }}
+        >
+          <DayPanel />
         </aside>
 
-        {/* Focus — flexible center */}
-        <main className="flex-1 h-full overflow-hidden border-r border-b-primary">
-          <FocusColumn />
+        {/* Focus — hero central */}
+        <main className="flex-1 h-full overflow-hidden relative z-10 border-l border-r border-b-primary">
+          <FocusHero />
         </main>
 
-        {/* Dopamine — 28% */}
-        <aside className="h-full overflow-hidden" style={{ width: "26%", minWidth: 300 }}>
-          <DopamineColumn />
+        {/* Progression — panneau droite */}
+        <aside
+          className="h-full overflow-hidden relative z-10"
+          style={{ width: 300, minWidth: 280 }}
+        >
+          <ProgressPanel />
         </aside>
       </div>
 

@@ -1,195 +1,198 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard,
-  ListChecks,
-  Target,
-  FlaskConical,
-  ShoppingBag,
-  Settings,
-  FolderKanban,
-  Eye,
-  BookOpen,
-  Inbox,
-  Moon,
-  Sun,
-  Rocket,
+  LayoutDashboard, ListChecks, Target, FlaskConical, ShoppingBag, Settings,
+  FolderKanban, Eye, BookOpen, Inbox, Moon, Sun, Rocket,
+  type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 
 type NavItem = {
   href: string;
   label: string;
-  Icon: React.ComponentType<any>;
+  Icon: LucideIcon;
   badge?: "inbox_count" | "today_tasks" | "pending_tasks";
 };
 
-const NAV_ITEMS: NavItem[] = [
-  { href: "/",           label: "Dashboard",    Icon: LayoutDashboard, badge: "today_tasks" },
-  { href: "/inbox",      label: "Inbox",        Icon: Inbox,           badge: "inbox_count" },
-  { href: "/taches",     label: "Tâches",       Icon: ListChecks,      badge: "pending_tasks" },
-  { href: "/projets",    label: "Projets",      Icon: FolderKanban    },
-  { href: "/objectifs",  label: "Objectifs",    Icon: Target          },
-  { href: "/vision",     label: "Vision Board", Icon: Eye             },
-  { href: "/journal",    label: "Journal",      Icon: BookOpen        },
-  { href: "/sprints",    label: "Sprints",      Icon: Rocket          },
-  { href: "/hyperfocus", label: "Focus Lab",    Icon: FlaskConical    },
-  { href: "/boutique",   label: "Boutique",     Icon: ShoppingBag     },
+const NAV_PRIMARY: NavItem[] = [
+  { href: "/",        label: "Dashboard", Icon: LayoutDashboard, badge: "today_tasks" },
+  { href: "/inbox",   label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
+  { href: "/taches",  label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
 ];
+
+const NAV_SECONDARY: NavItem[] = [
+  { href: "/projets",    label: "Projets",      Icon: FolderKanban },
+  { href: "/objectifs",  label: "Objectifs",    Icon: Target       },
+  { href: "/sprints",    label: "Sprints",      Icon: Rocket       },
+  { href: "/hyperfocus", label: "Focus Lab",    Icon: FlaskConical },
+];
+
+const NAV_TERTIARY: NavItem[] = [
+  { href: "/vision",   label: "Vision",    Icon: Eye      },
+  { href: "/journal",  label: "Journal",   Icon: BookOpen },
+  { href: "/boutique", label: "Boutique",  Icon: ShoppingBag },
+];
+
+function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: boolean; badgeCount: number }) {
+  const { Icon, href, label, badge } = item;
+  return (
+    <Link
+      href={href}
+      className="relative flex items-center px-3 py-2 rounded-lg group transition-colors duration-150"
+    >
+      {isActive && (
+        <motion.div
+          layoutId="sidebar-active"
+          className="absolute inset-0 rounded-lg"
+          style={{ background: "var(--sidebar-active-bg)" }}
+          initial={false}
+          transition={{ type: "spring", stiffness: 400, damping: 32 }}
+        />
+      )}
+      <div className="relative z-10 flex items-center gap-2.5 w-full">
+        <Icon
+          size={15}
+          className={`shrink-0 transition-colors duration-150 ${
+            isActive ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-t-primary"
+          }`}
+          strokeWidth={1.75}
+        />
+        <span
+          className={`text-[13px] transition-colors duration-150 leading-none flex-1 ${
+            isActive
+              ? "text-sidebar-active-text font-medium"
+              : "text-sidebar-inactive font-normal group-hover:text-t-primary"
+          }`}
+        >
+          {label}
+        </span>
+        {badge && badgeCount > 0 && (
+          <motion.span
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-semibold rounded-full whitespace-nowrap tabular-nums"
+            style={{
+              background: isActive ? "var(--accent-blue)" : "var(--badge-bg)",
+              color: isActive ? "#fff" : "var(--badge-text)",
+            }}
+          >
+            {badgeCount}
+          </motion.span>
+        )}
+      </div>
+    </Link>
+  );
+}
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const [brainsInFocus, setBrainsInFocus] = useState(150);
   const theme = useAppStore((s) => s.theme);
   const toggleTheme = useAppStore((s) => s.toggleTheme);
   const inboxCount = useAppStore((s) => s.inboxItems.filter((i) => !i.processed).length);
   const todayTasks = useAppStore((s) => s.tasks.filter((t) => t.status === "today").length);
   const pendingTasks = useAppStore((s) => s.tasks.filter((t) => ["todo", "in_progress"].includes(t.status)).length);
 
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBrainsInFocus(Math.floor(Math.random() * (300 - 100 + 1)) + 100);
-    }, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  const countFor = (badge?: string) => {
+    if (badge === "inbox_count") return inboxCount;
+    if (badge === "today_tasks") return todayTasks;
+    if (badge === "pending_tasks") return pendingTasks;
+    return 0;
+  };
 
   return (
-    <nav className="flex flex-col h-full w-full px-4 py-5 gap-0.5">
-      {/* Logo */}
-      <div className="flex items-center gap-3 pb-6 pt-2 px-1">
-        <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0 bg-sidebar-active-bg shadow-[0_2px_8px_rgba(0,0,0,0.04)]">
-          <span className="text-[13px] text-sidebar-active-text">⚡</span>
+    <nav className="flex flex-col h-full w-full px-3 py-6 gap-0.5">
+      {/* Logo — minimal */}
+      <div className="flex items-center gap-2.5 pb-7 pt-1 px-2">
+        <div
+          className="w-7 h-7 rounded-[8px] flex items-center justify-center shrink-0"
+          style={{
+            background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))",
+          }}
+        >
+          <span className="text-[13px] text-white font-semibold">D</span>
         </div>
         <div>
-          <p className="text-[14px] font-medium leading-none tracking-tight text-t-primary">
+          <p className="text-[13px] font-semibold leading-none tracking-tight text-t-primary">
             DopaTask
           </p>
-          <p className="text-[10px] leading-none mt-1 font-medium text-sidebar-inactive">
-            v4.0
+          <p className="text-[9px] leading-none mt-1 font-medium text-t-tertiary tracking-wider uppercase">
+            v4.1 · premium
           </p>
         </div>
       </div>
 
-      {/* Navigation */}
-      <div className="flex flex-col gap-1 flex-1 overflow-y-auto w-full px-1">
-        {NAV_ITEMS.map(({ href, label, Icon, badge }) => {
-          const isActive = pathname === href;
-
-          let badgeCount = 0;
-          if (badge === "inbox_count") badgeCount = inboxCount;
-          else if (badge === "today_tasks") badgeCount = todayTasks;
-          else if (badge === "pending_tasks") badgeCount = pendingTasks;
-
-          return (
-            <Link
-              key={href}
-              href={href}
-              className="relative flex items-center px-3 py-2.5 rounded-xl group transition-colors duration-200"
-            >
-              {isActive && (
-                <motion.div
-                  layoutId="sidebar-active"
-                  className="absolute inset-0 bg-sidebar-active-bg rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
-                  initial={false}
-                  transition={{ type: "spring", stiffness: 350, damping: 30 }}
-                />
-              )}
-              <div className="relative z-10 flex items-center gap-3 w-full">
-                <Icon
-                  size={17}
-                  className={`shrink-0 transition-all duration-300 group-hover:scale-110 ${
-                    isActive ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-t-primary"
-                  }`}
-                  strokeWidth={1.5}
-                />
-                <div className="flex items-center gap-2">
-                  <span
-                    className={`text-[14px] transition-colors duration-200 leading-none ${
-                      isActive ? "text-sidebar-active-text font-medium" : "text-sidebar-inactive font-normal group-hover:text-t-primary"
-                    }`}
-                  >
-                    {label}
-                  </span>
-                  {badge && badgeCount > 0 && (
-                    <motion.span
-                      initial={{ scale: 0.8, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      className="inline-flex items-center justify-center px-2 py-0.5 bg-red-500 text-white text-[10px] font-semibold rounded-full whitespace-nowrap"
-                    >
-                      {badgeCount}
-                    </motion.span>
-                  )}
-                </div>
-              </div>
-            </Link>
-          );
-        })}
+      {/* Primary group */}
+      <div className="flex flex-col gap-0.5 px-1">
+        {NAV_PRIMARY.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            badgeCount={countFor(item.badge)}
+          />
+        ))}
       </div>
 
-      {/* Separator */}
-      <div className="h-px my-2 bg-b-primary" />
+      {/* Divider + Secondary */}
+      <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
+        Organiser
+      </p>
+      <div className="flex flex-col gap-0.5 px-1">
+        {NAV_SECONDARY.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            badgeCount={countFor(item.badge)}
+          />
+        ))}
+      </div>
+
+      {/* Divider + Tertiary */}
+      <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
+        Explorer
+      </p>
+      <div className="flex flex-col gap-0.5 px-1">
+        {NAV_TERTIARY.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            badgeCount={countFor(item.badge)}
+          />
+        ))}
+      </div>
+
+      {/* Spacer */}
+      <div className="flex-1" />
 
       {/* Settings */}
       <div className="px-1">
-        <Link
-          href="/reglages"
-          className="relative flex items-center px-3 py-2.5 rounded-xl group transition-colors duration-200"
-        >
-          {pathname === "/reglages" && (
-            <motion.div
-              layoutId="sidebar-active"
-              className="absolute inset-0 bg-sidebar-active-bg rounded-xl shadow-[0_1px_3px_rgba(0,0,0,0.02)]"
-              initial={false}
-              transition={{ type: "spring", stiffness: 350, damping: 30 }}
-            />
-          )}
-          <div className="relative z-10 flex items-center gap-3 w-full">
-            <Settings
-              size={17}
-              className={`shrink-0 transition-all duration-300 group-hover:rotate-45 ${
-                pathname === "/reglages" ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-t-primary"
-              }`}
-              strokeWidth={1.5}
-            />
-            <span
-              className={`text-[14px] transition-colors duration-200 leading-none ${
-                pathname === "/reglages" ? "text-sidebar-active-text font-medium" : "text-sidebar-inactive font-normal group-hover:text-t-primary"
-              }`}
-            >
-              Réglages
-            </span>
-          </div>
-        </Link>
+        <NavLink
+          item={{ href: "/reglages", label: "Réglages", Icon: Settings }}
+          isActive={pathname === "/reglages"}
+          badgeCount={0}
+        />
       </div>
 
-      {/* Footer */}
-      <div className="pt-4 mt-1 flex flex-col gap-4">
-        {/* Body Doubling Indicator */}
-        <div className="px-2 py-2 bg-surface-2 rounded-lg border border-b-primary">
-          <p className="text-[11px] text-center font-medium text-sidebar-inactive">
-            {brainsInFocus} cerveaux en focus
-          </p>
-        </div>
-
-        <p className="text-[10px] leading-relaxed text-t-tertiary">
-          DopaTask OS 4.0
-        </p>
-
-        {/* Theme Toggle */}
+      {/* Theme toggle */}
+      <div className="px-2 pt-3">
         <button
           onClick={toggleTheme}
-          className="flex items-center justify-center w-full py-2 px-3 rounded-lg bg-surface border border-b-primary hover:bg-surface-3 transition-colors duration-200 group"
-          title={`Switch to ${theme === "light" ? "dark" : "light"} mode`}
+          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors duration-150 group hover:bg-surface-2"
+          title={`Thème ${theme === "light" ? "sombre" : "clair"}`}
         >
           {theme === "light" ? (
-            <Moon size={18} className="text-sidebar-inactive group-hover:text-t-primary transition-colors" />
+            <Moon size={14} className="text-sidebar-inactive group-hover:text-t-primary transition-colors" strokeWidth={1.75} />
           ) : (
-            <Sun size={18} className="text-sidebar-inactive group-hover:text-t-primary transition-colors" />
+            <Sun size={14} className="text-sidebar-inactive group-hover:text-t-primary transition-colors" strokeWidth={1.75} />
           )}
+          <span className="text-[12px] text-sidebar-inactive group-hover:text-t-primary transition-colors">
+            {theme === "light" ? "Mode sombre" : "Mode clair"}
+          </span>
         </button>
       </div>
     </nav>
