@@ -215,7 +215,7 @@ export default function BoutiqueDopamine() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4 border-b-b-primary">
+      <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary">
         <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
           <ShoppingBag size={18} className="text-t-secondary" /> Boutique Dopamine
         </h1>
@@ -223,7 +223,7 @@ export default function BoutiqueDopamine() {
       </div>
 
       {/* XP Status Bar — Premium */}
-      <div className="shrink-0 px-7 py-4 flex items-center gap-4 bg-surface border-b-b-primary">
+      <div className="shrink-0 px-7 py-4 flex items-center gap-4 bg-surface border-b border-b-primary">
         <div className="relative">
           <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-base bg-accent-blue-light text-accent-blue border border-b-primary"
           >{level}</div>

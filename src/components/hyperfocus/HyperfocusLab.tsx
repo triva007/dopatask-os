@@ -301,7 +301,7 @@ export default function HyperfocusLab() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4 border-b-b-primary">
+      <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary">
         <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
           <FlaskConical size={18} className="text-t-secondary" /> Focus Lab
         </h1>
@@ -408,7 +408,7 @@ export default function HyperfocusLab() {
             onChange={(e) => setTaskName(e.target.value)}
             placeholder="Sur quoi travailles-tu ?"
             disabled={running}
-            className="text-center text-sm bg-transparent text-t-primary placeholder:text-[var(--text-tertiary)] focus:outline-none w-64 border-b-b-primary border-b pb-2 disabled:opacity-50"
+            className="text-center text-sm bg-transparent text-t-primary placeholder:text-[var(--text-tertiary)] focus:outline-none w-64 border-b border-b-primary pb-2 disabled:opacity-50"
           />
 
           {/* Preset buttons */}

@@ -12,7 +12,7 @@ import type { InboxItemType } from "@/store/useAppStore";
 const TYPE_CONFIG: { id: InboxItemType; label: string; icon: typeof ListTodo; color: string }[] = [
   { id: "task", label: "Tâche", icon: ListTodo, color: "var(--accent-green)" },
   { id: "note", label: "Note", icon: StickyNote, color: "var(--accent-blue)" },
-  { id: "event", label: "Event", icon: Calendar, color: "var(--accent-purple)" },
+  { id: "event", label: "Événement", icon: Calendar, color: "var(--accent-purple)" },
 ];
 
 export default function InboxCapture() {

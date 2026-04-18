@@ -19,7 +19,7 @@ interface KanbanColumn {
 }
 
 const COLUMNS: KanbanColumn[] = [
-  { id: "todo",        label: "To Do",      dotColor: "var(--accent-red)", Icon: Plus     },
+  { id: "todo",        label: "À faire",    dotColor: "var(--accent-red)", Icon: Plus     },
   { id: "in_progress", label: "En cours",   dotColor: "var(--accent-blue)", Icon: Clock    },
   { id: "completed",   label: "Terminé",    dotColor: "var(--accent-green)", Icon: Check    },
   { id: "saved",       label: "Sauvegarde", dotColor: "var(--accent-orange)", Icon: Bookmark },
