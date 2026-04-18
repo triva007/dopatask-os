@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import dynamic from "next/dynamic";
+import { Analytics } from "@vercel/analytics/next";
 
 const AppShell = dynamic(() => import("@/components/AppShell"), {
   ssr: false,
@@ -40,6 +41,7 @@ export default function RootLayout({
         <ThemeProvider>
           <AppShell>{children}</AppShell>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
