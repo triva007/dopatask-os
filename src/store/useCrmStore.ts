@@ -1,0 +1,216 @@
+// src/store/useCrmStore.ts
+// Store Zustand pour le CRM : cache prospects/calls/revenus/config.
+// Pas de persist — données source de vérité = Supabase.
+
+"use client";
+
+import { create } from "zustand";
+import { supabase } from "@/lib/supabase";
+import type { Prospect, Call, Revenu, Config, Script, ResultatAppel } from "@/lib/crmTypes";
+import { buildFeedbackLine, statutFromResultat, shouldArchive, resultatCompteMission } from "@/lib/crmLogic";
+import { celebrate } from "@/lib/dopamineFeedback";
+
+type CrmState = {
+  prospects: Prospect[];
+  calls: Call[];
+  revenus: Revenu[];
+  config: Config | null;
+  scripts: Script[];
+  loading: boolean;
+  error: string | null;
+  loaded: boolean;
+
+  // actions
+  loadAll: () => Promise<void>;
+  createProspect: (data: Partial<Prospect> & { entreprise: string }) => Promise<Prospect | null>;
+  updateProspect: (id: string, patch: Partial<Prospect>) => Promise<void>;
+  importProspects: (rows: Array<Partial<Prospect> & { entreprise: string }>) => Promise<number>;
+  logCall: (prospectId: string, resultat: ResultatAppel, notes?: string) => Promise<void>;
+  addRevenu: (prospectId: string | null, montant: number, notes?: string) => Promise<void>;
+  updateConfig: (patch: Partial<Config>) => Promise<void>;
+};
+
+export const useCrmStore = create<CrmState>((set, get) => ({
+  prospects: [],
+  calls: [],
+  revenus: [],
+  config: null,
+  scripts: [],
+  loading: false,
+  error: null,
+  loaded: false,
+
+  loadAll: async () => {
+    set({ loading: true, error: null });
+    try {
+      const [pRes, cRes, rRes, cfRes, scRes] = await Promise.all([
+        supabase.from("prospects").select("*").order("created_at", { ascending: false }),
+        supabase.from("calls").select("*").order("date", { ascending: false }).limit(5000),
+        supabase.from("revenus").select("*").order("date_signature", { ascending: false }),
+        supabase.from("config").select("*").eq("id", 1).maybeSingle(),
+        supabase.from("scripts").select("*").order("updated_at", { ascending: false }),
+      ]);
+
+      if (pRes.error) throw pRes.error;
+      if (cRes.error) throw cRes.error;
+      if (rRes.error) throw rRes.error;
+      if (cfRes.error) throw cfRes.error;
+      if (scRes.error) throw scRes.error;
+
+      set({
+        prospects: (pRes.data || []) as Prospect[],
+        calls: (cRes.data || []) as Call[],
+        revenus: (rRes.data || []) as Revenu[],
+        config: (cfRes.data as Config) || null,
+        scripts: (scRes.data || []) as Script[],
+        loading: false,
+        loaded: true,
+      });
+    } catch (e: unknown) {
+      const msg = e instanceof Error ? e.message : String(e);
+      set({ error: msg, loading: false });
+    }
+  },
+
+  createProspect: async (data) => {
+    const { data: inserted, error } = await supabase
+      .from("prospects")
+      .insert({
+        entreprise: data.entreprise,
+        telephone: data.telephone ?? null,
+        gmb_url: data.gmb_url ?? null,
+        site_url: data.site_url ?? null,
+        notes: data.notes ?? null,
+        statut: data.statut ?? "A_APPELER",
+        niche: data.niche ?? "menuisiers_suisse",
+      })
+      .select("*")
+      .single();
+    if (error) {
+      set({ error: error.message });
+      return null;
+    }
+    set({ prospects: [inserted as Prospect, ...get().prospects] });
+    return inserted as Prospect;
+  },
+
+  updateProspect: async (id, patch) => {
+    const { data, error } = await supabase
+      .from("prospects")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
+    set({
+      prospects: get().prospects.map((p) => (p.id === id ? (data as Prospect) : p)),
+    });
+  },
+
+  importProspects: async (rows) => {
+    if (rows.length === 0) return 0;
+    const payload = rows.map((r) => ({
+      entreprise: r.entreprise,
+      telephone: r.telephone ?? null,
+      gmb_url: r.gmb_url ?? null,
+      site_url: r.site_url ?? null,
+      notes: r.notes ?? null,
+      statut: r.statut ?? "A_APPELER",
+      niche: r.niche ?? "menuisiers_suisse",
+    }));
+    const { data, error } = await supabase
+      .from("prospects")
+      .insert(payload)
+      .select("*");
+    if (error) {
+      set({ error: error.message });
+      return 0;
+    }
+    set({ prospects: [...((data || []) as Prospect[]), ...get().prospects] });
+    return (data || []).length;
+  },
+
+  logCall: async (prospectId, resultat, notes) => {
+    const prospect = get().prospects.find((p) => p.id === prospectId);
+    if (!prospect) return;
+
+    // 1. Insert call
+    const { data: callRow, error: cErr } = await supabase
+      .from("calls")
+      .insert({
+        prospect_id: prospectId,
+        resultat,
+        notes: notes || null,
+        compte_mission: resultatCompteMission(resultat),
+      })
+      .select("*")
+      .single();
+    if (cErr) {
+      set({ error: cErr.message });
+      return;
+    }
+
+    // 2. Update prospect : statut + feedback + archivage
+    const newStatut = statutFromResultat(resultat, prospect.statut);
+    const newFeedback = buildFeedbackLine({
+      oldFeedback: prospect.feedback,
+      resultat,
+    });
+    const archive = shouldArchive(newStatut);
+
+    const patch: Partial<Prospect> = {
+      statut: newStatut,
+      feedback: newFeedback,
+      archived: archive ? true : prospect.archived,
+    };
+    // Si RDV booké → on pose date_rdv à +3 jours ouvrés par défaut (Aaron peut éditer)
+    if (resultat === "RDV" && !prospect.date_rdv) {
+      const d = new Date();
+      d.setDate(d.getDate() + 3);
+      patch.date_rdv = d.toISOString().slice(0, 10);
+    }
+
+    await get().updateProspect(prospectId, patch);
+    set({ calls: [callRow as Call, ...get().calls] });
+
+    // 3. Feedback dopamine
+    if (resultat === "RDV") celebrate("critical");
+    else if (resultat === "DECROCHE") celebrate("task-complete");
+    else celebrate("task-complete");
+  },
+
+  addRevenu: async (prospectId, montant, notes) => {
+    const { data, error } = await supabase
+      .from("revenus")
+      .insert({ prospect_id: prospectId, montant, notes: notes || null })
+      .select("*")
+      .single();
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
+    set({ revenus: [data as Revenu, ...get().revenus] });
+    // Si prospect fourni, le passer en VENDU
+    if (prospectId) {
+      await get().updateProspect(prospectId, { statut: "VENDU" });
+    }
+    celebrate("lucky-drop");
+  },
+
+  updateConfig: async (patch) => {
+    const { data, error } = await supabase
+      .from("config")
+      .update(patch)
+      .eq("id", 1)
+      .select("*")
+      .single();
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
+    set({ config: data as Config });
+  },
+}));

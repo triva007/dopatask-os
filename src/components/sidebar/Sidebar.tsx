@@ -5,22 +5,24 @@ import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Target, FlaskConical, ShoppingBag, Settings,
-  FolderKanban, Eye, BookOpen, Inbox, Moon, Sun, Rocket,
+  FolderKanban, Eye, BookOpen, Inbox, Moon, Sun, Rocket, Phone,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useCrmStore } from "@/store/useCrmStore";
 
 type NavItem = {
   href: string;
   label: string;
   Icon: LucideIcon;
-  badge?: "inbox_count" | "today_tasks" | "pending_tasks";
+  badge?: "inbox_count" | "today_tasks" | "pending_tasks" | "prospects_to_call";
 };
 
 const NAV_PRIMARY: NavItem[] = [
-  { href: "/",        label: "Dashboard", Icon: LayoutDashboard, badge: "today_tasks" },
-  { href: "/inbox",   label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
-  { href: "/taches",  label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
+  { href: "/",           label: "Dashboard", Icon: LayoutDashboard },
+  { href: "/prospects",  label: "Prospects", Icon: Phone, badge: "prospects_to_call" },
+  { href: "/inbox",      label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
+  { href: "/taches",     label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
 ];
 
 const NAV_SECONDARY: NavItem[] = [
@@ -94,11 +96,15 @@ export default function Sidebar() {
   const inboxCount = useAppStore((s) => s.inboxItems.filter((i) => !i.processed).length);
   const todayTasks = useAppStore((s) => s.tasks.filter((t) => t.status === "today").length);
   const pendingTasks = useAppStore((s) => s.tasks.filter((t) => ["todo", "in_progress"].includes(t.status)).length);
+  const prospectsToCall = useCrmStore((s) =>
+    s.prospects.filter((p) => !p.archived && (p.statut === "A_APPELER" || p.statut === "REPONDEUR")).length
+  );
 
   const countFor = (badge?: string) => {
     if (badge === "inbox_count") return inboxCount;
     if (badge === "today_tasks") return todayTasks;
     if (badge === "pending_tasks") return pendingTasks;
+    if (badge === "prospects_to_call") return prospectsToCall;
     return 0;
   };
 
