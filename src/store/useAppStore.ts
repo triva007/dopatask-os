@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { celebrate } from "@/lib/dopamineFeedback";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -371,6 +372,8 @@ export const useAppStore = create<AppState>()(
           totalTasksCompleted: totalTasksCompleted + 1,
         });
 
+        celebrate(isCritical ? "critical" : "task-complete");
+
         if (isCritical) {
           get().addToast(`COUP CRITIQUE ! +${XP_CRITICAL} XP !`, "xp");
         } else {
@@ -722,11 +725,12 @@ export const useAppStore = create<AppState>()(
 
       // ── Boutique ─────────────────────────────────────────────────────────
       purchasedRewards: [],
-      buyReward: (rewardId, cost) =>
-        set((s) => {
-          if (s.xp < cost) return s;
-          return { xp: s.xp - cost, purchasedRewards: [...s.purchasedRewards, rewardId + "_" + Date.now()] };
-        }),
+      buyReward: (rewardId, cost) => {
+        const s = get();
+        if (s.xp < cost) return;
+        set({ xp: s.xp - cost, purchasedRewards: [...s.purchasedRewards, rewardId + "_" + Date.now()] });
+        celebrate("purchase");
+      },
 
       // ── Timeline Events ───────────────────────────────────────────────────
       timelineEvents: [
@@ -811,17 +815,18 @@ export const useAppStore = create<AppState>()(
             xp: s.xp + bonusXp,
           };
         }),
-      unlockAchievement: (id) =>
-        set((s) => ({
-          unlockedAchievements: s.unlockedAchievements.includes(id)
-            ? s.unlockedAchievements
-            : [...s.unlockedAchievements, id],
-        })),
-      completeDailyChallenge: () =>
-        set((s) => ({
-          dailyChallengeCompleted: true,
-          xp: s.xp + 150,
-        })),
+      unlockAchievement: (id) => {
+        const s = get();
+        if (s.unlockedAchievements.includes(id)) return;
+        set({ unlockedAchievements: [...s.unlockedAchievements, id] });
+        celebrate("achievement");
+      },
+      completeDailyChallenge: () => {
+        const s = get();
+        if (s.dailyChallengeCompleted) return;
+        set({ dailyChallengeCompleted: true, xp: s.xp + 150 });
+        celebrate("critical");
+      },
       setDailyChallenge: (id) =>
         set({ dailyChallengeId: id, dailyChallengeCompleted: false }),
       checkAndResetStreak: () => {
