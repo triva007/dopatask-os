@@ -21,7 +21,7 @@ const STEPS = [
     tag: "Loi n°2 — Isolation Visuelle",
     title: "Stop à la paralysie.",
     subtitle: "3 tâches max pour aujourd'hui.",
-    body: "Trop de tâches = cerveau qui freeze. DopaTask t'oblige à choisir seulement 3 à 5 priorités. Le reste attend dans l'Inbox.",
+    body: "Trop de tâches = cerveau qui freeze. Aaron-OS t'oblige à choisir seulement 3 à 5 priorités. Le reste attend dans l'Inbox.",
     hint: "Moins tu vois, plus tu agis.",
   },
   {

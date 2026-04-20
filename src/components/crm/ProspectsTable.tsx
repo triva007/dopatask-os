@@ -100,19 +100,19 @@ export default function ProspectsTable() {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-[var(--border-primary)]">
+      <div className="px-6 pt-6 pb-4 border-b border-surface-3">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <Link
               href="/crm"
-              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] inline-flex items-center gap-1 text-[12px]"
+              className="text-t-tertiary hover:text-t-primary inline-flex items-center gap-1 text-[12px]"
               title="Retour au CRM"
             >
               <ArrowLeft size={14} /> CRM
             </Link>
             <div>
               <h1 className="text-[22px] font-bold tracking-tight">Prospects</h1>
-              <p className="text-[12px] text-[var(--text-tertiary)] mt-0.5">
+              <p className="text-[12px] text-t-tertiary mt-0.5">
                 {filtered.length} affiches - {prospects.filter((p) => !p.archived).length} actifs - {prospects.filter((p) => p.archived).length} archives
               </p>
             </div>
@@ -120,7 +120,7 @@ export default function ProspectsTable() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => setShowImport(true)}
-              className="inline-flex items-center gap-2 h-9 px-3 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-xl text-[12.5px] font-medium hover:bg-[var(--surface-2)] transition-colors"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/20 transition-colors"
             >
               <Upload size={14} />
               Importer CSV
@@ -131,22 +131,22 @@ export default function ProspectsTable() {
         <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
           <div className="relative flex-1 min-w-[260px]">
-            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" />
+            <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t-tertiary" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Chercher une entreprise, téléphone, note..."
-              className="w-full pl-9 pr-3 py-2 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg text-[13px] placeholder-[var(--text-tertiary)] focus:outline-none focus:border-[var(--accent-cyan)]"
+              className="w-full pl-9 pr-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] placeholder-t-tertiary focus:outline-none focus:border-dopa-cyan/50"
             />
           </div>
 
           {/* Filter statut */}
           <div className="relative">
-            <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] pointer-events-none" />
+            <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-t-tertiary pointer-events-none" />
             <select
               value={filterStatut}
               onChange={(e) => setFilterStatut(e.target.value as typeof filterStatut)}
-              className="pl-9 pr-8 py-2 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg text-[13px] focus:outline-none focus:border-[var(--accent-cyan)] appearance-none cursor-pointer"
+              className="pl-9 pr-8 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] focus:outline-none focus:border-dopa-cyan/50 appearance-none cursor-pointer"
             >
               <option value="ACTIFS">Actifs uniquement</option>
               <option value="ALL">Tous (incl. archivés)</option>
@@ -165,12 +165,12 @@ export default function ProspectsTable() {
               onChange={(e) => setNewName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && onQuickCreate()}
               placeholder="Ajouter rapidement..."
-              className="px-3 py-2 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg text-[13px] placeholder-t-tertiary focus:outline-none focus:border-[var(--accent-cyan)]/50 w-44"
+              className="px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] placeholder-t-tertiary focus:outline-none focus:border-dopa-cyan/50 w-44"
             />
             <button
               onClick={onQuickCreate}
               disabled={creating || !newName.trim()}
-              className="inline-flex items-center gap-1 h-9 px-3 bg-[var(--accent-green-light)] text-[var(--accent-green)] rounded-xl text-[12.5px] font-medium hover:bg-[var(--surface-2)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="inline-flex items-center gap-1 px-3 py-2 bg-dopa-green/10 text-dopa-green rounded-lg text-[13px] font-semibold hover:bg-dopa-green/20 disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <Plus size={14} />
               Ajouter
@@ -182,19 +182,19 @@ export default function ProspectsTable() {
       {/* Body */}
       <div className="flex-1 overflow-auto">
         {error && (
-          <div className="mx-6 mt-4 px-4 py-3 bg-[var(--accent-red-light)] border border-[var(--accent-red)] rounded-lg text-[12px] text-[var(--accent-red)] flex items-center gap-2">
+          <div className="mx-6 mt-4 px-4 py-3 bg-dopa-red/10 border border-dopa-red/30 rounded-lg text-[12px] text-dopa-red flex items-center gap-2">
             <AlertTriangle size={14} />
             {error}
           </div>
         )}
 
         {loading && !loaded ? (
-          <div className="flex items-center justify-center h-64 text-[var(--text-tertiary)] gap-2">
+          <div className="flex items-center justify-center h-64 text-t-tertiary gap-2">
             <Loader2 size={16} className="animate-spin" />
             <span className="text-[13px]">Chargement...</span>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-[var(--text-tertiary)] gap-3">
+          <div className="flex flex-col items-center justify-center h-64 text-t-tertiary gap-3">
             <div className="text-[40px]">🗂️</div>
             <p className="text-[14px]">
               {prospects.length === 0
@@ -204,7 +204,7 @@ export default function ProspectsTable() {
             {prospects.length === 0 && (
               <button
                 onClick={() => setShowImport(true)}
-                className="mt-2 h-9 px-3 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-xl text-[12.5px] font-medium hover:bg-[var(--surface-2)] transition-colors"
+                className="mt-2 px-4 py-2 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/20"
               >
                 Importer mon premier CSV
               </button>
@@ -212,11 +212,11 @@ export default function ProspectsTable() {
           </div>
         ) : (
           <table className="w-full text-[12.5px]">
-            <thead className="bg-[var(--surface-2)] sticky top-0 z-10">
-              <tr className="text-left text-[var(--text-tertiary)] uppercase text-[10px] tracking-wider">
+            <thead className="bg-surface-2 sticky top-0 z-10">
+              <tr className="text-left text-t-tertiary uppercase text-[10px] tracking-wider">
                 <th
                   onClick={() => toggleSort("entreprise")}
-                  className="px-4 py-3 cursor-pointer hover:text-[var(--text-primary)] font-semibold"
+                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
                 >
                   Entreprise {sortKey === "entreprise" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
@@ -224,13 +224,13 @@ export default function ProspectsTable() {
                 <th className="px-4 py-3 font-semibold">GMB</th>
                 <th
                   onClick={() => toggleSort("statut")}
-                  className="px-4 py-3 cursor-pointer hover:text-[var(--text-primary)] font-semibold"
+                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
                 >
                   Statut {sortKey === "statut" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th
                   onClick={() => toggleSort("date_relance")}
-                  className="px-4 py-3 cursor-pointer hover:text-[var(--text-primary)] font-semibold"
+                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
                 >
                   Date RDV / Relance {sortKey === "date_relance" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
@@ -246,53 +246,53 @@ export default function ProspectsTable() {
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: Math.min(idx * 0.01, 0.2) }}
-                  className={`border-b border-[var(--border-primary)] hover:bg-[var(--surface-2)]/60 transition-colors ${
-                    idx % 2 === 0 ? "bg-[var(--surface-1)]" : "bg-[var(--surface-1)]/50"
+                  className={`border-b border-surface-3 hover:bg-surface-2/60 transition-colors ${
+                    idx % 2 === 0 ? "bg-surface-1" : "bg-surface-1/50"
                   } ${p.archived ? "opacity-50" : ""}`}
                 >
                   <td className="px-4 py-3">
-                    <Link href={`/prospects/${p.id}`} className="font-semibold text-[var(--text-primary)] hover:text-[var(--accent-cyan)]">
+                    <Link href={`/prospects/${p.id}`} className="font-semibold text-t-primary hover:text-dopa-cyan">
                       {p.entreprise}
                     </Link>
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)] tabular-nums">
+                  <td className="px-4 py-3 text-t-secondary tabular-nums">
                     {p.telephone ? (
-                      <a href={`tel:${p.telephone}`} className="inline-flex items-center gap-1.5 hover:text-[var(--accent-green)]">
+                      <a href={`tel:${p.telephone}`} className="inline-flex items-center gap-1.5 hover:text-dopa-green">
                         <Phone size={11} />
                         {p.telephone}
                       </a>
                     ) : (
-                      <span className="text-[var(--text-tertiary)]">—</span>
+                      <span className="text-t-tertiary">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     {p.gmb_url ? (
-                      <a href={p.gmb_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[var(--accent-cyan)] hover:underline">
+                      <a href={p.gmb_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-dopa-cyan hover:underline">
                         <MapPin size={11} /> Fiche
                       </a>
                     ) : (
-                      <span className="text-[var(--text-tertiary)]">—</span>
+                      <span className="text-t-tertiary">—</span>
                     )}
                   </td>
                   <td className="px-4 py-3">
                     <StatutBadge statut={p.statut} compact />
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)] tabular-nums">
+                  <td className="px-4 py-3 text-t-secondary tabular-nums">
                     {p.date_rdv ? `RDV ${p.date_rdv}` : p.date_relance ? `Relance ${p.date_relance}` : "—"}
                   </td>
                   <td className="px-4 py-3">
                     {p.lien_maquette ? (
-                      <a href={p.lien_maquette} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[var(--accent-purple)] hover:underline">
+                      <a href={p.lien_maquette} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-dopa-violet hover:underline">
                         <ExternalLink size={11} /> Lien
                       </a>
                     ) : (
-                      <span className="text-[var(--text-tertiary)]">—</span>
+                      <span className="text-t-tertiary">—</span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-secondary)] max-w-[220px] truncate" title={p.feedback || ""}>
+                  <td className="px-4 py-3 text-t-secondary max-w-[220px] truncate" title={p.feedback || ""}>
                     {p.feedback || "—"}
                   </td>
-                  <td className="px-4 py-3 text-[var(--text-tertiary)] max-w-[200px] truncate" title={p.notes || ""}>
+                  <td className="px-4 py-3 text-t-tertiary max-w-[200px] truncate" title={p.notes || ""}>
                     {p.notes || "—"}
                   </td>
                 </motion.tr>
@@ -302,4 +302,7 @@ export default function ProspectsTable() {
         )}
       </div>
 
-      {showImport && <ImportCsvModal onClose={() =
+      {showImport && <ImportCsvModal onClose={() => setShowImport(false)} />}
+    </div>
+  );
+}

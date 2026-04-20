@@ -219,7 +219,7 @@ export default function ReglagesPanel() {
         <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
           <Settings size={18} className="text-accent-blue" /> Réglages
         </h1>
-        <p className="text-xs text-[var(--text-secondary)] mt-1">Personnalise DopaTask OS</p>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">Personnalise Aaron-OS</p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 flex flex-col gap-6">
@@ -457,7 +457,7 @@ export default function ReglagesPanel() {
           </div>
 
           <div className="text-center pt-2">
-            <p className="text-[10px] text-t-ghost">DopaTask OS · v4.0</p>
+            <p className="text-[10px] text-t-ghost">Aaron-OS · v4.1</p>
           </div>
         </div>
       </div>

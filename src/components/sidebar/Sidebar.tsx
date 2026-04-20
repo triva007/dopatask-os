@@ -113,11 +113,11 @@ export default function Sidebar() {
             background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))",
           }}
         >
-          <span className="text-[13px] text-white font-semibold">D</span>
+          <span className="text-[13px] text-white font-semibold">A</span>
         </div>
         <div>
           <p className="text-[13px] font-semibold leading-none tracking-tight text-t-primary">
-            DopaTask
+            Aaron-OS
           </p>
           <p className="text-[9px] leading-none mt-1 font-medium text-t-tertiary tracking-wider uppercase">
             v4.1 · premium

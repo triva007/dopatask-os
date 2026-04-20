@@ -23,7 +23,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "DopaTask OS — Productivity Reimagined",
+  title: "Aaron-OS — Productivity Reimagined",
   description:
     "Conçu pour les cerveaux TDAH. Un espace de travail calme, structuré et beau.",
 };
