@@ -4,8 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  LayoutDashboard, ListChecks, Target, FlaskConical, ShoppingBag, Settings,
-  FolderKanban, Eye, BookOpen, Inbox, Moon, Sun, Rocket, Phone,
+  LayoutDashboard, ListChecks, Target, Settings,
+  FolderKanban, Eye, BookOpen, Inbox, Phone,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -88,8 +88,6 @@ function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: bool
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const theme = useAppStore((s) => s.theme);
-  const toggleTheme = useAppStore((s) => s.toggleTheme);
   const inboxCount = useAppStore((s) => s.inboxItems.filter((i) => !i.processed).length);
   const todayTasks = useAppStore((s) => s.tasks.filter((t) => t.status === "today").length);
   const pendingTasks = useAppStore((s) => s.tasks.filter((t) => ["todo", "in_progress"].includes(t.status)).length);
@@ -181,23 +179,6 @@ export default function Sidebar() {
         />
       </div>
 
-      {/* Theme toggle */}
-      <div className="px-2 pt-3">
-        <button
-          onClick={toggleTheme}
-          className="flex items-center gap-2.5 w-full px-3 py-2 rounded-lg transition-colors duration-150 group hover:bg-surface-2"
-          title={`Thème ${theme === "light" ? "sombre" : "clair"}`}
-        >
-          {theme === "light" ? (
-            <Moon size={14} className="text-sidebar-inactive group-hover:text-t-primary transition-colors" strokeWidth={1.75} />
-          ) : (
-            <Sun size={14} className="text-sidebar-inactive group-hover:text-t-primary transition-colors" strokeWidth={1.75} />
-          )}
-          <span className="text-[12px] text-sidebar-inactive group-hover:text-t-primary transition-colors">
-            {theme === "light" ? "Mode sombre" : "Mode clair"}
-          </span>
-        </button>
-      </div>
     </nav>
   );
 }
