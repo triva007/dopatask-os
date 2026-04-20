@@ -176,7 +176,7 @@ export default function CrmDashboard() {
         {/* === 5. BOUTON LANCER RITUEL (V1.1 placeholder) === */}
         <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
           <Link
-            href="/prospects"
+            href="/crm"
             className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-dopa-cyan to-dopa-violet p-6 shadow-card-hover hover:shadow-glow-cyan transition-shadow"
           >
             <div className="relative z-10 flex items-center justify-between">

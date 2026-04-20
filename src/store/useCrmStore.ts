@@ -8,6 +8,7 @@ import { create } from "zustand";
 import { supabase } from "@/lib/supabase";
 import type { Prospect, Call, Revenu, Config, Script, ResultatAppel } from "@/lib/crmTypes";
 import { buildFeedbackLine, statutFromResultat, shouldArchive, resultatCompteMission } from "@/lib/crmLogic";
+import { extractStatutFromNotes } from "@/lib/csvParser";
 import { celebrate } from "@/lib/dopamineFeedback";
 
 type CrmState = {
@@ -28,6 +29,8 @@ type CrmState = {
   logCall: (prospectId: string, resultat: ResultatAppel, notes?: string) => Promise<void>;
   addRevenu: (prospectId: string | null, montant: number, notes?: string) => Promise<void>;
   updateConfig: (patch: Partial<Config>) => Promise<void>;
+  repairProspectsFromNotes: () => Promise<{ fixed: number; scanned: number }>;
+  deleteProspect: (id: string) => Promise<void>;
 };
 
 export const useCrmStore = create<CrmState>((set, get) => ({
@@ -212,5 +215,45 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       return;
     }
     set({ config: data as Config });
+  },
+
+  // Scan les prospects : si statut est defaut (A_APPELER) et notes commence
+  // par un statut reconnu, on le deplace dans le champ statut et on nettoie la note.
+  repairProspectsFromNotes: async () => {
+    const list = get().prospects;
+    let fixed = 0;
+    for (const p of list) {
+      if (p.statut !== "A_APPELER") continue;
+      if (!p.notes) continue;
+      const { statut, notes } = extractStatutFromNotes(p.notes);
+      if (!statut) continue;
+      const patch: Partial<Prospect> = { statut, notes };
+      // Si statut deplace est terminal, on archive
+      if (statut === "REFUS" || statut === "EXISTE_PAS" || statut === "PERDU") {
+        patch.archived = true;
+      }
+      const { data, error } = await supabase
+        .from("prospects")
+        .update(patch)
+        .eq("id", p.id)
+        .select("*")
+        .single();
+      if (!error && data) {
+        fixed += 1;
+        set({
+          prospects: get().prospects.map((x) => (x.id === p.id ? (data as Prospect) : x)),
+        });
+      }
+    }
+    return { fixed, scanned: list.length };
+  },
+
+  deleteProspect: async (id) => {
+    const { error } = await supabase.from("prospects").delete().eq("id", id);
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
+    set({ prospects: get().prospects.filter((p) => p.id !== id) });
   },
 }));

@@ -2,8 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Filter, Upload, Phone, MapPin, ExternalLink, Plus, Loader2, AlertTriangle } from "lucide-react";
+import { Search, Filter, Upload, Phone, MapPin, ExternalLink, Plus, Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI } from "@/lib/crmLabels";
 import type { StatutProspect } from "@/lib/crmTypes";
@@ -20,8 +21,12 @@ export default function ProspectsTable() {
   const loadAll = useCrmStore((s) => s.loadAll);
   const createProspect = useCrmStore((s) => s.createProspect);
 
+  const searchParams = useSearchParams();
+  const initialStatut = searchParams.get("statut");
   const [query, setQuery] = useState("");
-  const [filterStatut, setFilterStatut] = useState<StatutProspect | "ALL" | "ACTIFS">("ACTIFS");
+  const [filterStatut, setFilterStatut] = useState<StatutProspect | "ALL" | "ACTIFS">(
+    (initialStatut as StatutProspect) || "ACTIFS"
+  );
   const [sortKey, setSortKey] = useState<SortKey>("created_at");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showImport, setShowImport] = useState(false);
@@ -97,11 +102,20 @@ export default function ProspectsTable() {
       {/* Header */}
       <div className="px-6 pt-6 pb-4 border-b border-surface-3">
         <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-[22px] font-bold tracking-tight">Prospects</h1>
-            <p className="text-[12px] text-t-tertiary mt-0.5">
-              {filtered.length} affichés · {prospects.filter((p) => !p.archived).length} actifs · {prospects.filter((p) => p.archived).length} archivés
-            </p>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/crm"
+              className="text-t-tertiary hover:text-t-primary inline-flex items-center gap-1 text-[12px]"
+              title="Retour au CRM"
+            >
+              <ArrowLeft size={14} /> CRM
+            </Link>
+            <div>
+              <h1 className="text-[22px] font-bold tracking-tight">Prospects</h1>
+              <p className="text-[12px] text-t-tertiary mt-0.5">
+                {filtered.length} affiches - {prospects.filter((p) => !p.archived).length} actifs - {prospects.filter((p) => p.archived).length} archives
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

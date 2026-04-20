@@ -3,23 +3,19 @@
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Papa from "papaparse";
-import { X, Upload, Check } from "lucide-react";
+import { X, Upload, Check, AlertTriangle, FileSpreadsheet } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
-
-type Row = {
-  entreprise: string;
-  telephone?: string;
-  gmb_url?: string;
-  site_url?: string;
-  notes?: string;
-};
+import { mapRow, normalizeHeader, detectSeparator, type MappedRow } from "@/lib/csvParser";
+import { STATUT_LABEL } from "@/lib/crmLabels";
+import StatutBadge from "./StatutBadge";
 
 export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
   const [raw, setRaw] = useState("");
-  const [parsed, setParsed] = useState<Row[]>([]);
+  const [parsed, setParsed] = useState<MappedRow[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
   const [importing, setImporting] = useState(false);
   const [done, setDone] = useState<number | null>(null);
+  const [headers, setHeaders] = useState<string[]>([]);
   const importProspects = useCrmStore((s) => s.importProspects);
 
   const handleParse = (text: string) => {
@@ -27,29 +23,27 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
     if (!text.trim()) {
       setParsed([]);
       setErrors([]);
+      setHeaders([]);
       return;
     }
+    const separator = detectSeparator(text);
     const res = Papa.parse<Record<string, string>>(text, {
       header: true,
       skipEmptyLines: true,
-      transformHeader: (h) => h.trim().toLowerCase().replace(/\s+/g, "_"),
+      delimiter: separator,
+      transformHeader: (h) => normalizeHeader(h),
     });
-    const rows: Row[] = [];
+    const rows: MappedRow[] = [];
     const errs: string[] = [];
     res.data.forEach((r, idx) => {
-      const entreprise = (r.entreprise || r.company || r.nom || "").trim();
-      if (!entreprise) {
-        errs.push(`Ligne ${idx + 2} : entreprise manquante, ignorée`);
+      const mapped = mapRow(r);
+      if (!mapped) {
+        errs.push(`Ligne ${idx + 2} : entreprise manquante, ignoree`);
         return;
       }
-      rows.push({
-        entreprise,
-        telephone: (r.telephone || r.tel || r.phone || "").trim() || undefined,
-        gmb_url: (r.gmb_url || r.gmb || r.google_maps || "").trim() || undefined,
-        site_url: (r.site_url || r.site || r.website || r.url || "").trim() || undefined,
-        notes: (r.notes || r.note || "").trim() || undefined,
-      });
+      rows.push(mapped);
     });
+    setHeaders(res.meta.fields || []);
     setParsed(rows);
     setErrors(errs);
   };
@@ -66,7 +60,11 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
     setImporting(false);
   };
 
-  const preview = useMemo(() => parsed.slice(0, 5), [parsed]);
+  const preview = useMemo(() => parsed.slice(0, 8), [parsed]);
+  const statutDetectes = useMemo(
+    () => parsed.filter((p) => p.statut !== null).length,
+    [parsed]
+  );
 
   return (
     <AnimatePresence>
@@ -81,7 +79,7 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
           initial={{ scale: 0.95, y: 10 }}
           animate={{ scale: 1, y: 0 }}
           exit={{ scale: 0.95, y: 10 }}
-          className="bg-surface-1 border border-surface-3 rounded-2xl shadow-elevated w-full max-w-3xl max-h-[85vh] overflow-hidden flex flex-col"
+          className="bg-surface-1 border border-surface-3 rounded-2xl shadow-elevated w-full max-w-4xl max-h-[88vh] overflow-hidden flex flex-col"
           onClick={(e) => e.stopPropagation()}
         >
           <div className="flex items-center justify-between px-5 py-4 border-b border-surface-3">
@@ -100,7 +98,12 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
                 <div className="w-14 h-14 rounded-full bg-dopa-green/10 flex items-center justify-center">
                   <Check size={28} className="text-dopa-green" />
                 </div>
-                <p className="text-[15px] font-semibold">{done} prospects ajoutés</p>
+                <p className="text-[15px] font-semibold">{done} prospects ajoutes</p>
+                {statutDetectes > 0 && (
+                  <p className="text-[12px] text-t-secondary">
+                    {statutDetectes} avec statut detecte automatiquement.
+                  </p>
+                )}
                 <button
                   onClick={onClose}
                   className="mt-2 px-4 py-2 bg-dopa-green/10 text-dopa-green rounded-lg text-[13px] font-semibold hover:bg-dopa-green/20"
@@ -110,10 +113,19 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
               </div>
             ) : (
               <>
+                <div className="rounded-lg bg-surface-2/60 border border-surface-3 p-3 text-[11.5px] text-t-secondary leading-relaxed">
+                  <p className="font-semibold text-t-primary mb-1 flex items-center gap-1.5">
+                    <FileSpreadsheet size={13} /> Colonnes reconnues (ordre libre, insensible accents)
+                  </p>
+                  <p><strong className="text-t-primary">Requis :</strong> entreprise (ou company, nom, raison_sociale)</p>
+                  <p><strong className="text-t-primary">Optionnels :</strong> telephone, gmb_url, site_url, notes, <strong className="text-dopa-cyan">statut</strong>, niche</p>
+                  <p className="text-t-tertiary mt-1">
+                    Si la colonne <strong>statut</strong> est presente, elle est detectee automatiquement.
+                    Sinon, si la note commence par un statut (ex: &quot;RDV Booke - Rappeler mardi&quot;), il est extrait sans polluer les notes.
+                  </p>
+                </div>
+
                 <div>
-                  <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-2">
-                    Colonnes attendues : entreprise, telephone, gmb_url, site_url, notes
-                  </label>
                   <input
                     type="file"
                     accept=".csv,text/csv"
@@ -128,40 +140,61 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
                   />
                 </div>
 
+                {headers.length > 0 && (
+                  <div className="text-[11px] text-t-tertiary">
+                    Colonnes detectees : <span className="font-mono text-t-secondary">{headers.join(", ")}</span>
+                  </div>
+                )}
+
                 {parsed.length > 0 && (
                   <div>
-                    <p className="text-[12px] text-t-secondary mb-2">
-                      <span className="font-semibold text-t-primary">{parsed.length}</span> lignes valides.
-                      {errors.length > 0 && (
-                        <span className="text-dopa-red ml-2">
-                          {errors.length} ignorée(s).
+                    <div className="flex items-center gap-4 text-[12px] text-t-secondary mb-2">
+                      <span>
+                        <span className="font-semibold text-t-primary">{parsed.length}</span> lignes valides
+                      </span>
+                      {statutDetectes > 0 && (
+                        <span className="text-dopa-cyan">
+                          {statutDetectes} avec statut detecte
                         </span>
                       )}
-                    </p>
+                      {errors.length > 0 && (
+                        <span className="text-dopa-red inline-flex items-center gap-1">
+                          <AlertTriangle size={11} /> {errors.length} ignoree(s)
+                        </span>
+                      )}
+                    </div>
                     <div className="bg-surface-2 border border-surface-3 rounded-lg overflow-hidden">
                       <table className="w-full text-[12px]">
                         <thead className="bg-surface-3">
                           <tr>
                             <th className="text-left px-3 py-2 font-semibold">Entreprise</th>
-                            <th className="text-left px-3 py-2 font-semibold">Tél</th>
-                            <th className="text-left px-3 py-2 font-semibold">GMB</th>
-                            <th className="text-left px-3 py-2 font-semibold">Site</th>
+                            <th className="text-left px-3 py-2 font-semibold">Telephone</th>
+                            <th className="text-left px-3 py-2 font-semibold">Statut</th>
+                            <th className="text-left px-3 py-2 font-semibold">Notes</th>
                           </tr>
                         </thead>
                         <tbody>
                           {preview.map((r, i) => (
                             <tr key={i} className="border-t border-surface-3">
-                              <td className="px-3 py-2 text-t-primary">{r.entreprise}</td>
-                              <td className="px-3 py-2 text-t-secondary">{r.telephone || "—"}</td>
-                              <td className="px-3 py-2 text-t-secondary truncate max-w-[150px]">{r.gmb_url || "—"}</td>
-                              <td className="px-3 py-2 text-t-secondary truncate max-w-[150px]">{r.site_url || "—"}</td>
+                              <td className="px-3 py-2 text-t-primary font-medium">{r.entreprise}</td>
+                              <td className="px-3 py-2 text-t-secondary tabular-nums">{r.telephone || "-"}</td>
+                              <td className="px-3 py-2">
+                                {r.statut ? (
+                                  <StatutBadge statut={r.statut} compact />
+                                ) : (
+                                  <span className="text-t-tertiary text-[11px]">{STATUT_LABEL.A_APPELER}</span>
+                                )}
+                              </td>
+                              <td className="px-3 py-2 text-t-tertiary truncate max-w-[240px]" title={r.notes || ""}>
+                                {r.notes || "-"}
+                              </td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
-                      {parsed.length > 5 && (
+                      {parsed.length > preview.length && (
                         <div className="px-3 py-2 text-[11px] text-t-tertiary border-t border-surface-3 bg-surface-1">
-                          ... et {parsed.length - 5} autres
+                          ... et {parsed.length - preview.length} autres
                         </div>
                       )}
                     </div>

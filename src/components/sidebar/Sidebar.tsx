@@ -20,7 +20,7 @@ type NavItem = {
 
 const NAV_PRIMARY: NavItem[] = [
   { href: "/",           label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/prospects",  label: "Prospects", Icon: Phone, badge: "prospects_to_call" },
+  { href: "/crm",        label: "CRM",       Icon: Phone, badge: "prospects_to_call" },
   { href: "/inbox",      label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
   { href: "/taches",     label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
 ];
@@ -28,14 +28,11 @@ const NAV_PRIMARY: NavItem[] = [
 const NAV_SECONDARY: NavItem[] = [
   { href: "/projets",    label: "Projets",      Icon: FolderKanban },
   { href: "/objectifs",  label: "Objectifs",    Icon: Target       },
-  { href: "/sprints",    label: "Sprints",      Icon: Rocket       },
-  { href: "/hyperfocus", label: "Focus Lab",    Icon: FlaskConical },
 ];
 
 const NAV_TERTIARY: NavItem[] = [
   { href: "/vision",   label: "Vision",    Icon: Eye      },
   { href: "/journal",  label: "Journal",   Icon: BookOpen },
-  { href: "/boutique", label: "Boutique",  Icon: ShoppingBag },
 ];
 
 function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: boolean; badgeCount: number }) {
