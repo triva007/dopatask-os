@@ -19,7 +19,7 @@ function SettingRow({ icon: Icon, label, description, badge, color = "var(--text
   return (
     <div
       onClick={onClick}
-      className={`flex items-center gap-4 px-4 py-3.5 rounded-3xl transition-all group ${isClickable ? "cursor-pointer hover:bg-surface-2" : "cursor-default"} bg-surface border-b-primary`}
+      className={`flex items-center gap-4 px-4 py-3.5 rounded-3xl transition-all group ${isClickable ? "cursor-pointer hover:bg-[var(--surface-2)]" : "cursor-default"} bg-surface border-b-primary`}
     >
       <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all group-hover:scale-105"
         style={{ background: `${color}12` }}>
@@ -27,15 +27,15 @@ function SettingRow({ icon: Icon, label, description, badge, color = "var(--text
       </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2">
-          <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>{label}</p>
+          <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>{label}</p>
           {badge && (
             <span className="text-[8px] px-2 py-0.5 rounded-full font-medium uppercase tracking-wider"
               style={badgeStyle}>{badge}</span>
           )}
         </div>
-        <p className="text-[11px] text-t-secondary mt-0.5 leading-relaxed">{description}</p>
+        <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">{description}</p>
       </div>
-      {isClickable && <ChevronRight size={14} className="text-b-hover shrink-0 transition-all group-hover:text-t-secondary" />}
+      {isClickable && <ChevronRight size={14} className="text-b-hover shrink-0 transition-all group-hover:text-[var(--text-secondary)]" />}
     </div>
   );
 }
@@ -43,7 +43,7 @@ function SettingRow({ icon: Icon, label, description, badge, color = "var(--text
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2.5">
-      <p className="text-[10px] font-medium text-t-secondary uppercase tracking-widest px-1">{title}</p>
+      <p className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest px-1">{title}</p>
       <div className="flex flex-col gap-2">{children}</div>
     </div>
   );
@@ -74,8 +74,8 @@ function ConfirmationModal({ title, message, confirmText, onConfirm, onCancel, i
           <div className="flex items-start gap-3 mb-4">
             {isDangerous && <AlertCircle size={20} className="text-accent-red shrink-0 mt-0.5" />}
             <div>
-              <h2 className="text-lg font-semibold text-t-primary">{title}</h2>
-              <p className="text-sm text-t-secondary mt-2">{message}</p>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">{title}</h2>
+              <p className="text-sm text-[var(--text-secondary)] mt-2">{message}</p>
             </div>
           </div>
 
@@ -85,21 +85,21 @@ function ConfirmationModal({ title, message, confirmText, onConfirm, onCancel, i
               placeholder={`Type "${confirmText}" to confirm`}
               value={inputValue}
               onChange={(e) => setInputValue(e.target.value.toUpperCase())}
-              className="w-full px-3 py-2 rounded-2xl bg-empty-bg border border-b-primary text-t-primary text-sm mt-4 mb-4 focus:outline-none focus:ring-2 focus:ring-accent-blue"
+              className="w-full px-3 py-2 rounded-xl bg-empty-bg border border-b-primary text-[var(--text-primary)] text-sm mt-4 mb-4 focus:outline-none focus:ring-2 focus:ring-accent-blue"
             />
           )}
 
           <div className="flex gap-3 mt-6">
             <button
               onClick={onCancel}
-              className="flex-1 px-4 py-2.5 rounded-2xl font-medium text-sm bg-empty-bg text-t-primary transition-all hover:bg-surface-2"
+              className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-empty-bg text-[var(--text-primary)] transition-all hover:bg-[var(--surface-2)]"
             >
               Annuler
             </button>
             <button
               onClick={onConfirm}
               disabled={requiresInput && inputValue !== confirmText}
-              className={`flex-1 px-4 py-2.5 rounded-2xl font-medium text-sm transition-all ${
+              className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${
                 isDangerous
                   ? "bg-accent-red text-white disabled:opacity-50"
                   : "bg-accent-blue text-white disabled:opacity-50"
@@ -216,10 +216,10 @@ export default function ReglagesPanel() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       <div className="shrink-0 px-7 pt-6 pb-4 border border-b-primary" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-        <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
           <Settings size={18} className="text-accent-blue" /> Réglages
         </h1>
-        <p className="text-xs text-t-secondary mt-1">Personnalise DopaTask OS</p>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">Personnalise DopaTask OS</p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 flex flex-col gap-6">
@@ -230,7 +230,7 @@ export default function ReglagesPanel() {
             style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.1)" }}>
             <div className="px-5 py-3 border border-b-primary flex items-center gap-2" style={{ borderBottom: "1px solid var(--border-primary)" }}>
               <BarChart3 size={14} className="text-accent-blue" />
-              <p className="text-[10px] font-medium text-t-secondary uppercase tracking-wider">Statistiques</p>
+              <p className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-wider">Statistiques</p>
             </div>
             <div className="grid grid-cols-4 gap-px bg-border-b-primary p-px">
               {[
@@ -241,7 +241,7 @@ export default function ReglagesPanel() {
               ].map(({ label, value, color }) => (
                 <div key={label} className="flex flex-col items-center py-4 gap-1 bg-surface">
                   <span className="text-lg font-semibold tabular-nums" style={{ color }}>{value}</span>
-                  <span className="text-[10px] text-t-secondary text-center">{label}</span>
+                  <span className="text-[10px] text-[var(--text-secondary)] text-center">{label}</span>
                 </div>
               ))}
             </div>
@@ -254,8 +254,8 @@ export default function ReglagesPanel() {
                 ].map(({ label, value, icon: Icon, color }) => (
                   <div key={label} className="flex flex-col items-center gap-1">
                     <Icon size={12} style={{ color }} />
-                    <span className="text-[10px] text-t-secondary">{label}</span>
-                    <span className="text-sm font-semibold text-t-primary">{value}</span>
+                    <span className="text-[10px] text-[var(--text-secondary)]">{label}</span>
+                    <span className="text-sm font-semibold text-[var(--text-primary)]">{value}</span>
                   </div>
                 ))}
               </div>
@@ -267,13 +267,13 @@ export default function ReglagesPanel() {
             <div className="flex gap-2 p-3 rounded-3xl bg-surface border border-b-primary">
               <button
                 onClick={() => setTheme("light")}
-                className={`flex-1 px-4 py-2.5 rounded-2xl font-medium text-sm transition-all ${theme === "light" ? "bg-accent-blue text-white" : "bg-empty-bg text-t-primary"}`}
+                className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${theme === "light" ? "bg-accent-blue text-white" : "bg-empty-bg text-[var(--text-primary)]"}`}
               >
                 🌞 Apple Light
               </button>
               <button
                 onClick={() => setTheme("dark")}
-                className={`flex-1 px-4 py-2.5 rounded-2xl font-medium text-sm transition-all ${theme === "dark" ? "bg-accent-blue text-white" : "bg-empty-bg text-t-primary"}`}
+                className={`flex-1 px-4 py-2.5 rounded-xl font-medium text-sm transition-all ${theme === "dark" ? "bg-accent-blue text-white" : "bg-empty-bg text-[var(--text-primary)]"}`}
               >
                 🌙 Dark OLED
               </button>
@@ -284,7 +284,7 @@ export default function ReglagesPanel() {
           <Section title="Profil TDAH">
             <button
               onClick={() => setShowTdahModal(true)}
-              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-surface-2 text-left"
+              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-[var(--surface-2)] text-left"
             >
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all"
@@ -292,8 +292,8 @@ export default function ReglagesPanel() {
                   <Brain size={15} style={{ color: "var(--accent-orange)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Profil TDAH</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5 leading-relaxed">
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Profil TDAH</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">
                     Sélectionné: {settings.tdahSubtype || "Non défini"}
                   </p>
                 </div>
@@ -306,7 +306,7 @@ export default function ReglagesPanel() {
           <Section title="Paramètres de productivité">
             <button
               onClick={() => setShowPomodoroModal(true)}
-              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-surface-2 text-left"
+              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-[var(--surface-2)] text-left"
             >
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -314,8 +314,8 @@ export default function ReglagesPanel() {
                   <Zap size={15} style={{ color: "var(--accent-red)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Durée Pomodoro</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5">{settings.pomodoroDefault || 25} minutes</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Durée Pomodoro</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{settings.pomodoroDefault || 25} minutes</p>
                 </div>
                 <ChevronRight size={14} className="text-b-hover shrink-0" />
               </div>
@@ -323,7 +323,7 @@ export default function ReglagesPanel() {
 
             <button
               onClick={() => setShowMaxTasksModal(true)}
-              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-surface-2 text-left"
+              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-[var(--surface-2)] text-left"
             >
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -331,8 +331,8 @@ export default function ReglagesPanel() {
                   <Target size={15} style={{ color: "var(--accent-green)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Tâches par jour max</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5">{settings.maxDailyTasks || 5} tâches</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Tâches par jour max</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">{settings.maxDailyTasks || 5} tâches</p>
                 </div>
                 <ChevronRight size={14} className="text-b-hover shrink-0" />
               </div>
@@ -352,8 +352,8 @@ export default function ReglagesPanel() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Sons activés</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5">Notifications sonores et timers</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Sons activés</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Notifications sonores et timers</p>
                 </div>
               </div>
               <button
@@ -373,8 +373,8 @@ export default function ReglagesPanel() {
                   <Users size={15} style={{ color: "var(--accent-blue)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Body Doubling</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5">Afficher l&apos;indicateur de productivité</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Body Doubling</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Afficher l&apos;indicateur de productivité</p>
                 </div>
               </div>
               <button
@@ -392,7 +392,7 @@ export default function ReglagesPanel() {
           <Section title="Données">
             <button
               onClick={handleExportData}
-              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-surface-2 text-left"
+              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-[var(--surface-2)] text-left"
             >
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -400,8 +400,8 @@ export default function ReglagesPanel() {
                   <Download size={15} style={{ color: "var(--accent-green)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Exporter</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5 leading-relaxed">Télécharge tes données en JSON</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Exporter</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">Télécharge tes données en JSON</p>
                 </div>
                 <ChevronRight size={14} className="text-b-hover shrink-0" />
               </div>
@@ -409,7 +409,7 @@ export default function ReglagesPanel() {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-surface-2 text-left"
+              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-[var(--surface-2)] text-left"
             >
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -417,8 +417,8 @@ export default function ReglagesPanel() {
                   <Upload size={15} style={{ color: "var(--accent-purple)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Importer</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5 leading-relaxed">Restaure tes données depuis un fichier JSON</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Importer</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">Restaure tes données depuis un fichier JSON</p>
                 </div>
                 <ChevronRight size={14} className="text-b-hover shrink-0" />
               </div>
@@ -435,7 +435,7 @@ export default function ReglagesPanel() {
 
             <button
               onClick={() => setShowResetModal(true)}
-              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-surface-2 text-left"
+              className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary transition-all hover:bg-[var(--surface-2)] text-left"
             >
               <div className="flex items-center gap-4">
                 <div className="w-8 h-8 rounded-xl flex items-center justify-center shrink-0"
@@ -443,8 +443,8 @@ export default function ReglagesPanel() {
                   <Trash2 size={15} style={{ color: "var(--accent-red)" }} />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-[17px] text-t-primary" style={{ fontWeight: 450 }}>Réinitialiser</p>
-                  <p className="text-[11px] text-t-secondary mt-0.5 leading-relaxed">Supprimer toutes les données</p>
+                  <p className="text-[17px] text-[var(--text-primary)]" style={{ fontWeight: 450 }}>Réinitialiser</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 leading-relaxed">Supprimer toutes les données</p>
                 </div>
                 <ChevronRight size={14} className="text-b-hover shrink-0" />
               </div>
@@ -452,8 +452,8 @@ export default function ReglagesPanel() {
           </Section>
 
           <div className="rounded-3xl px-5 py-4 text-center bg-empty-bg border border-b-primary">
-            <p className="text-sm text-t-secondary">En construction</p>
-            <p className="text-[11px] text-t-secondary mt-1">Sync cloud, notifications avancées, intégrations et plus.</p>
+            <p className="text-sm text-[var(--text-secondary)]">En construction</p>
+            <p className="text-[11px] text-[var(--text-secondary)] mt-1">Sync cloud, notifications avancées, intégrations et plus.</p>
           </div>
 
           <div className="text-center pt-2">
@@ -481,8 +481,8 @@ export default function ReglagesPanel() {
             >
               <div className="flex items-start gap-3 mb-4">
                 <div>
-                  <h2 className="text-lg font-semibold text-t-primary">Profil TDAH</h2>
-                  <p className="text-sm text-t-secondary mt-2">Sélectionne ton sous-type TDAH pour des conseils personnalisés</p>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Profil TDAH</h2>
+                  <p className="text-sm text-[var(--text-secondary)] mt-2">Sélectionne ton sous-type TDAH pour des conseils personnalisés</p>
                 </div>
               </div>
               <div className="mt-4 space-y-2">
@@ -497,10 +497,10 @@ export default function ReglagesPanel() {
                       updateSettings({ tdahSubtype: value });
                       setShowTdahModal(false);
                     }}
-                    className={`w-full p-3 rounded-2xl text-sm font-medium transition-all ${
+                    className={`w-full p-3 rounded-xl text-sm font-medium transition-all ${
                       settings.tdahSubtype === value
                         ? "bg-accent-orange text-white"
-                        : "bg-empty-bg text-t-primary hover:bg-surface-2"
+                        : "bg-empty-bg text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
                     }`}
                   >
                     {label}
@@ -510,7 +510,7 @@ export default function ReglagesPanel() {
               <div className="flex gap-3 mt-6">
                 <button
                   onClick={() => setShowTdahModal(false)}
-                  className="flex-1 px-4 py-2.5 rounded-2xl font-medium text-sm bg-empty-bg text-t-primary transition-all hover:bg-surface-2"
+                  className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-empty-bg text-[var(--text-primary)] transition-all hover:bg-[var(--surface-2)]"
                 >
                   Annuler
                 </button>
@@ -534,7 +534,7 @@ export default function ReglagesPanel() {
             onClick={(e) => e.stopPropagation()}
             className="bg-surface rounded-3xl max-w-sm w-full border border-b-primary p-6 shadow-lg"
           >
-            <h2 className="text-lg font-semibold text-t-primary mb-4">Durée Pomodoro</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Durée Pomodoro</h2>
             <div className="flex items-center gap-4">
               <input
                 type="range"
@@ -550,7 +550,7 @@ export default function ReglagesPanel() {
             <div className="flex gap-3 mt-6">
               <button
                 onClick={() => setShowPomodoroModal(false)}
-                className="flex-1 px-4 py-2.5 rounded-2xl font-medium text-sm bg-accent-blue text-white transition-all hover:bg-accent-blue/90"
+                className="flex-1 px-4 py-2.5 rounded-xl font-medium text-sm bg-accent-blue text-white transition-all hover:bg-accent-blue/90"
               >
                 Valider
               </button>
@@ -573,7 +573,7 @@ export default function ReglagesPanel() {
             onClick={(e) => e.stopPropagation()}
             className="bg-surface rounded-3xl max-w-sm w-full border border-b-primary p-6 shadow-lg"
           >
-            <h2 className="text-lg font-semibold text-t-primary mb-4">Tâches par jour</h2>
+            <h2 className="text-lg font-semibold text-[var(--text-primary)] mb-4">Tâches par jour</h2>
             <div className="grid grid-cols-3 gap-2">
               {[3, 5, 7].map((num) => (
                 <button
@@ -582,10 +582,10 @@ export default function ReglagesPanel() {
                     updateSettings({ maxDailyTasks: num });
                     setShowMaxTasksModal(false);
                   }}
-                  className={`py-3 rounded-2xl font-medium transition-all ${
+                  className={`py-3 rounded-xl font-medium transition-all ${
                     settings.maxDailyTasks === num
                       ? "bg-accent-green text-white"
-                      : "bg-empty-bg text-t-primary hover:bg-surface-2"
+                      : "bg-empty-bg text-[var(--text-primary)] hover:bg-[var(--surface-2)]"
                   }`}
                 >
                   {num}
@@ -594,7 +594,7 @@ export default function ReglagesPanel() {
             </div>
             <button
               onClick={() => setShowMaxTasksModal(false)}
-              className="w-full px-4 py-2.5 rounded-2xl font-medium text-sm bg-accent-blue text-white transition-all hover:bg-accent-blue/90 mt-4"
+              className="w-full px-4 py-2.5 rounded-xl font-medium text-sm bg-accent-blue text-white transition-all hover:bg-accent-blue/90 mt-4"
             >
               Fermer
             </button>

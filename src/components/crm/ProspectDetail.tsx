@@ -49,7 +49,7 @@ export default function ProspectDetail({ id }: { id: string }) {
 
   if (!prospect) {
     return (
-      <div className="h-full flex items-center justify-center text-t-tertiary">
+      <div className="h-full flex items-center justify-center text-[var(--text-tertiary)]">
         {loaded ? "Prospect introuvable." : <Loader2 size={16} className="animate-spin" />}
       </div>
     );
@@ -79,18 +79,18 @@ export default function ProspectDetail({ id }: { id: string }) {
   return (
     <div className="h-full flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="px-6 py-4 border-b border-surface-3 flex items-center justify-between">
+      <div className="px-6 py-4 border-b border-[var(--border-primary)] flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link
             href="/prospects"
-            className="p-2 hover:bg-surface-2 rounded-lg text-t-tertiary hover:text-t-primary transition-colors"
+            className="p-2 hover:bg-[var(--surface-2)] rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors"
           >
             <ArrowLeft size={16} />
           </Link>
           <div>
             <h1 className="text-[18px] font-bold tracking-tight flex items-center gap-2">
               {prospect.entreprise}
-              {prospect.archived && <span className="text-[10px] uppercase tracking-wider text-t-tertiary">archivé</span>}
+              {prospect.archived && <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">archivé</span>}
             </h1>
             <div className="mt-1">
               <StatutBadge statut={prospect.statut} compact />
@@ -101,7 +101,7 @@ export default function ProspectDetail({ id }: { id: string }) {
           <button
             onClick={onSave}
             disabled={saving}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[12px] font-semibold hover:bg-dopa-cyan/20"
+            className="inline-flex items-center gap-2 px-3 py-2 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[12px] font-semibold hover:bg-[var(--surface-2)]"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : savedPulse ? <Check size={12} /> : <Save size={12} />}
             {savedPulse ? "Sauvé" : "Enregistrer"}
@@ -110,8 +110,8 @@ export default function ProspectDetail({ id }: { id: string }) {
       </div>
 
       {/* Action bar gros boutons résultats appel */}
-      <div className="px-6 py-4 border-b border-surface-3 bg-surface-1">
-        <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-3">Résultat de l'appel</p>
+      <div className="px-6 py-4 border-b border-[var(--border-primary)] bg-[var(--surface-1)]">
+        <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">Résultat de l'appel</p>
         <div className="grid grid-cols-5 gap-2">
           <ResultBtn icon={<Calendar size={16} />} label="RDV calé" color="blue" onClick={() => onAction("RDV")} disabled={acting} />
           <ResultBtn icon={<Voicemail size={16} />} label="Répondeur" color="orange" onClick={() => onAction("REPONDEUR")} disabled={acting} />
@@ -124,12 +124,12 @@ export default function ProspectDetail({ id }: { id: string }) {
       {/* Body split 2 colonnes */}
       <div className="flex-1 overflow-auto grid grid-cols-2 gap-0">
         {/* Colonne gauche : fiche éditable */}
-        <div className="p-6 border-r border-surface-3 space-y-5">
+        <div className="p-6 border-r border-[var(--border-primary)] space-y-5">
           <Field label="Entreprise">
             <input
               value={form.entreprise || ""}
               onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-              className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-dopa-cyan/50"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-var(--accent-cyan)/50"
             />
           </Field>
 
@@ -139,12 +139,12 @@ export default function ProspectDetail({ id }: { id: string }) {
                 <input
                   value={form.telephone || ""}
                   onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                  className="flex-1 bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[13px] tabular-nums focus:outline-none focus:border-dopa-cyan/50"
+                  className="flex-1 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] tabular-nums focus:outline-none focus:border-var(--accent-cyan)/50"
                 />
                 {prospect.telephone && (
                   <a
                     href={`tel:${prospect.telephone}`}
-                    className="inline-flex items-center justify-center w-9 h-9 bg-dopa-green/10 text-dopa-green rounded-lg hover:bg-dopa-green/20"
+                    className="inline-flex items-center justify-center w-9 h-9 bg-[var(--accent-green-light)] text-[var(--accent-green)] rounded-lg hover:bg-[var(--surface-2)]"
                     title="Appeler"
                   >
                     <Phone size={14} />
@@ -157,7 +157,7 @@ export default function ProspectDetail({ id }: { id: string }) {
               <select
                 value={form.statut || prospect.statut}
                 onChange={(e) => setForm({ ...form, statut: e.target.value as Prospect["statut"] })}
-                className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-dopa-cyan/50 cursor-pointer"
+                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-var(--accent-cyan)/50 cursor-pointer"
               >
                 {STATUTS_ORDRE.map((s) => (
                   <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
@@ -172,10 +172,10 @@ export default function ProspectDetail({ id }: { id: string }) {
                 value={form.gmb_url || ""}
                 onChange={(e) => setForm({ ...form, gmb_url: e.target.value })}
                 placeholder="https://maps.google.com/..."
-                className="flex-1 bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50"
+                className="flex-1 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
               />
               {prospect.gmb_url && (
-                <a href={prospect.gmb_url} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-9 h-9 bg-dopa-cyan/10 text-dopa-cyan rounded-lg hover:bg-dopa-cyan/20">
+                <a href={prospect.gmb_url} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-9 h-9 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg hover:bg-[var(--surface-2)]">
                   <MapPin size={14} />
                 </a>
               )}
@@ -188,10 +188,10 @@ export default function ProspectDetail({ id }: { id: string }) {
                 value={form.site_url || ""}
                 onChange={(e) => setForm({ ...form, site_url: e.target.value })}
                 placeholder="https://..."
-                className="flex-1 bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50"
+                className="flex-1 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
               />
               {prospect.site_url && (
-                <a href={prospect.site_url} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-9 h-9 bg-dopa-cyan/10 text-dopa-cyan rounded-lg hover:bg-dopa-cyan/20">
+                <a href={prospect.site_url} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-9 h-9 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg hover:bg-[var(--surface-2)]">
                   <ExternalLink size={14} />
                 </a>
               )}
@@ -204,10 +204,10 @@ export default function ProspectDetail({ id }: { id: string }) {
                 value={form.lien_maquette || ""}
                 onChange={(e) => setForm({ ...form, lien_maquette: e.target.value })}
                 placeholder="Colle ici le lien Google AI Studio"
-                className="flex-1 bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50"
+                className="flex-1 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
               />
               {prospect.lien_maquette && (
-                <a href={prospect.lien_maquette} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-9 h-9 bg-dopa-violet/10 text-dopa-violet rounded-lg hover:bg-dopa-violet/20">
+                <a href={prospect.lien_maquette} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center w-9 h-9 bg-[var(--accent-purple-light)] text-[var(--accent-purple)] rounded-lg hover:bg-[var(--surface-2)]">
                   <ExternalLink size={14} />
                 </a>
               )}
@@ -220,7 +220,7 @@ export default function ProspectDetail({ id }: { id: string }) {
                 type="date"
                 value={form.date_rdv || ""}
                 onChange={(e) => setForm({ ...form, date_rdv: e.target.value || null })}
-                className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50"
+                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
               />
             </Field>
             <Field label="Date relance">
@@ -228,7 +228,7 @@ export default function ProspectDetail({ id }: { id: string }) {
                 type="date"
                 value={form.date_relance || ""}
                 onChange={(e) => setForm({ ...form, date_relance: e.target.value || null })}
-                className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50"
+                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
               />
             </Field>
           </div>
@@ -238,7 +238,7 @@ export default function ProspectDetail({ id }: { id: string }) {
               value={form.feedback || ""}
               onChange={(e) => setForm({ ...form, feedback: e.target.value })}
               rows={2}
-              className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50 resize-none"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50 resize-none"
             />
           </Field>
 
@@ -247,33 +247,33 @@ export default function ProspectDetail({ id }: { id: string }) {
               value={form.notes || ""}
               onChange={(e) => setForm({ ...form, notes: e.target.value })}
               rows={3}
-              className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-dopa-cyan/50 resize-none"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50 resize-none"
             />
           </Field>
 
-          <div className="flex items-center justify-between pt-3 border-t border-surface-3">
-            <label className="inline-flex items-center gap-2 text-[12px] text-t-secondary cursor-pointer">
+          <div className="flex items-center justify-between pt-3 border-t border-[var(--border-primary)]">
+            <label className="inline-flex items-center gap-2 text-[12px] text-[var(--text-secondary)] cursor-pointer">
               <input
                 type="checkbox"
                 checked={!!form.archived}
                 onChange={(e) => setForm({ ...form, archived: e.target.checked })}
-                className="accent-dopa-red"
+                className="accent-var(--accent-red)"
               />
               Archivé
             </label>
-            <span className="text-[10px] text-t-tertiary">
+            <span className="text-[10px] text-[var(--text-tertiary)]">
               Créé le {new Date(prospect.created_at).toLocaleDateString("fr-FR")}
             </span>
           </div>
         </div>
 
         {/* Colonne droite : historique appels */}
-        <div className="p-6 bg-surface-1/40">
-          <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-3">
+        <div className="p-6 bg-[var(--surface-1)]/40">
+          <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
             Historique des appels ({prospectCalls.length})
           </p>
           {prospectCalls.length === 0 ? (
-            <div className="text-center py-10 text-t-tertiary text-[13px]">
+            <div className="text-center py-10 text-[var(--text-tertiary)] text-[13px]">
               Aucun appel enregistré pour ce prospect.
             </div>
           ) : (
@@ -281,24 +281,24 @@ export default function ProspectDetail({ id }: { id: string }) {
               {prospectCalls.map((c) => (
                 <li
                   key={c.id}
-                  className="bg-surface-2 border border-surface-3 rounded-lg px-3 py-2.5 flex items-start justify-between gap-3"
+                  className="bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2.5 flex items-start justify-between gap-3"
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[12px] font-semibold text-t-primary">
+                      <span className="text-[12px] font-semibold text-[var(--text-primary)]">
                         {RESULTAT_ICON[c.resultat]} {RESULTAT_TEXT[c.resultat]}
                       </span>
                       {!c.compte_mission && (
-                        <span className="text-[9px] uppercase tracking-wider text-t-tertiary">
+                        <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)]">
                           ne compte pas
                         </span>
                       )}
                     </div>
                     {c.notes && (
-                      <p className="text-[11.5px] text-t-secondary mt-1 whitespace-pre-wrap">{c.notes}</p>
+                      <p className="text-[11.5px] text-[var(--text-secondary)] mt-1 whitespace-pre-wrap">{c.notes}</p>
                     )}
                   </div>
-                  <time className="text-[10px] text-t-tertiary tabular-nums whitespace-nowrap">
+                  <time className="text-[10px] text-[var(--text-tertiary)] tabular-nums whitespace-nowrap">
                     {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                     <br />
                     {new Date(c.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
@@ -315,30 +315,30 @@ export default function ProspectDetail({ id }: { id: string }) {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowVendu(false)}>
           <motion.div
             initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-            className="bg-surface-1 border border-surface-3 rounded-2xl shadow-elevated w-full max-w-md p-6"
+            className="bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl  w-full max-w-md p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-[16px] font-bold mb-4 flex items-center gap-2">
-              <DollarSign size={16} className="text-dopa-green" />
+              <DollarSign size={16} className="text-var(--accent-green)" />
               Encaisser une vente
             </h3>
-            <label className="block text-[11px] uppercase tracking-wider text-t-tertiary mb-2">
+            <label className="block text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
               Montant (€)
             </label>
             <input
               type="number"
               value={montantVendu}
               onChange={(e) => setMontantVendu(Number(e.target.value))}
-              className="w-full bg-surface-2 border border-surface-3 rounded-lg px-3 py-2 text-[14px] font-semibold tabular-nums focus:outline-none focus:border-dopa-green/50 mb-4"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[14px] font-semibold tabular-nums focus:outline-none focus:border-var(--accent-green)/50 mb-4"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowVendu(false)} className="px-4 py-2 text-[13px] text-t-secondary rounded-lg">
+              <button onClick={() => setShowVendu(false)} className="px-4 py-2 text-[13px] text-[var(--text-secondary)] rounded-lg">
                 Annuler
               </button>
               <button
                 onClick={onVendu}
                 disabled={acting || !montantVendu}
-                className="px-4 py-2 bg-dopa-green text-black text-[13px] font-semibold rounded-lg disabled:opacity-40"
+                className="px-4 py-2 bg-var(--accent-green) text-black text-[13px] font-semibold rounded-lg disabled:opacity-40"
               >
                 Encaisser {montantVendu}€
               </button>
@@ -355,7 +355,7 @@ export default function ProspectDetail({ id }: { id: string }) {
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wider text-t-tertiary mb-1.5 font-semibold">
+      <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5 font-semibold">
         {label}
       </label>
       {children}
@@ -385,9 +385,9 @@ type BtnColor = "blue" | "orange" | "red" | "gray" | "green";
 const BTN_COLORS: Record<BtnColor, string> = {
   blue:   "bg-dopa-blue/10 text-dopa-blue border-dopa-blue/30 hover:bg-dopa-blue/20",
   orange: "bg-[#422006]/80 text-[#fb923c] border-[#78350f] hover:bg-[#422006]",
-  red:    "bg-dopa-red/10 text-dopa-red border-dopa-red/30 hover:bg-dopa-red/20",
-  gray:   "bg-surface-2 text-t-secondary border-surface-3 hover:bg-surface-3",
-  green:  "bg-dopa-green/10 text-dopa-green border-dopa-green/30 hover:bg-dopa-green/20",
+  red:    "bg-[var(--accent-red-light)] text-[var(--accent-red)] border-[var(--accent-red)] hover:bg-[var(--surface-2)]",
+  gray:   "bg-[var(--surface-2)] text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-surface-3",
+  green:  "bg-[var(--accent-green-light)] text-[var(--accent-green)] border-[var(--accent-green)] hover:bg-[var(--surface-2)]",
 };
 
 function ResultBtn({

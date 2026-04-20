@@ -91,12 +91,12 @@ export default function VisionBoard() {
       {/* Header */}
       <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between border border-b-primary">
         <div>
-          <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-            <Eye size={18} className="text-t-secondary" /> Vision Board
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
+            <Eye size={18} className="text-[var(--text-secondary)]" /> Vision Board
           </h1>
-          <p className="text-xs text-t-secondary mt-1">Tes objectifs de vie · Visualise ton futur</p>
+          <p className="text-xs text-[var(--text-secondary)] mt-1">Tes objectifs de vie · Visualise ton futur</p>
         </div>
-        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all bg-surface border border-b-primary text-t-primary"
+        <button onClick={() => setAdding(!adding)} className="flex items-center gap-1.5 text-xs px-3 py-2 rounded-xl font-medium transition-all bg-surface border border-b-primary text-[var(--text-primary)]"
         ><Plus size={13} /> Nouvel objectif</button>
       </div>
 
@@ -142,7 +142,7 @@ export default function VisionBoard() {
                 value={formTitle}
                 onChange={(e) => setFormTitle(e.target.value)}
                 placeholder="Mon objectif de vie…"
-                className="text-base bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none border-b border-b-primary pb-2"
+                className="text-base bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none border-b border-b-primary pb-2"
                 autoFocus
               />
 
@@ -151,11 +151,11 @@ export default function VisionBoard() {
                 onChange={(e) => setFormDesc(e.target.value)}
                 placeholder="Décris en détail ce que tu veux accomplir, pourquoi c'est important pour toi…"
                 rows={3}
-                className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary rounded-xl p-3 focus:outline-none resize-none bg-empty-bg border border-b-primary"
+                className="text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] rounded-xl p-3 focus:outline-none resize-none bg-empty-bg border border-b-primary"
               />
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest">Horizon</label>
+                <label className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Horizon</label>
                 <div className="flex gap-2">
                   {HORIZONS.map((h) => (
                     <button
@@ -173,7 +173,7 @@ export default function VisionBoard() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest">Catégorie</label>
+                <label className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Catégorie</label>
                 <div className="flex flex-wrap gap-1.5">
                   {CATEGORIES.map((c) => (
                     <button
@@ -191,14 +191,14 @@ export default function VisionBoard() {
               </div>
 
               <div className="flex flex-col gap-2">
-                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest flex items-center gap-1.5">
+                <label className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-1.5">
                   <Image size={10} /> Image d&apos;inspiration (URL)
                 </label>
                 <input
                   value={formImageUrl}
                   onChange={(e) => setFormImageUrl(e.target.value)}
                   placeholder="https://images.unsplash.com/…"
-                  className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none border-b border-b-primary pb-1"
+                  className="text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none border-b border-b-primary pb-1"
                 />
                 <div className="flex gap-2 flex-wrap">
                   {INSPIRATIONAL_IMAGES.map((url, i) => (
@@ -220,7 +220,7 @@ export default function VisionBoard() {
               </div>
 
               <div className="flex gap-2 justify-end pt-2">
-                <button type="button" onClick={() => setAdding(false)} className="text-xs text-t-secondary hover:text-t-primary px-3 py-1.5">Annuler</button>
+                <button type="button" onClick={() => setAdding(false)} className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5">Annuler</button>
                 <button type="submit" className="text-xs px-4 py-2 rounded-xl font-medium bg-accent-blue text-white">Créer l&apos;objectif</button>
               </div>
             </motion.form>
@@ -235,11 +235,11 @@ export default function VisionBoard() {
               <p className="text-[11px] font-medium uppercase tracking-widest" style={{ color: group.color }}>
                 {group.label}
               </p>
-              <span className="text-[10px] text-t-secondary ml-1">{group.description}</span>
+              <span className="text-[10px] text-[var(--text-secondary)] ml-1">{group.description}</span>
             </div>
 
             {group.goals.length === 0 && (
-              <p className="text-[11px] text-t-secondary px-2 py-4">Aucun objectif pour cet horizon. Ajoutes-en un !</p>
+              <p className="text-[11px] text-[var(--text-secondary)] px-2 py-4">Aucun objectif pour cet horizon. Ajoutes-en un !</p>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
@@ -265,7 +265,7 @@ export default function VisionBoard() {
                         <img src={goal.imageUrl} alt="" className="w-full h-full object-cover" />
                         <div className="absolute inset-0" style={{ background: "linear-gradient(to top, rgba(255,255,255,0.7) 0%, transparent 60%)" }} />
                         <div className="absolute bottom-3 left-4 right-4">
-                          <p className="text-sm font-semibold text-t-primary">{goal.title}</p>
+                          <p className="text-sm font-semibold text-[var(--text-primary)]">{goal.title}</p>
                         </div>
                       </div>
                     )}
@@ -277,15 +277,15 @@ export default function VisionBoard() {
                       {!goal.imageUrl && (
                         <div className="flex items-center gap-2 mb-1">
                           <Star size={12} style={{ color: goal.color }} />
-                          <p className="text-sm font-medium text-t-primary">{goal.title}</p>
+                          <p className="text-sm font-medium text-[var(--text-primary)]">{goal.title}</p>
                         </div>
                       )}
-                      <div className="flex items-center gap-2 text-[10px] text-t-secondary">
+                      <div className="flex items-center gap-2 text-[10px] text-[var(--text-secondary)]">
                         {cat && <span>{cat.emoji} {cat.label}</span>}
                         {totalSteps > 0 && <span>· {doneSteps}/{totalSteps} étapes</span>}
                       </div>
                       {goal.description && !isExpanded && (
-                        <p className="text-[11px] text-t-secondary mt-2 line-clamp-2">{goal.description}</p>
+                        <p className="text-[11px] text-[var(--text-secondary)] mt-2 line-clamp-2">{goal.description}</p>
                       )}
                       {totalSteps > 0 && (
                         <div className="mt-2 h-1 rounded-full overflow-hidden bg-b-primary">
@@ -305,14 +305,14 @@ export default function VisionBoard() {
                           <div className="px-4 pb-4 flex flex-col gap-3" style={{ borderTop: "1px solid var(--border-primary)" }}>
                             {/* Full description */}
                             {goal.description && (
-                              <p className="text-[12px] text-t-primary mt-2 leading-relaxed whitespace-pre-wrap">{goal.description}</p>
+                              <p className="text-[12px] text-[var(--text-primary)] mt-2 leading-relaxed whitespace-pre-wrap">{goal.description}</p>
                             )}
 
                             {/* Action Plan */}
                             <div className="flex flex-col gap-2 mt-1">
                               <div className="flex items-center gap-1.5">
-                                <Heart size={10} className="text-t-secondary" />
-                                <label className="text-[10px] font-medium text-t-secondary uppercase tracking-widest">Plan d&apos;action</label>
+                                <Heart size={10} className="text-[var(--text-secondary)]" />
+                                <label className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Plan d&apos;action</label>
                               </div>
 
                               {goal.actionSteps.map((step) => (
@@ -325,38 +325,38 @@ export default function VisionBoard() {
                                     {step.done && <Check size={7} style={{ color: goal.color }} strokeWidth={3} />}
                                   </button>
                                   <span className="flex-1 text-[11px]" style={{ color: step.done ? "var(--accent-green)" : "var(--text-secondary)", textDecoration: step.done ? "line-through" : "none" }}>{step.text}</span>
-                                  <button onClick={() => deleteLifeGoalStep(goal.id, step.id)} className="opacity-0 group-hover/step:opacity-100 text-t-secondary hover:text-accent-red">
+                                  <button onClick={() => deleteLifeGoalStep(goal.id, step.id)} className="opacity-0 group-hover/step:opacity-100 text-[var(--text-secondary)] hover:text-accent-red">
                                     <X size={9} />
                                   </button>
                                 </div>
                               ))}
 
                               <div className="flex items-center gap-2">
-                                <Plus size={10} className="text-t-secondary shrink-0" />
+                                <Plus size={10} className="text-[var(--text-secondary)] shrink-0" />
                                 <input
                                   value={expandedId === goal.id ? stepInput : ""}
                                   onChange={(e) => setStepInput(e.target.value)}
                                   onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddStep(goal.id); } }}
                                   placeholder="Ajouter une étape…"
-                                  className="flex-1 text-[11px] bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none py-0.5"
+                                  className="flex-1 text-[11px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none py-0.5"
                                 />
                               </div>
                             </div>
 
                             {/* Image URL edit */}
                             <div className="flex items-center gap-2 mt-1">
-                              <Image size={10} className="text-t-secondary" />
+                              <Image size={10} className="text-[var(--text-secondary)]" />
                               <input
                                 value={goal.imageUrl || ""}
                                 onChange={(e) => updateLifeGoal(goal.id, { imageUrl: e.target.value || undefined })}
                                 placeholder="URL image d'inspiration"
-                                className="flex-1 text-[10px] bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none"
+                                className="flex-1 text-[10px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
                               />
                             </div>
 
                             <button
                               onClick={() => deleteLifeGoal(goal.id)}
-                              className="flex items-center gap-1.5 text-[10px] text-t-secondary hover:text-accent-red transition-colors self-end mt-1"
+                              className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)] hover:text-accent-red transition-colors self-end mt-1"
                             >
                               <Trash2 size={9} /> Supprimer
                             </button>
@@ -373,14 +373,14 @@ export default function VisionBoard() {
 
         {lifeGoals.length === 0 && !adding && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center bg-empty-bg border border-b-primary">
-              <Eye size={22} className="text-t-secondary" />
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center bg-empty-bg border border-b-primary">
+              <Eye size={22} className="text-[var(--text-secondary)]" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-t-primary">Ton Vision Board est vide</p>
-              <p className="text-xs text-t-secondary mt-1">Commence à écrire tes objectifs de vie pour te projeter et te motiver.</p>
+              <p className="text-sm text-[var(--text-primary)]">Ton Vision Board est vide</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">Commence à écrire tes objectifs de vie pour te projeter et te motiver.</p>
             </div>
-            <button onClick={() => setAdding(true)} className="text-xs px-4 py-2 rounded-xl font-medium transition-all bg-surface text-t-primary border border-b-primary">
+            <button onClick={() => setAdding(true)} className="text-xs px-4 py-2 rounded-xl font-medium transition-all bg-surface text-[var(--text-primary)] border border-b-primary">
               <Plus size={12} className="inline mr-1" /> Créer mon premier objectif
             </button>
           </div>

@@ -53,7 +53,7 @@ export default function CrmDashboard() {
 
   if (!loaded && loading) {
     return (
-      <div className="h-full flex items-center justify-center text-t-tertiary gap-2">
+      <div className="h-full flex items-center justify-center text-[var(--text-tertiary)] gap-2">
         <Loader2 size={16} className="animate-spin" />
         <span>Chargement du dashboard...</span>
       </div>
@@ -64,7 +64,7 @@ export default function CrmDashboard() {
     <div className="h-full overflow-auto">
       <div className="max-w-[1280px] mx-auto px-8 py-8 space-y-6">
         {error && (
-          <div className="px-4 py-3 bg-dopa-red/10 border border-dopa-red/30 rounded-lg text-[12px] text-dopa-red flex items-center gap-2">
+          <div className="px-4 py-3 bg-[var(--accent-red-light)] border border-[var(--accent-red)] rounded-lg text-[12px] text-[var(--accent-red)] flex items-center gap-2">
             <AlertTriangle size={14} />
             {error}
           </div>
@@ -74,42 +74,42 @@ export default function CrmDashboard() {
         <motion.div
           initial={{ opacity: 0, y: -6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-surface-3 bg-gradient-to-br from-surface-1 to-surface-2 p-6 shadow-card"
+          className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-6"
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-dopa-cyan/10 text-dopa-cyan flex items-center justify-center">
+              <div className="w-10 h-10 rounded-lg bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] flex items-center justify-center">
                 <Target size={20} />
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-wider text-t-tertiary font-semibold">
+                <p className="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold">
                   Objectif mensuel · deadline {new Date(deadline).toLocaleDateString("fr-FR")}
                 </p>
                 <h2 className="text-[20px] font-bold tracking-tight">
-                  {stats.revenuTotal.toLocaleString("fr-FR")} € <span className="text-t-tertiary font-normal">/ {objectif.toLocaleString("fr-FR")} €</span>
+                  {stats.revenuTotal.toLocaleString("fr-FR")} € <span className="text-[var(--text-tertiary)] font-normal">/ {objectif.toLocaleString("fr-FR")} €</span>
                 </h2>
               </div>
             </div>
             <div className="text-right">
-              <p className="text-[11px] uppercase tracking-wider text-t-tertiary">J - {Math.max(0, jX)}</p>
-              <p className={`text-[14px] font-bold tabular-nums ${retard ? "text-dopa-red" : "text-dopa-green"}`}>
+              <p className="text-[11px] uppercase tracking-wider text-[var(--text-tertiary)]">J - {Math.max(0, jX)}</p>
+              <p className={`text-[14px] font-bold tabular-nums ${retard ? "text-[var(--accent-red)]" : "text-[var(--accent-green)]"}`}>
                 {retard ? `-${(trajectoire - stats.revenuTotal).toLocaleString("fr-FR")} € vs trajectoire` : "Sur la bonne voie"}
               </p>
             </div>
           </div>
 
-          <div className="relative h-4 rounded-full bg-surface-3 overflow-hidden">
+          <div className="relative h-4 rounded-full bg-[var(--surface-2)] overflow-hidden">
             <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${pct}%` }}
               transition={{ duration: 0.8, ease: "easeOut" }}
               className="absolute inset-y-0 left-0 rounded-full"
-              style={{ background: thermoColor, boxShadow: `0 0 16px ${thermoColor}66` }}
+              style={{ background: thermoColor }}
             />
           </div>
-          <div className="mt-2 flex items-center justify-between text-[11px] text-t-tertiary tabular-nums">
+          <div className="mt-2 flex items-center justify-between text-[11px] text-[var(--text-tertiary)] tabular-nums">
             <span>0 €</span>
-            <span className="text-t-primary font-semibold">{pct}%</span>
+            <span className="text-[var(--text-primary)] font-semibold">{pct}%</span>
             <span>{objectif.toLocaleString("fr-FR")} €</span>
           </div>
         </motion.div>
@@ -132,34 +132,34 @@ export default function CrmDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-2xl border border-surface-3 bg-surface-1 p-6"
+          className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-6"
         >
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Flame size={16} className="text-dopa-xp" />
-              <p className="text-[11px] uppercase tracking-wider font-semibold text-t-tertiary">
+              <Flame size={16} className="text-[var(--accent-orange)]" />
+              <p className="text-[11px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)]">
                 Mission du jour · objectif {dailyTarget} appels
               </p>
             </div>
             {streak > 0 && (
-              <span className="inline-flex items-center gap-1 text-[11px] text-dopa-xp font-semibold">
+              <span className="inline-flex items-center gap-1 text-[11px] text-[var(--accent-orange)] font-semibold">
                 <Flame size={11} /> Streak {streak}j
               </span>
             )}
           </div>
 
           <div className="flex items-center gap-4 mb-4">
-            <p className="text-[32px] font-bold tabular-nums text-t-primary leading-none">
-              {stats.appelsDuJour}<span className="text-t-tertiary"> / {dailyTarget}</span>
+            <p className="text-[32px] font-bold tabular-nums text-[var(--text-primary)] leading-none">
+              {stats.appelsDuJour}<span className="text-[var(--text-tertiary)]"> / {dailyTarget}</span>
             </p>
             <div className="flex gap-2">
               {Array.from({ length: dailyTarget }).map((_, i) => (
                 <div
                   key={i}
-                  className={`w-10 h-10 rounded-xl border-2 flex items-center justify-center transition-all ${
+                  className={`w-10 h-10 rounded-lg border flex items-center justify-center transition-all ${
                     i < stats.appelsDuJour
-                      ? "bg-dopa-green/10 border-dopa-green text-dopa-green"
-                      : "border-surface-3 text-surface-4"
+                      ? "bg-[var(--accent-green-light)] border-[var(--accent-green)] text-[var(--accent-green)]"
+                      : "border-[var(--border-secondary)] text-[var(--text-tertiary)]"
                   }`}
                 >
                   {i < stats.appelsDuJour ? <CheckCircle2 size={18} /> : <span className="text-[14px] font-bold">{i + 1}</span>}
@@ -168,7 +168,7 @@ export default function CrmDashboard() {
             </div>
           </div>
 
-          <p className="text-[13.5px] text-t-secondary italic border-t border-surface-3 pt-3">
+          <p className="text-[13.5px] text-[var(--text-secondary)] italic border-t border-[var(--border-primary)] pt-3">
             {motiv}
           </p>
         </motion.div>
@@ -177,21 +177,21 @@ export default function CrmDashboard() {
         <div className="grid grid-cols-[1fr_auto] gap-4 items-stretch">
           <Link
             href="/crm"
-            className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-dopa-cyan to-dopa-violet p-6 shadow-card-hover hover:shadow-glow-cyan transition-shadow"
+            className="group relative overflow-hidden rounded-xl bg-[var(--accent-cyan-light)] border border-[var(--accent-cyan)] p-6 hover:bg-[var(--surface-2)] transition-colors"
           >
             <div className="relative z-10 flex items-center justify-between">
               <div>
-                <p className="text-[11px] uppercase tracking-wider text-black/70 font-semibold">
+                <p className="text-[11px] uppercase tracking-wider text-[var(--accent-cyan)] font-semibold">
                   {stats.appelsDuJour >= dailyTarget ? "Bonus — continuer" : "Démarrer ma session"}
                 </p>
-                <p className="text-[22px] font-black text-black leading-tight">
+                <p className="text-[22px] font-black text-[var(--accent-cyan)] leading-tight">
                   {stats.appelsDuJour >= dailyTarget ? "La suite c'est du bonus" : "Lancer mon rituel"}
                 </p>
-                <p className="text-[12px] text-black/60 mt-1">
+                <p className="text-[12px] text-[var(--text-secondary)] mt-1">
                   Ouvre la liste prospects · V1.1 : mode focus 17h50 (phases 1→2→3)
                 </p>
               </div>
-              <Rocket size={36} className="text-black/80 group-hover:scale-110 transition-transform" />
+              <Rocket size={36} className="text-[var(--accent-cyan)] group-hover:scale-110 transition-transform" />
             </div>
           </Link>
 
@@ -210,18 +210,17 @@ function KpiCard({ icon, label, value, color }: { icon: React.ReactNode; label: 
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className="rounded-2xl p-5 border border-surface-3 shadow-card"
-      style={{ background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)` }}
+      className="rounded-lg p-5 border border-[var(--border-primary)] bg-[var(--card-bg)] hover:bg-[var(--surface-2)] transition-colors"
     >
       <div className="flex items-center justify-between mb-3">
         <div
           className="w-9 h-9 rounded-lg flex items-center justify-center"
-          style={{ background: `${color}26`, color }}
+          style={{ background: `${color}18`, color }}
         >
           {icon}
         </div>
       </div>
-      <p className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold mb-1">{label}</p>
+      <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold mb-1">{label}</p>
       <p className="text-[28px] font-black tabular-nums tracking-tight" style={{ color }}>
         {value}
       </p>
@@ -231,15 +230,15 @@ function KpiCard({ icon, label, value, color }: { icon: React.ReactNode; label: 
 
 function RatioCard({ icon, label, value, hint }: { icon: React.ReactNode; label: string; value: string; hint: string }) {
   return (
-    <div className="rounded-xl bg-surface-1 border border-surface-3 p-4 flex items-center justify-between">
+    <div className="rounded-lg bg-[var(--card-bg)] border border-[var(--border-primary)] p-4 flex items-center justify-between hover:bg-[var(--surface-2)] transition-colors">
       <div>
-        <div className="flex items-center gap-1.5 text-t-tertiary mb-0.5">
+        <div className="flex items-center gap-1.5 text-[var(--text-tertiary)] mb-0.5">
           {icon}
           <p className="text-[10px] uppercase tracking-wider font-semibold">{label}</p>
         </div>
-        <p className="text-[11px] text-t-tertiary">{hint}</p>
+        <p className="text-[11px] text-[var(--text-tertiary)]">{hint}</p>
       </div>
-      <p className="text-[24px] font-bold tabular-nums text-t-primary">{value}</p>
+      <p className="text-[24px] font-bold tabular-nums text-[var(--text-primary)]">{value}</p>
     </div>
   );
 }
@@ -247,24 +246,15 @@ function RatioCard({ icon, label, value, hint }: { icon: React.ReactNode; label:
 function BouleAZ({ sitesVendus, revenuTotal, bouleMessage }: { sitesVendus: number; revenuTotal: number; bouleMessage: string }) {
   if (sitesVendus === 0) {
     return (
-      <div className="rounded-2xl border border-dopa-red/30 bg-dopa-red/5 p-5 w-72 flex flex-col justify-center">
-        <div className="flex items-center gap-2 text-dopa-red mb-2">
+      <div className="rounded-lg border border-[var(--accent-red)] bg-[var(--accent-red-light)] p-5 w-72 flex flex-col justify-center">
+        <div className="flex items-center gap-2 text-[var(--accent-red)] mb-2">
           <Skull size={14} />
           <p className="text-[10px] uppercase tracking-wider font-semibold">Boule à Z</p>
         </div>
-        <p className="text-[12px] text-t-secondary leading-snug">{bouleMessage}</p>
+        <p className="text-[12px] text-[var(--text-secondary)] leading-snug">{bouleMessage}</p>
       </div>
     );
   }
   return (
-    <div className="rounded-2xl border border-dopa-green/30 bg-dopa-green/5 p-5 w-72 flex flex-col justify-center">
-      <div className="flex items-center gap-2 text-dopa-green mb-2">
-        <Trophy size={14} />
-        <p className="text-[10px] uppercase tracking-wider font-semibold">Boule à Z évitée</p>
-      </div>
-      <p className="text-[12px] text-t-secondary leading-snug">
-        <span className="font-bold text-t-primary">{sitesVendus} contrat{sitesVendus > 1 ? "s" : ""} signé{sitesVendus > 1 ? "s" : ""}</span> · {revenuTotal.toLocaleString("fr-FR")} € encaissés.
-      </p>
-    </div>
-  );
-}
+    <div className="rounded-lg border border-[var(--accent-green)] bg-[var(--accent-green-light)] p-5 w-72 flex flex-col justify-center">
+      <di

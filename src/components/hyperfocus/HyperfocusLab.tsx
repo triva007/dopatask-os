@@ -302,10 +302,10 @@ export default function HyperfocusLab() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary">
-        <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-          <FlaskConical size={18} className="text-t-secondary" /> Focus Lab
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
+          <FlaskConical size={18} className="text-[var(--text-secondary)]" /> Focus Lab
         </h1>
-        <p className="text-xs text-t-secondary mt-1">Deep work avec bruit ambiant</p>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">Deep work avec bruit ambiant</p>
       </div>
 
       <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-6 px-7 py-6">
@@ -313,24 +313,24 @@ export default function HyperfocusLab() {
         {/* Stats Bar */}
         <div className="grid grid-cols-3 gap-3">
           <div className="flex flex-col gap-1 p-5 rounded-3xl bg-surface border border-b-primary" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <span className="text-[13px] text-t-secondary uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[13px] text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1">
               <Clock size={9} /> Aujourd&apos;hui
             </span>
-            <span className="text-xl font-semibold text-t-primary tabular-nums">{todayMinutes}<span className="text-xs text-t-secondary font-normal ml-0.5">min</span></span>
+            <span className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">{todayMinutes}<span className="text-xs text-[var(--text-secondary)] font-normal ml-0.5">min</span></span>
           </div>
           <div className="flex flex-col gap-1 p-5 rounded-3xl bg-surface border border-b-primary" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <span className="text-[13px] text-t-secondary uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[13px] text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1">
               <Trophy size={9} /> Total
             </span>
-            <span className="text-xl font-semibold text-t-primary tabular-nums">
+            <span className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">
               {totalFocusMinutes >= 60 ? `${Math.floor(totalFocusMinutes / 60)}h${totalFocusMinutes % 60 > 0 ? String(totalFocusMinutes % 60).padStart(2, "0") : ""}` : `${totalFocusMinutes}min`}
             </span>
           </div>
           <div className="flex flex-col gap-1 p-5 rounded-3xl bg-surface border border-b-primary" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-            <span className="text-[13px] text-t-secondary uppercase tracking-wider flex items-center gap-1">
+            <span className="text-[13px] text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1">
               <Flame size={9} className="text-accent-orange" /> Sessions
             </span>
-            <span className="text-xl font-semibold text-t-primary tabular-nums">{hyperfocusSessions.length}</span>
+            <span className="text-xl font-semibold text-[var(--text-primary)] tabular-nums">{hyperfocusSessions.length}</span>
           </div>
         </div>
 
@@ -345,7 +345,7 @@ export default function HyperfocusLab() {
           )}
 
           {/* Quote */}
-          <p className="text-[13px] text-t-secondary italic text-center px-8">&quot;{quote}&quot;</p>
+          <p className="text-[13px] text-[var(--text-secondary)] italic text-center px-8">&quot;{quote}&quot;</p>
 
           {/* Timer ring */}
           <div
@@ -378,11 +378,11 @@ export default function HyperfocusLab() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="text-6xl font-extralight text-t-primary tabular-nums tracking-tighter">
+              <span className="text-6xl font-extralight text-[var(--text-primary)] tabular-nums tracking-tighter">
                 {String(minutes).padStart(2, "0")}:{String(seconds).padStart(2, "0")}
               </span>
               {paused && (
-                <span className="text-xs font-medium text-t-secondary mt-1">En pause</span>
+                <span className="text-xs font-medium text-[var(--text-secondary)] mt-1">En pause</span>
               )}
               <div className="flex items-center gap-2 mt-2">
                 <span
@@ -395,7 +395,7 @@ export default function HyperfocusLab() {
                 >
                   {currentPreset.description}
                 </span>
-                <span className="text-[13px] text-t-secondary flex items-center gap-1">
+                <span className="text-[13px] text-[var(--text-secondary)] flex items-center gap-1">
                   <Zap size={8} className="text-accent-orange" /> +{currentPreset.xp} XP
                 </span>
               </div>
@@ -408,7 +408,7 @@ export default function HyperfocusLab() {
             onChange={(e) => setTaskName(e.target.value)}
             placeholder="Sur quoi travailles-tu ?"
             disabled={running}
-            className="text-center text-sm bg-transparent text-t-primary placeholder:text-[var(--text-tertiary)] focus:outline-none w-64 border-b border-b-primary pb-2 disabled:opacity-50"
+            className="text-center text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none w-64 border-b border-b-primary pb-2 disabled:opacity-50"
           />
 
           {/* Preset buttons */}
@@ -439,7 +439,7 @@ export default function HyperfocusLab() {
                 >
                   {p.label}
                 </span>
-                <span className="text-[9px] flex items-center gap-0.5 text-t-secondary">
+                <span className="text-[9px] flex items-center gap-0.5 text-[var(--text-secondary)]">
                   <Zap size={7} /> {p.xp} XP
                 </span>
               </button>
@@ -458,7 +458,7 @@ export default function HyperfocusLab() {
                 disabled={running}
                 min="1"
                 max="480"
-                className="w-12 text-xs text-center bg-transparent text-t-primary placeholder:text-t-secondary focus:outline-none disabled:opacity-50"
+                className="w-12 text-xs text-center bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-secondary)] focus:outline-none disabled:opacity-50"
               />
               <button
                 onClick={handleCustomDuration}
@@ -481,7 +481,7 @@ export default function HyperfocusLab() {
               className="w-11 h-11 rounded-3xl flex items-center justify-center transition-all border border-b-primary"
               style={{ background: "var(--surface)" }}
             >
-              <RotateCcw size={15} className="text-t-secondary" />
+              <RotateCcw size={15} className="text-[var(--text-secondary)]" />
             </button>
 
             <motion.button
@@ -526,7 +526,7 @@ export default function HyperfocusLab() {
               }}
             >
               {noise === "none" ? (
-                <VolumeX size={15} className="text-t-secondary" />
+                <VolumeX size={15} className="text-[var(--text-secondary)]" />
               ) : (
                 <Volume2 size={15} className="text-accent-blue" />
               )}
@@ -542,7 +542,7 @@ export default function HyperfocusLab() {
               className="flex items-center gap-3 px-6 py-3 rounded-3xl max-w-xs"
               style={{ background: "var(--surface)" }}
             >
-              <Volume2 size={14} className="text-t-secondary shrink-0" />
+              <Volume2 size={14} className="text-[var(--text-secondary)] shrink-0" />
               <input
                 type="range"
                 min="0"
@@ -565,7 +565,7 @@ export default function HyperfocusLab() {
                     "), var(--border-primary) 100%)",
                 }}
               />
-              <span className="text-[11px] font-medium text-t-secondary w-6 text-right">
+              <span className="text-[11px] font-medium text-[var(--text-secondary)] w-6 text-right">
                 {noiseVolume}%
               </span>
             </motion.div>
@@ -616,7 +616,7 @@ export default function HyperfocusLab() {
                     Session terminée !
                   </p>
                 </div>
-                <div className="flex items-center justify-center gap-3 text-[13px] text-t-secondary">
+                <div className="flex items-center justify-center gap-3 text-[13px] text-[var(--text-secondary)]">
                   <span className="flex items-center gap-1">
                     <Zap size={10} className="text-accent-orange" /> +{currentPreset.xp} XP
                   </span>
@@ -649,7 +649,7 @@ export default function HyperfocusLab() {
                     Prends une pause !
                   </p>
                 </div>
-                <p className="text-xs text-t-secondary mb-3">
+                <p className="text-xs text-[var(--text-secondary)] mb-3">
                   5 minutes pour recharger tes batteries
                 </p>
                 <div className="flex gap-2 justify-center">
@@ -723,10 +723,10 @@ export default function HyperfocusLab() {
             onClick={() => setShowHistory(!showHistory)}
             className="flex items-center justify-between w-full px-1 py-1"
           >
-            <span className="text-[10px] font-medium text-t-secondary uppercase tracking-widest flex items-center gap-1.5">
+            <span className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest flex items-center gap-1.5">
               <Clock size={10} /> Historique ({hyperfocusSessions.length})
             </span>
-            {showHistory ? <ChevronUp size={12} className="text-t-secondary" /> : <ChevronDown size={12} className="text-t-secondary" />}
+            {showHistory ? <ChevronUp size={12} className="text-[var(--text-secondary)]" /> : <ChevronDown size={12} className="text-[var(--text-secondary)]" />}
           </button>
 
           <AnimatePresence>
@@ -738,7 +738,7 @@ export default function HyperfocusLab() {
                 className="overflow-hidden flex flex-col gap-1.5"
               >
                 {hyperfocusSessions.length === 0 && (
-                  <p className="text-xs text-t-secondary text-center py-4">Aucune session pour le moment</p>
+                  <p className="text-xs text-[var(--text-secondary)] text-center py-4">Aucune session pour le moment</p>
                 )}
                 {hyperfocusSessions.slice(0, 15).map((s) => (
                   <div
@@ -750,8 +750,8 @@ export default function HyperfocusLab() {
                       <FlaskConical size={11} className="text-accent-blue" />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] text-t-primary truncate">{s.taskName}</p>
-                      <p className="text-[12px] text-t-secondary">
+                      <p className="text-[13px] text-[var(--text-primary)] truncate">{s.taskName}</p>
+                      <p className="text-[12px] text-[var(--text-secondary)]">
                         {new Date(s.completedAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                         {" · "}{s.durationMinutes} min
                         {s.noise !== "none" && ` · ${s.noise}`}
@@ -777,8 +777,8 @@ export default function HyperfocusLab() {
           >
             <Flame size={14} className="text-accent-orange" />
             <div className="flex-1">
-              <p className="text-xs text-t-primary">Streak actif : <span className="text-accent-orange font-semibold">{streak}</span></p>
-              <p className="text-[12px] text-t-secondary">Continue comme ça, chaque session compte !</p>
+              <p className="text-xs text-[var(--text-primary)]">Streak actif : <span className="text-accent-orange font-semibold">{streak}</span></p>
+              <p className="text-[12px] text-[var(--text-secondary)]">Continue comme ça, chaque session compte !</p>
             </div>
           </div>
         )}

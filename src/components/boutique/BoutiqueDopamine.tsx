@@ -124,8 +124,8 @@ function RewardCard({ reward, xp, onBuy }: { reward: Reward; xp: number; onBuy: 
       </div>
 
       <div className="flex flex-col gap-1.5 px-4 py-2 flex-1">
-        <p className="text-sm text-t-primary" style={{ fontWeight: 450 }}>{reward.name}</p>
-        <p className="text-[12px] text-t-secondary leading-relaxed flex-1">{reward.description}</p>
+        <p className="text-sm text-[var(--text-primary)]" style={{ fontWeight: 450 }}>{reward.name}</p>
+        <p className="text-[12px] text-[var(--text-secondary)] leading-relaxed flex-1">{reward.description}</p>
       </div>
 
       <div className="px-4 pb-4 flex items-center justify-between">
@@ -216,16 +216,16 @@ export default function BoutiqueDopamine() {
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
       <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary">
-        <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-          <ShoppingBag size={18} className="text-t-secondary" /> Boutique Dopamine
+        <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
+          <ShoppingBag size={18} className="text-[var(--text-secondary)]" /> Boutique Dopamine
         </h1>
-        <p className="text-xs text-t-secondary mt-1">Échange tes XP contre des récompenses</p>
+        <p className="text-xs text-[var(--text-secondary)] mt-1">Échange tes XP contre des récompenses</p>
       </div>
 
       {/* XP Status Bar — Premium */}
       <div className="shrink-0 px-7 py-4 flex items-center gap-4 bg-surface border-b border-b-primary">
         <div className="relative">
-          <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 font-bold text-base bg-accent-blue-light text-accent-blue border border-b-primary"
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 font-bold text-base bg-accent-blue-light text-accent-blue border border-b-primary"
           >{level}</div>
           {streak > 0 && (
             <div className="absolute -top-1 -right-1 w-5 h-5 rounded-full flex items-center justify-center text-[8px] font-bold bg-accent-red text-white border border-b-primary"
@@ -237,7 +237,7 @@ export default function BoutiqueDopamine() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-medium text-t-primary">{levelTitle}</span>
+              <span className="text-xs font-medium text-[var(--text-primary)]">{levelTitle}</span>
               <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-accent-blue-light text-accent-blue">Niv. {level}</span>
             </div>
             <span className="text-xs font-medium tabular-nums text-accent-orange">{xp.toLocaleString()} XP</span>
@@ -251,8 +251,8 @@ export default function BoutiqueDopamine() {
             />
           </div>
           <div className="flex items-center justify-between mt-1">
-            <span className="text-[10px] text-t-secondary">{nextLevelXp - xp} XP pour le niveau {level + 1}</span>
-            <span className="text-[10px] text-t-secondary">{totalTasksCompleted} tâches · {totalFocusMinutes} min focus</span>
+            <span className="text-[10px] text-[var(--text-secondary)]">{nextLevelXp - xp} XP pour le niveau {level + 1}</span>
+            <span className="text-[10px] text-[var(--text-secondary)]">{totalTasksCompleted} tâches · {totalFocusMinutes} min focus</span>
           </div>
         </div>
       </div>
@@ -322,7 +322,7 @@ export default function BoutiqueDopamine() {
           {activeTab === "achievements" && (
             <motion.div key="achievements" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="flex flex-col gap-3 pt-3">
               <div className="flex items-center justify-between mb-1">
-                <span className="text-[12px] text-t-secondary">{unlockedAchievements.length}/{ACHIEVEMENTS.length} débloqués</span>
+                <span className="text-[12px] text-[var(--text-secondary)]">{unlockedAchievements.length}/{ACHIEVEMENTS.length} débloqués</span>
                 <div className="h-1.5 w-24 rounded-full overflow-hidden bg-b-primary">
                   <div className="h-full rounded-full" style={{ width: `${(unlockedAchievements.length / ACHIEVEMENTS.length) * 100}%`, background: "linear-gradient(90deg, var(--accent-green), var(--accent-blue))" }} />
                 </div>
@@ -342,7 +342,7 @@ export default function BoutiqueDopamine() {
                     }}
                   >
                     <div
-                      className="w-10 h-10 rounded-2xl flex items-center justify-center shrink-0"
+                      className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
                       style={{
                         background: unlocked ? `${a.color}15` : "var(--surface-4)",
                         border: `1px solid ${unlocked ? a.color + "30" : "var(--border-primary)"}`,
@@ -374,8 +374,8 @@ export default function BoutiqueDopamine() {
                     <Sparkles size={14} className="text-accent-orange" />
                     <span className="text-[12px] font-medium uppercase tracking-widest text-accent-orange">Défi du jour</span>
                   </div>
-                  <p className="text-base font-medium text-t-primary">{currentChallenge.name}</p>
-                  <p className="text-[13px] text-t-secondary">{currentChallenge.description}</p>
+                  <p className="text-base font-medium text-[var(--text-primary)]">{currentChallenge.name}</p>
+                  <p className="text-[13px] text-[var(--text-secondary)]">{currentChallenge.description}</p>
                   <div className="flex items-center justify-between mt-1">
                     <div className="flex items-center gap-1.5">
                       <Zap size={11} className="text-accent-orange" />
@@ -396,7 +396,7 @@ export default function BoutiqueDopamine() {
               )}
 
               {/* All challenges list */}
-              <p className="text-[12px] font-medium text-t-secondary uppercase tracking-widest px-1">Défis disponibles</p>
+              <p className="text-[12px] font-medium text-[var(--text-secondary)] uppercase tracking-widest px-1">Défis disponibles</p>
               {DAILY_CHALLENGES.map((c) => {
                 const isActive = c.id === dailyChallengeId;
                 const isCompleted = isActive && dailyChallengeCompleted;
@@ -411,11 +411,11 @@ export default function BoutiqueDopamine() {
                     }}
                   >
                     <div className="w-8 h-8 rounded-xl flex items-center justify-center bg-b-primary">
-                      <Target size={13} className="text-t-secondary" />
+                      <Target size={13} className="text-[var(--text-secondary)]" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm text-t-primary">{c.name}</p>
-                      <p className="text-[12px] text-t-secondary">{c.description}</p>
+                      <p className="text-sm text-[var(--text-primary)]">{c.name}</p>
+                      <p className="text-[12px] text-[var(--text-secondary)]">{c.description}</p>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
                       <Zap size={9} className="text-accent-orange" />
@@ -437,7 +437,7 @@ export default function BoutiqueDopamine() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
-            className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-medium z-50 bg-surface border border-b-primary text-accent-green"
+            className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 px-5 py-3 rounded-xl text-sm font-medium z-50 bg-surface border border-b-primary text-accent-green"
             style={{ backdropFilter: "blur(20px)", boxShadow: "0 8px 32px rgba(0,0,0,0.1)" }}
           ><CheckCircle2 size={14} /> {toast}</motion.div>
         )}

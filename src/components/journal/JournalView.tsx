@@ -154,16 +154,16 @@ export default function JournalView() {
       {/* Header */}
       <div className="shrink-0 px-7 pt-6 pb-4 flex items-center justify-between" style={{ borderBottom: "1px solid var(--border-primary)" }}>
         <div>
-          <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-            <BookOpen size={18} className="text-t-secondary" /> Journal
+          <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
+            <BookOpen size={18} className="text-[var(--text-secondary)]" /> Journal
           </h1>
           <div className="flex items-center gap-3 mt-1">
-            <p className="text-xs text-t-secondary">{journalEntries.length} entrées</p>
-            <span className="text-xs text-t-tertiary">·</span>
-            <p className="text-xs text-t-secondary">{totalWords.toLocaleString()} mots</p>
+            <p className="text-xs text-[var(--text-secondary)]">{journalEntries.length} entrées</p>
+            <span className="text-xs text-[var(--text-tertiary)]">·</span>
+            <p className="text-xs text-[var(--text-secondary)]">{totalWords.toLocaleString()} mots</p>
             {writingStreak > 0 && (
               <>
-                <span className="text-xs text-t-tertiary">·</span>
+                <span className="text-xs text-[var(--text-tertiary)]">·</span>
                 <p className="text-xs flex items-center gap-1" style={{ color: "var(--accent-orange)" }}>
                   <Flame size={11} /> {writingStreak}j streak
                 </p>
@@ -188,16 +188,16 @@ export default function JournalView() {
       {/* Search */}
       {journalEntries.length > 0 && (
         <div className="shrink-0 px-7 py-3" style={{ borderBottom: "1px solid var(--border-primary)" }}>
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl" style={{ background: "var(--surface)" }}>
-            <Search size={13} className="text-t-secondary shrink-0" />
+          <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "var(--surface)" }}>
+            <Search size={13} className="text-[var(--text-secondary)] shrink-0" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Rechercher dans ton journal…"
-              className="flex-1 text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none"
+              className="flex-1 text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
             />
             {searchQuery && (
-              <button onClick={() => setSearchQuery("")} className="text-t-secondary hover:text-t-primary">
+              <button onClick={() => setSearchQuery("")} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
                 <X size={12} />
               </button>
             )}
@@ -214,10 +214,10 @@ export default function JournalView() {
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="rounded-2xl p-5 flex flex-col gap-3"
+              className="rounded-xl p-5 flex flex-col gap-3"
               style={{ background: "var(--surface)", border: "1px solid var(--border-primary)" }}
             >
-              <p className="text-[11px] font-medium text-t-secondary uppercase tracking-widest">Humeur · 30 derniers jours</p>
+              <p className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-widest">Humeur · 30 derniers jours</p>
               <div className="flex flex-col gap-2">
                 {moodStats.map((m) => (
                   <div key={m.id} className="flex items-center gap-3">
@@ -225,7 +225,7 @@ export default function JournalView() {
                     <div className="flex-1 h-2 rounded-full overflow-hidden" style={{ background: "var(--border-primary)" }}>
                       <div className="h-full rounded-full transition-all" style={{ width: `${m.pct}%`, background: m.color, minWidth: m.count > 0 ? "4px" : "0" }} />
                     </div>
-                    <span className="text-[10px] text-t-tertiary w-8 text-right">{m.count}</span>
+                    <span className="text-[10px] text-[var(--text-tertiary)] w-8 text-right">{m.count}</span>
                   </div>
                 ))}
               </div>
@@ -235,7 +235,7 @@ export default function JournalView() {
 
         {/* Writing Prompt */}
         {!composing && (
-          <div className="rounded-2xl px-5 py-4 flex items-center gap-3" style={{ background: "color-mix(in srgb, var(--accent-blue) 5%, var(--surface))", border: "1px solid color-mix(in srgb, var(--accent-blue) 15%, var(--border-primary))" }}>
+          <div className="rounded-xl px-5 py-4 flex items-center gap-3" style={{ background: "color-mix(in srgb, var(--accent-blue) 5%, var(--surface))", border: "1px solid color-mix(in srgb, var(--accent-blue) 15%, var(--border-primary))" }}>
             <p className="flex-1 text-[13px] italic" style={{ color: "var(--accent-blue)" }}>
               &ldquo;{randomPrompt}&rdquo;
             </p>
@@ -282,18 +282,18 @@ export default function JournalView() {
                 placeholder="Qu'est-ce qui se passe dans ta tête ? Écris librement, sans filtre…"
                 rows={6}
                 autoFocus
-                className="text-sm bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none resize-none leading-relaxed"
+                className="text-sm bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none resize-none leading-relaxed"
                 onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleSubmit(); }}
               />
 
               {/* Word count */}
               <div className="flex items-center justify-between">
-                <span className="text-[10px] text-t-tertiary">{countWords(content)} mots</span>
+                <span className="text-[10px] text-[var(--text-tertiary)]">{countWords(content)} mots</span>
               </div>
 
               {/* Mood picker */}
               <div className="flex items-center gap-3">
-                <span className="text-[10px] text-t-secondary uppercase tracking-widest font-medium">Humeur</span>
+                <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-widest font-medium">Humeur</span>
                 <div className="flex gap-1.5">
                   {MOODS.map((m) => (
                     <button
@@ -314,9 +314,9 @@ export default function JournalView() {
               </div>
 
               <div className="flex gap-2 justify-between items-center">
-                <span className="text-[10px] text-t-tertiary">Ctrl+Enter pour sauvegarder</span>
+                <span className="text-[10px] text-[var(--text-tertiary)]">Ctrl+Enter pour sauvegarder</span>
                 <div className="flex gap-2">
-                  <button onClick={() => { setComposing(false); setContent(""); setMood(undefined); }} className="text-xs text-t-secondary hover:text-t-primary px-3 py-1.5">Annuler</button>
+                  <button onClick={() => { setComposing(false); setContent(""); setMood(undefined); }} className="text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] px-3 py-1.5">Annuler</button>
                   <button
                     onClick={handleSubmit}
                     disabled={!content.trim()}
@@ -332,7 +332,7 @@ export default function JournalView() {
         {/* Entries */}
         {grouped.map((group, gi) => (
           <div key={gi} className="flex flex-col gap-3">
-            <p className="text-[10px] font-medium text-t-secondary uppercase tracking-widest px-1">{group.label}</p>
+            <p className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest px-1">{group.label}</p>
             {group.entries.map((entry) => {
               const moodCfg = MOODS.find((m) => m.id === entry.mood);
               const isEditing = editingId === entry.id;
@@ -342,7 +342,7 @@ export default function JournalView() {
                 <motion.div
                   key={entry.id}
                   layout
-                  className="rounded-2xl px-5 py-4 group transition-all"
+                  className="rounded-xl px-5 py-4 group transition-all"
                   style={{ background: "var(--surface)", border: "1px solid var(--border-primary)", boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -355,11 +355,11 @@ export default function JournalView() {
                           onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleEditSave(entry.id); }}
                           autoFocus
                           rows={4}
-                          className="w-full text-sm bg-transparent text-t-primary focus:outline-none resize-none leading-relaxed"
+                          className="w-full text-sm bg-transparent text-[var(--text-primary)] focus:outline-none resize-none leading-relaxed"
                         />
                       ) : (
                         <p
-                          className="text-[14px] text-t-primary leading-relaxed whitespace-pre-wrap cursor-pointer"
+                          className="text-[14px] text-[var(--text-primary)] leading-relaxed whitespace-pre-wrap cursor-pointer"
                           onClick={() => { setEditingId(entry.id); setEditContent(entry.content); }}
                         >
                           {entry.content}
@@ -370,17 +370,17 @@ export default function JournalView() {
                       {moodCfg && <span className="text-sm" title={moodCfg.label}>{moodCfg.emoji}</span>}
                       <button
                         onClick={() => deleteJournalEntry(entry.id)}
-                        className="opacity-0 group-hover:opacity-100 text-t-secondary hover:text-accent-red transition-all"
+                        className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-accent-red transition-all"
                       >
                         <Trash2 size={11} />
                       </button>
                     </div>
                   </div>
                   <div className="flex items-center gap-2 mt-2">
-                    <span className="text-[10px] text-t-tertiary">
+                    <span className="text-[10px] text-[var(--text-tertiary)]">
                       {new Date(entry.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </span>
-                    <span className="text-[10px] text-t-tertiary">· {words} mot{words > 1 ? "s" : ""}</span>
+                    <span className="text-[10px] text-[var(--text-tertiary)]">· {words} mot{words > 1 ? "s" : ""}</span>
                     {/* Mood change */}
                     <div className="flex gap-0.5 ml-auto opacity-0 group-hover:opacity-100 transition-all">
                       {MOODS.map((m) => (
@@ -403,12 +403,12 @@ export default function JournalView() {
 
         {journalEntries.length === 0 && !composing && (
           <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "var(--empty-bg)" }}>
-              <BookOpen size={22} className="text-t-secondary" />
+            <div className="w-14 h-14 rounded-xl flex items-center justify-center" style={{ background: "var(--empty-bg)" }}>
+              <BookOpen size={22} className="text-[var(--text-secondary)]" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-t-primary">Ton journal est vide</p>
-              <p className="text-xs text-t-secondary mt-1">Écris ce qui se passe dans ta journée. C&apos;est ton espace, sans jugement.</p>
+              <p className="text-sm text-[var(--text-primary)]">Ton journal est vide</p>
+              <p className="text-xs text-[var(--text-secondary)] mt-1">Écris ce qui se passe dans ta journée. C&apos;est ton espace, sans jugement.</p>
             </div>
             <button
               onClick={() => setComposing(true)}

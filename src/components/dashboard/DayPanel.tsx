@@ -74,22 +74,21 @@ export default function DayPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full px-6 py-10 gap-6">
-      {/* Header — whispered date */}
+    <div className="flex flex-col h-full px-8 pt-8 pb-5 gap-6">
+      {/* Header */}
       <div className="shrink-0">
-        <p className="text-[10px] font-medium tracking-[0.22em] uppercase text-t-tertiary mb-2">
-          Journée
-        </p>
-        <p className="text-[18px] font-medium text-t-primary capitalize leading-tight" style={{ letterSpacing: "-0.02em" }}>
+        <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">
           {now.toLocaleDateString("fr-FR", { weekday: "long" })}
-        </p>
-        <p className="text-[13px] text-t-secondary mt-0.5">
+        </h1>
+        <p className="text-[13px] text-[var(--text-secondary)] mt-2">
           {now.toLocaleDateString("fr-FR", { day: "numeric", month: "long" })} · {pad(now.getHours())}:{pad(now.getMinutes())}
+          <span className="mx-2 text-[var(--text-ghost)]">·</span>
+          Bloc horaire
         </p>
       </div>
 
       {/* Timeline */}
-      <div className="relative flex-1 min-h-0 overflow-hidden rounded-2xl px-4 py-4 bg-surface-2" style={{ border: "1px solid var(--border-primary)" }}>
+      <div className="relative flex-1 min-h-0 overflow-hidden rounded-xl px-4 py-4" style={{ background: "var(--surface-1)", boxShadow: "inset 0 0 0 1px var(--border-primary)" }}>
         {Array.from({ length: TOTAL_HOURS + 1 }, (_, i) => {
           const h = START_HOUR + i;
           const pct = (i / TOTAL_HOURS) * 100;
@@ -163,9 +162,9 @@ export default function DayPanel() {
           >
             <div
               className="w-1.5 h-1.5 rounded-full shrink-0 ml-8 animate-breathe"
-              style={{ background: "var(--accent-blue)", boxShadow: "0 0 12px rgba(79,70,229,0.4)" }}
+              style={{ background: "var(--accent-blue)" }}
             />
-            <div className="flex-1 h-px" style={{ background: "linear-gradient(to right, rgba(79,70,229,0.4), transparent 80%)" }} />
+            <div className="flex-1 h-px" style={{ background: "var(--accent-blue)" }} />
           </motion.div>
         )}
       </div>
@@ -174,8 +173,12 @@ export default function DayPanel() {
       <div className="shrink-0 relative">
         <button
           onClick={() => setShowAddForm(!showAddForm)}
-          className="w-full flex items-center justify-center gap-1.5 py-2.5 rounded-xl text-[12px] font-medium text-t-secondary hover:text-t-primary hover:bg-surface-2 transition-all"
-          style={{ border: "1px dashed var(--border-secondary)" }}
+          className="w-full flex items-center justify-center gap-1.5 h-9 rounded-xl text-[12.5px] font-medium transition-colors"
+          style={{
+            background: "var(--accent-blue-light)",
+            color: "var(--accent-blue)",
+            border: "1px solid color-mix(in srgb, var(--accent-blue) 25%, transparent)",
+          }}
         >
           <Plus size={13} strokeWidth={2} />
           Ajouter un bloc
@@ -188,30 +191,32 @@ export default function DayPanel() {
               initial={{ opacity: 0, y: -8 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
-              className="absolute bottom-full mb-2 left-0 right-0 bg-card-bg border border-b-primary rounded-2xl px-4 py-4 shadow-[0_8px_32px_rgba(0,0,0,0.12)] z-50"
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute bottom-full mb-2 left-0 right-0 bg-[var(--card-bg)] border border-[var(--border-primary)] rounded-xl px-4 py-4 z-50"
+              style={{ boxShadow: "var(--shadow-elevated)" }}
             >
               <div className="space-y-3">
                 <div>
-                  <label className="text-[10px] font-medium tracking-wider uppercase text-t-tertiary block mb-1.5">Libellé</label>
+                  <label className="text-[10px] font-medium tracking-wider uppercase text-[var(--text-tertiary)] block mb-1.5">Libellé</label>
                   <input
                     type="text"
                     value={addFormData.label}
                     onChange={(e) => setAddFormData({ ...addFormData, label: e.target.value })}
                     onKeyDown={(e) => e.key === "Enter" && handleAddEvent()}
                     placeholder="Ex: Réunion"
-                    className="w-full text-[12px] px-3 py-2 rounded-lg bg-surface-2 text-t-primary placeholder:text-t-tertiary focus:outline-none focus:border-accent-blue transition-colors"
-                    style={{ border: "1px solid var(--border-primary)" }}
+                    className="w-full text-[13px] px-3.5 py-2.5 rounded-xl bg-[var(--card-bg)] text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none transition-colors"
+                    style={{ border: "1px solid var(--accent-blue)", boxShadow: "0 0 0 3px var(--accent-blue-light)" }}
                     autoFocus
                   />
                 </div>
 
                 <div className="grid grid-cols-2 gap-2">
                   <div>
-                    <label className="text-[10px] font-medium tracking-wider uppercase text-t-tertiary block mb-1.5">Heure</label>
+                    <label className="text-[10px] font-medium tracking-wider uppercase text-[var(--text-tertiary)] block mb-1.5">Heure</label>
                     <select
                       value={addFormData.hour}
                       onChange={(e) => setAddFormData({ ...addFormData, hour: parseInt(e.target.value) })}
-                      className="w-full text-[12px] px-2.5 py-2 rounded-lg bg-surface-2 text-t-primary focus:outline-none"
+                      className="w-full text-[12px] px-3 py-2.5 rounded-xl bg-[var(--card-bg)] text-[var(--text-primary)] focus:outline-none"
                       style={{ border: "1px solid var(--border-primary)" }}
                     >
                       {Array.from({ length: 12 }, (_, i) => START_HOUR + i).map((h) => (
@@ -220,11 +225,11 @@ export default function DayPanel() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-[10px] font-medium tracking-wider uppercase text-t-tertiary block mb-1.5">Durée</label>
+                    <label className="text-[10px] font-medium tracking-wider uppercase text-[var(--text-tertiary)] block mb-1.5">Durée</label>
                     <select
                       value={addFormData.duration}
                       onChange={(e) => setAddFormData({ ...addFormData, duration: parseFloat(e.target.value) })}
-                      className="w-full text-[12px] px-2.5 py-2 rounded-lg bg-surface-2 text-t-primary focus:outline-none"
+                      className="w-full text-[12px] px-3 py-2.5 rounded-xl bg-[var(--card-bg)] text-[var(--text-primary)] focus:outline-none"
                       style={{ border: "1px solid var(--border-primary)" }}
                     >
                       <option value={0.5}>30 min</option>
@@ -237,7 +242,7 @@ export default function DayPanel() {
                 </div>
 
                 <div>
-                  <label className="text-[10px] font-medium tracking-wider uppercase text-t-tertiary block mb-2">Couleur</label>
+                  <label className="text-[10px] font-medium tracking-wider uppercase text-[var(--text-tertiary)] block mb-2">Couleur</label>
                   <div className="flex gap-2">
                     {(["orange", "purple", "green", "blue"] as const).map((colorKey) => {
                       const colorData = COLOR_MAP[colorKey];
@@ -261,7 +266,14 @@ export default function DayPanel() {
                 <button
                   onClick={handleAddEvent}
                   disabled={!addFormData.label.trim()}
-                  className="w-full text-[12px] font-medium px-3 py-2.5 rounded-xl bg-t-primary text-background hover:opacity-90 disabled:opacity-30 disabled:cursor-not-allowed transition-opacity"
+                  className="w-full h-9 text-[12.5px] font-medium px-3 py-2.5 rounded-xl border transition-colors hover:scale-[1.02] active:scale-[0.98]"
+                  style={{
+                    background: "var(--accent-blue-light)",
+                    color: "var(--accent-blue)",
+                    borderColor: "color-mix(in srgb, var(--accent-blue) 25%, transparent)",
+                    opacity: !addFormData.label.trim() ? 0.5 : 1,
+                    cursor: !addFormData.label.trim() ? "not-allowed" : "pointer",
+                  }}
                 >
                   Ajouter
                 </button>

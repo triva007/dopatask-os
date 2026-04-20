@@ -77,44 +77,33 @@ export default function ProgressPanel() {
   };
 
   return (
-    <div className="flex flex-col h-full px-6 py-10 gap-6 overflow-y-auto">
+    <div className="flex flex-col h-full px-8 pt-8 pb-5 gap-6 overflow-y-auto">
       {/* Header */}
       <div className="shrink-0">
-        <p className="text-[10px] font-medium tracking-[0.22em] uppercase text-t-tertiary mb-2">
-          Progression
-        </p>
-        <h2 className="text-[18px] font-medium text-t-primary" style={{ letterSpacing: "-0.02em" }}>
+        <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">
           Niveau {level}
-        </h2>
-        <p className="text-[13px] text-t-secondary mt-0.5">
-          {levelTitle}
+        </h1>
+        <p className="text-[13px] text-[var(--text-secondary)] mt-2">
+          {levelTitle} · Progression
         </p>
       </div>
 
-      {/* Level Ring — centered, premium */}
-      <div className="shrink-0 flex flex-col items-center gap-5 py-8 rounded-2xl bg-card-bg border border-b-primary relative overflow-hidden"
-        style={{ boxShadow: "var(--card-shadow)" }}
-      >
-        <div
-          className="absolute inset-0 pointer-events-none"
-          style={{
-            background: "radial-gradient(circle at center top, var(--accent-blue-light), transparent 70%)",
-          }}
-        />
+      {/* Level Ring */}
+      <div className="shrink-0 flex flex-col items-center gap-5 py-8 rounded-xl bg-[var(--card-bg)] border border-[var(--border-primary)] relative overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none" style={{ background: "transparent" }} />
         <div className="relative flex items-center justify-center" style={{ width: 132, height: 132 }}>
           <ProgressRing progress={xpProg} size={132} strokeWidth={7} color="var(--accent-blue)" />
           <div className="absolute inset-0 flex flex-col items-center justify-center">
-            <span className="text-[28px] font-semibold text-t-primary tabular-nums leading-none">{level}</span>
-            <span className="text-[10px] font-medium text-t-tertiary mt-1.5 tracking-wider uppercase">Niveau</span>
+            <span className="text-[32px] font-semibold text-[var(--text-primary)] tabular-nums leading-none">{level}</span>
           </div>
         </div>
-        <div className="flex flex-col items-center gap-1 relative z-10">
-          <p className="text-[11px] text-t-secondary tabular-nums">
-            {(nextLevelXp - xp).toLocaleString()} XP → Niv. {level + 1}
+        <div className="flex flex-col items-center gap-1.5 relative z-10 text-center">
+          <p className="text-[12px] text-[var(--text-secondary)] tabular-nums">
+            {(nextLevelXp - xp).toLocaleString()} XP restants
           </p>
-          <div className="flex items-center gap-1.5 text-[10px] text-t-tertiary">
-            <Zap size={9} className="text-accent-blue" />
-            <span className="tabular-nums">{xp.toLocaleString()} XP total</span>
+          <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-tertiary)]">
+            <Zap size={10} style={{ color: "var(--accent-blue)" }} />
+            <span className="tabular-nums">{xp.toLocaleString()} XP</span>
           </div>
         </div>
 
@@ -124,7 +113,9 @@ export default function ProgressPanel() {
               initial={{ opacity: 0, y: -8, scale: 0.9 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
-              className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-accent-blue text-white text-[10px] font-semibold"
+              transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+              className="absolute top-3 right-3 px-2.5 py-1 rounded-md text-[10px] font-semibold"
+              style={{ background: "var(--accent-green-light)", color: "var(--accent-green)" }}
             >
               +1 {levelUpText}
             </motion.div>
@@ -132,24 +123,22 @@ export default function ProgressPanel() {
         </AnimatePresence>
       </div>
 
-      {/* Stat trio — streak, tasks, focus */}
+      {/* Stat trio */}
       <div className="shrink-0 grid grid-cols-3 gap-2">
-        <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-card-bg border border-b-primary">
-          <div className="flex items-center gap-1 text-t-tertiary">
-            <Flame size={10} className="text-accent-orange" />
-          </div>
-          <span className="text-[18px] font-semibold tabular-nums text-t-primary leading-none">{streak}</span>
-          <span className="text-[9px] text-t-tertiary uppercase tracking-wider">streak</span>
+        <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-[var(--card-bg)] border border-[var(--border-primary)]">
+          <Flame size={11} style={{ color: "var(--accent-orange)" }} />
+          <span className="text-[18px] font-semibold tabular-nums text-[var(--text-primary)] leading-none">{streak}</span>
+          <span className="text-[10px] text-[var(--text-tertiary)] font-medium">Streak</span>
         </div>
-        <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-card-bg border border-b-primary">
-          <span className="text-[18px] font-semibold tabular-nums text-t-primary leading-none mt-[18px]">{totalTasksCompleted}</span>
-          <span className="text-[9px] text-t-tertiary uppercase tracking-wider">tâches</span>
+        <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-[var(--card-bg)] border border-[var(--border-primary)]">
+          <span className="text-[18px] font-semibold tabular-nums text-[var(--text-primary)] leading-none">{totalTasksCompleted}</span>
+          <span className="text-[10px] text-[var(--text-tertiary)] font-medium">Tâches</span>
         </div>
-        <div className="flex flex-col items-center gap-1 p-3 rounded-xl bg-card-bg border border-b-primary">
-          <span className="text-[18px] font-semibold tabular-nums text-t-primary leading-none mt-[18px]">
+        <div className="flex flex-col items-center gap-1.5 p-3 rounded-lg bg-[var(--card-bg)] border border-[var(--border-primary)]">
+          <span className="text-[18px] font-semibold tabular-nums text-[var(--text-primary)] leading-none">
             {totalFocusMinutes >= 60 ? `${Math.floor(totalFocusMinutes / 60)}h` : `${totalFocusMinutes}m`}
           </span>
-          <span className="text-[9px] text-t-tertiary uppercase tracking-wider">focus</span>
+          <span className="text-[10px] text-[var(--text-tertiary)] font-medium">Focus</span>
         </div>
       </div>
 
@@ -158,13 +147,14 @@ export default function ProgressPanel() {
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl bg-accent-orange-light"
-          style={{ border: "1px solid rgba(217, 148, 78, 0.2)" }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          className="shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg"
+          style={{ background: "var(--accent-orange-light)", border: "1px solid var(--accent-orange)" }}
         >
-          <Sparkles size={14} className="text-accent-orange shrink-0" strokeWidth={1.8} />
+          <Sparkles size={13} style={{ color: "var(--accent-orange)" }} className="shrink-0" strokeWidth={2} />
           <div className="flex-1 min-w-0">
-            <p className="text-[11px] font-medium text-accent-orange">Défi du jour</p>
-            <p className="text-[10px] text-t-secondary">+150 XP en jeu</p>
+            <p className="text-[12px] font-medium" style={{ color: "var(--accent-orange)" }}>Défi du jour</p>
+            <p className="text-[11px] text-[var(--text-secondary)]">+150 XP</p>
           </div>
         </motion.div>
       )}
@@ -172,27 +162,28 @@ export default function ProgressPanel() {
         <motion.div
           initial={{ opacity: 0, y: 6 }}
           animate={{ opacity: 1, y: 0 }}
-          className="shrink-0 flex items-center gap-3 px-4 py-3 rounded-xl bg-accent-green-light"
-          style={{ border: "1px solid rgba(95, 168, 125, 0.2)" }}
+          transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+          className="shrink-0 flex items-center gap-3 px-4 py-3 rounded-lg"
+          style={{ background: "var(--accent-green-light)", border: "1px solid var(--accent-green)" }}
         >
-          <Sparkles size={14} className="text-accent-green shrink-0" strokeWidth={1.8} />
-          <p className="text-[11px] font-medium text-accent-green">Défi complété !</p>
+          <Sparkles size={13} style={{ color: "var(--accent-green)" }} className="shrink-0" strokeWidth={2} />
+          <p className="text-[12px] font-medium" style={{ color: "var(--accent-green)" }}>Défi complété !</p>
         </motion.div>
       )}
 
       {/* Achievements */}
       {unlockedAchievements.length > 0 && (
-        <div className="shrink-0 flex items-center gap-2.5 px-4 py-3 rounded-xl bg-card-bg border border-b-primary">
-          <Trophy size={13} className="text-accent-purple shrink-0" strokeWidth={1.8} />
-          <span className="text-[11px] text-t-primary">
-            {unlockedAchievements.length} achievement{unlockedAchievements.length > 1 ? "s" : ""}
+        <div className="shrink-0 flex items-center gap-2.5 px-4 py-3 rounded-lg bg-[var(--card-bg)] border border-[var(--border-primary)]">
+          <Trophy size={13} style={{ color: "var(--accent-purple)" }} className="shrink-0" strokeWidth={2} />
+          <span className="text-[12px] font-medium text-[var(--text-primary)]">
+            {unlockedAchievements.length} récompense{unlockedAchievements.length > 1 ? "s" : ""}
           </span>
         </div>
       )}
 
       {/* Rewards */}
       <div className="flex-1 flex flex-col gap-3 min-h-0">
-        <p className="text-[10px] font-medium tracking-[0.22em] uppercase text-t-tertiary">
+        <p className="text-[12px] font-semibold text-[var(--text-secondary)]">
           Récompenses
         </p>
 
@@ -207,20 +198,18 @@ export default function ProgressPanel() {
               <motion.button
                 key={label}
                 onClick={() => canBuy && handleBuyReward(label, cost)}
-                disabled={!canBuy}
-                className="flex items-center gap-3 px-4 py-3 rounded-xl transition-all bg-card-bg text-left"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg transition-colors bg-[var(--card-bg)] border border-[var(--border-primary)] hover:bg-[var(--surface-2)] text-left"
                 style={{
-                  border: "1px solid var(--border-primary)",
-                  opacity: canBuy ? 1 : 0.45,
+                  opacity: canBuy ? 1 : 0.5,
                   cursor: canBuy ? "pointer" : "default",
                 }}
-                whileHover={canBuy ? { y: -1, borderColor: "var(--border-hover)" } : {}}
+                whileHover={canBuy ? { scale: 1.01 } : {}}
                 whileTap={canBuy ? { scale: 0.98 } : {}}
               >
-                <span className="text-[16px]">{emoji}</span>
-                <span className="text-[12px] text-t-primary flex-1 font-medium">{label}</span>
+                <span className="text-[14px]">{emoji}</span>
+                <span className="text-[13px] font-medium text-[var(--text-primary)] flex-1">{label}</span>
                 <span
-                  className="text-[11px] font-semibold tabular-nums"
+                  className="text-[12px] font-semibold tabular-nums"
                   style={{ color: canBuy ? color : "var(--text-tertiary)" }}
                 >
                   {cost}

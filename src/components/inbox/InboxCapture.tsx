@@ -83,42 +83,39 @@ export default function InboxCapture() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-10 pt-10 pb-6 border-b border-b-primary">
-        <h1 className="text-2xl font-semibold text-t-primary tracking-tight flex items-center gap-2.5">
-          <Inbox size={18} className="text-t-secondary" /> Inbox
+      <div className="shrink-0 px-8 pt-8 pb-5 border-b" style={{ borderColor: "var(--border-primary)" }}>
+        <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">
+          Inbox
         </h1>
-        <div className="flex items-center gap-4 mt-1">
-          <p className="text-xs text-t-secondary">
-            <span className="font-medium text-t-primary">{pendingItems.length}</span> en attente
-            {processedItems.length > 0 && (
-              <>
-                {" · "}
-                <span className="font-medium text-t-primary">{processedItems.length}</span> traités
-              </>
-            )}
-          </p>
-        </div>
+        <p className="text-[13px] text-[var(--text-secondary)] mt-2">
+          <span className="font-medium">{pendingItems.length}</span> en attente
+          {processedItems.length > 0 && (
+            <>
+              <span className="mx-2 text-[var(--text-ghost)]">·</span>
+              <span className="font-medium">{processedItems.length}</span> traités
+            </>
+          )}
+        </p>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-10 py-8 flex flex-col max-w-4xl mx-auto w-full gap-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6 flex flex-col max-w-4xl mx-auto w-full gap-6">
 
         {/* Quick Capture Input */}
-        <div className="rounded-[28px] p-6 flex flex-col gap-4 bg-surface border border-b-primary shadow-[0_12px_48px_rgba(0,0,0,0.04)]"
-        >
+        <div className="rounded-xl p-5 flex flex-col gap-4 bg-[var(--card-bg)] border border-[var(--border-primary)]">
           <div className="flex items-center gap-2">
-            <div className="flex gap-1">
+            <div className="flex gap-1.5">
               {TYPE_CONFIG.map((t) => (
                 <button
                   key={t.id}
                   onClick={() => setSelectedType(t.id)}
-                  className="text-[10px] px-2 py-1 rounded-lg font-medium transition-all flex items-center gap-1"
+                  className="text-[12px] px-2.5 py-1.5 rounded-md font-medium transition-all flex items-center gap-1"
                   style={{
-                    background: selectedType === t.id ? "var(--accent-blue-light)" : "var(--surface)",
+                    background: selectedType === t.id ? "var(--accent-blue-light)" : "transparent",
                     color: selectedType === t.id ? "var(--accent-blue)" : "var(--text-secondary)",
                     border: `1px solid ${selectedType === t.id ? "var(--accent-blue)" : "var(--border-primary)"}`,
                   }}
                 >
-                  <t.icon size={9} /> {t.label}
+                  <t.icon size={11} /> {t.label}
                 </button>
               ))}
             </div>
@@ -129,29 +126,35 @@ export default function InboxCapture() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Capture une idée, une tâche, un rdv… (Entrée pour envoyer)"
-              className="flex-1 text-[18px] bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none"
+              placeholder="Capture une idée…"
+              className="flex-1 text-[14px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
             />
             <button
               type="button"
               onClick={toggleVoice}
-              className="p-2 rounded-xl transition-all"
+              className="h-8 w-8 rounded-lg transition-colors flex items-center justify-center"
               style={{
-                background: isRecording ? "var(--accent-red-light)" : "var(--surface)",
+                background: isRecording ? "var(--accent-red-light)" : "transparent",
+                color: isRecording ? "var(--accent-red)" : "var(--text-tertiary)",
                 border: `1px solid ${isRecording ? "var(--accent-red)" : "var(--border-primary)"}`,
-                color: isRecording ? "var(--accent-red)" : "var(--text-secondary)",
               }}
               title="Entrée vocale"
             >
-              {isRecording ? <MicOff size={14} /> : <Mic size={14} />}
+              {isRecording ? <MicOff size={13} /> : <Mic size={13} />}
             </button>
             <button
               type="submit"
               disabled={!input.trim()}
-              className="p-2 rounded-xl transition-all disabled:opacity-20"
-              style={{ background: "var(--accent-blue-light)", border: "1px solid var(--accent-blue)", color: "var(--accent-blue)" }}
+              className="h-8 w-8 rounded-lg transition-colors flex items-center justify-center"
+              style={{
+                background: "var(--accent-blue-light)",
+                color: "var(--accent-blue)",
+                border: "1px solid color-mix(in srgb, var(--accent-blue) 25%, transparent)",
+                opacity: !input.trim() ? 0.5 : 1,
+                cursor: !input.trim() ? "not-allowed" : "pointer",
+              }}
             >
-              <Plus size={14} />
+              <Plus size={13} />
             </button>
           </form>
 
@@ -161,13 +164,17 @@ export default function InboxCapture() {
               initial={{ opacity: 0, y: -4 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -4 }}
+              transition={{ duration: 0.12, ease: [0.22, 1, 0.36, 1] }}
             >
               <motion.div
-                className="w-2 h-2 rounded-full bg-accent-red"
+                className="w-2 h-2 rounded-full"
+                style={{ background: "var(--accent-red)" }}
                 animate={{ scale: [1, 1.5, 1], opacity: [1, 0.5, 1] }}
                 transition={{ duration: 1, repeat: Infinity }}
               />
-              <span className="text-[11px] text-accent-red font-medium">Écoute en cours… Parle maintenant</span>
+              <span className="text-[11px] font-medium" style={{ color: "var(--accent-red)" }}>
+                Écoute en cours… Parle maintenant
+              </span>
             </motion.div>
           )}
         </div>
@@ -175,8 +182,8 @@ export default function InboxCapture() {
         {/* Pending Items */}
         {pendingItems.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-medium text-t-secondary uppercase tracking-widest px-1">
-              En attente ({pendingItems.length})
+            <p className="text-[12px] font-semibold text-[var(--text-secondary)]">
+              En attente · {pendingItems.length}
             </p>
             <AnimatePresence mode="popLayout">
               {pendingItems.map((item) => {
@@ -188,28 +195,28 @@ export default function InboxCapture() {
                     initial={{ opacity: 0, y: -10, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    whileHover={{ y: -1, scale: 1.005 }}
-                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                    className="flex items-center gap-4 px-5 py-4 rounded-2xl group bg-surface border border-b-primary shadow-sm hover:shadow-[0_4px_16px_rgba(0,0,0,0.04)] transition-all"
+                    transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
+                    className="flex items-center gap-3 px-4 py-3.5 rounded-lg group bg-[var(--card-bg)] border border-[var(--border-primary)] hover:bg-[var(--surface-2)] transition-colors"
                   >
                     <div
-                      className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0"
-                      style={{ background: `${cfg?.color}10`, border: `1px solid ${cfg?.color}20` }}
+                      className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                      style={{ background: `${cfg?.color}20` }}
                     >
-                      {cfg && <cfg.icon size={11} style={{ color: cfg.color }} />}
+                      {cfg && <cfg.icon size={12} style={{ color: cfg.color }} />}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm text-t-primary truncate">{item.text}</p>
-                      <p className="text-[10px] text-t-secondary mt-0.5">
+                      <p className="text-[13px] font-medium text-[var(--text-primary)] truncate">{item.text}</p>
+                      <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">
                         {new Date(item.createdAt).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
-                        {" · "}{cfg?.label}
+                        <span className="mx-1.5">·</span>
+                        {cfg?.label}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-all">
+                    <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {item.type === "task" && (
                         <button
                           onClick={() => convertInboxToTask(item.id)}
-                          className="p-1.5 rounded-lg text-[10px] flex items-center gap-1 transition-all"
+                          className="h-7 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-colors"
                           style={{ background: "var(--accent-green-light)", color: "var(--accent-green)" }}
                           title="Convertir en tâche"
                         >
@@ -218,17 +225,22 @@ export default function InboxCapture() {
                       )}
                       <button
                         onClick={() => processInboxItem(item.id)}
-                        className="p-1.5 rounded-lg transition-all bg-surface text-t-secondary border border-b-primary"
+                        className="h-7 w-7 rounded-md transition-colors flex items-center justify-center"
+                        style={{
+                          background: "transparent",
+                          color: "var(--text-tertiary)",
+                          border: "1px solid var(--border-primary)",
+                        }}
                         title="Marquer comme traité"
                       >
-                        <Check size={11} />
+                        <Check size={12} />
                       </button>
                       <button
                         onClick={() => deleteInboxItem(item.id)}
-                        className="p-1.5 rounded-lg text-t-secondary hover:text-accent-red transition-all"
+                        className="h-7 w-7 rounded-md transition-colors flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--accent-red)]"
                         title="Supprimer"
                       >
-                        <Trash2 size={11} />
+                        <Trash2 size={12} />
                       </button>
                     </div>
                   </motion.div>
@@ -241,21 +253,21 @@ export default function InboxCapture() {
         {/* Processed Items */}
         {processedItems.length > 0 && (
           <div className="flex flex-col gap-2">
-            <p className="text-[10px] font-medium text-t-secondary uppercase tracking-widest px-1">
-              Traités ({processedItems.length})
+            <p className="text-[12px] font-semibold text-[var(--text-secondary)]">
+              Traités · {processedItems.length}
             </p>
             {processedItems.slice(0, 10).map((item) => (
               <div
                 key={item.id}
-                className="flex items-center gap-4 px-5 py-3 rounded-2xl group bg-empty-bg border border-b-primary shadow-sm"
+                className="flex items-center gap-3 px-4 py-3 rounded-lg group bg-[var(--surface-1)] border border-[var(--border-primary)]"
               >
-                <Check size={11} className="text-accent-green shrink-0" />
-                <p className="text-[12px] text-t-secondary truncate flex-1">{item.text}</p>
+                <Check size={12} style={{ color: "var(--accent-green)" }} className="shrink-0" />
+                <p className="text-[13px] text-[var(--text-secondary)] truncate flex-1">{item.text}</p>
                 <button
                   onClick={() => deleteInboxItem(item.id)}
-                  className="opacity-0 group-hover:opacity-100 text-t-secondary hover:text-accent-red transition-all"
+                  className="opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[var(--accent-red)] transition-all"
                 >
-                  <X size={10} />
+                  <X size={11} />
                 </button>
               </div>
             ))}
@@ -263,13 +275,13 @@ export default function InboxCapture() {
         )}
 
         {inboxItems.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-16 gap-4">
-            <div className="w-16 h-16 rounded-2xl flex items-center justify-center bg-empty-bg border border-b-primary shadow-[inset_0_2px_8px_rgba(0,0,0,0.02)]">
-              <Inbox size={26} className="text-t-secondary" />
+          <div className="flex flex-col items-center justify-center py-12 gap-3">
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center" style={{ background: "var(--surface-1)" }}>
+              <Inbox size={20} className="text-[var(--text-secondary)]" />
             </div>
             <div className="text-center">
-              <p className="text-sm text-t-secondary">Inbox vide</p>
-              <p className="text-xs text-t-tertiary mt-1">Capture tes idées en un clic. Trie-les plus tard.</p>
+              <p className="text-[14px] font-medium text-[var(--text-secondary)]">Inbox vide</p>
+              <p className="text-[12px] text-[var(--text-tertiary)] mt-1">Capture tes idées. Trie-les plus tard.</p>
             </div>
           </div>
         )}

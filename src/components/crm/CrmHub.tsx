@@ -99,7 +99,7 @@ export default function CrmHub() {
 
   if (!loaded && loading) {
     return (
-      <div className="h-full flex items-center justify-center text-t-tertiary gap-2">
+      <div className="h-full flex items-center justify-center text-[var(--text-tertiary)] gap-2">
         <Loader2 size={16} className="animate-spin" />
         <span>Chargement du CRM...</span>
       </div>
@@ -112,22 +112,22 @@ export default function CrmHub() {
         {/* HEADER */}
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-[26px] font-bold tracking-tight">CRM</h1>
-            <p className="text-[12.5px] text-t-tertiary mt-1">
-              Vue globale {prospects.length} prospects &middot; {actifs.length} actifs &middot; {archives.length} archives
+            <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">CRM</h1>
+            <p className="text-[13px] text-[var(--text-secondary)] mt-2">
+              Vue globale {prospects.length} prospects · {actifs.length} actifs · {archives.length} archives
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <Link
               href="/prospects"
-              className="inline-flex items-center gap-2 px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] font-semibold hover:bg-surface-3"
+              className="inline-flex items-center gap-2 h-9 px-3 bg-[var(--card-bg)] border border-[var(--border-primary)] rounded-lg text-[12.5px] font-medium hover:bg-[var(--surface-2)] transition-colors"
             >
               <Users size={14} /> Tous les prospects
             </Link>
             <button
               onClick={runRepair}
               disabled={repairing || suspectsNotes === 0}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-violet/10 text-dopa-violet rounded-lg text-[13px] font-semibold hover:bg-dopa-violet/20 disabled:opacity-40 disabled:cursor-not-allowed"
+              className="inline-flex items-center gap-2 h-9 px-3 bg-[var(--accent-purple-light)] text-[var(--accent-purple)] rounded-lg text-[12.5px] font-medium hover:bg-[var(--surface-2)] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               title={suspectsNotes === 0 ? "Aucune note suspecte" : `${suspectsNotes} prospect(s) a verifier`}
             >
               <Wrench size={14} />
@@ -135,7 +135,7 @@ export default function CrmHub() {
             </button>
             <button
               onClick={() => setShowImport(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/20"
+              className="inline-flex items-center gap-2 h-9 px-3 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[12.5px] font-medium hover:bg-[var(--surface-2)] transition-colors"
             >
               <Upload size={14} /> Importer CSV
             </button>
@@ -143,13 +143,13 @@ export default function CrmHub() {
         </div>
 
         {error && (
-          <div className="px-4 py-3 bg-dopa-red/10 border border-dopa-red/30 rounded-lg text-[12px] text-dopa-red flex items-center gap-2">
+          <div className="px-4 py-3 bg-[var(--accent-red-light)] border border-[var(--accent-red)] rounded-lg text-[12px] text-[var(--accent-red)] flex items-center gap-2">
             <AlertTriangle size={14} /> {error}
           </div>
         )}
 
         {repairResult && (
-          <div className="px-4 py-3 bg-dopa-violet/10 border border-dopa-violet/30 rounded-lg text-[12.5px] text-dopa-violet flex items-center gap-2">
+          <div className="px-4 py-3 bg-[var(--accent-purple-light)] border border-[var(--accent-purple)] rounded-lg text-[12.5px] text-[var(--accent-purple)] flex items-center gap-2">
             <Wrench size={14} />
             {repairResult.fixed > 0
               ? `${repairResult.fixed} prospect(s) reparesur ${repairResult.scanned}.`
@@ -167,13 +167,13 @@ export default function CrmHub() {
         </div>
 
         {/* PIPELINE KANBAN */}
-        <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
+        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-5">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-dopa-cyan" />
+              <TrendingUp size={16} className="text-[var(--accent-cyan)]" />
               <h2 className="text-[14px] font-semibold">Pipeline</h2>
             </div>
-            <p className="text-[11px] text-t-tertiary">
+            <p className="text-[11px] text-[var(--text-tertiary)]">
               Clique sur une colonne pour filtrer la liste complete.
             </p>
           </div>
@@ -199,15 +199,15 @@ export default function CrmHub() {
                   </p>
                   <div className="mt-2 space-y-1 min-h-[34px]">
                     {list.slice(0, 2).map((p) => (
-                      <p key={p.id} className="text-[11px] text-t-secondary truncate">
+                      <p key={p.id} className="text-[11px] text-[var(--text-secondary)] truncate">
                         {p.entreprise}
                       </p>
                     ))}
                     {list.length > 2 && (
-                      <p className="text-[10px] text-t-tertiary">+ {list.length - 2}</p>
+                      <p className="text-[10px] text-[var(--text-tertiary)]">+ {list.length - 2}</p>
                     )}
                     {list.length === 0 && (
-                      <p className="text-[10.5px] text-t-tertiary italic">vide</p>
+                      <p className="text-[10.5px] text-[var(--text-tertiary)] italic">vide</p>
                     )}
                   </div>
                 </Link>
@@ -219,36 +219,36 @@ export default function CrmHub() {
         {/* 2 PANELS : PROCHAINS A APPELER + PROCHAINS RDV */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Left : prochains a appeler */}
-          <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
+          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Phone size={15} className="text-dopa-orange" />
+                <Phone size={15} className="text-[var(--accent-orange)]" />
                 <h3 className="text-[13.5px] font-semibold">A appeler en priorite</h3>
               </div>
               {aAppeler.length > 6 && (
-                <Link href="/prospects?statut=A_APPELER" className="text-[11px] text-t-tertiary hover:text-dopa-cyan inline-flex items-center gap-0.5">
+                <Link href="/prospects?statut=A_APPELER" className="text-[11px] text-[var(--text-tertiary)] hover:text-[var(--accent-cyan)] inline-flex items-center gap-0.5">
                   Voir les {aAppeler.length} <ChevronRight size={11} />
                 </Link>
               )}
             </div>
             {aAppelerTop.length === 0 ? (
-              <p className="text-[12.5px] text-t-tertiary italic py-4">Aucun prospect a appeler. Importe un CSV ou ajoutes-en.</p>
+              <p className="text-[12.5px] text-[var(--text-tertiary)] italic py-4">Aucun prospect a appeler. Importe un CSV ou ajoutes-en.</p>
             ) : (
               <ul className="space-y-1">
                 {aAppelerTop.map((p) => (
                   <li key={p.id}>
                     <Link
                       href={`/prospects/${p.id}`}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors group"
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors group"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-t-primary truncate">{p.entreprise}</p>
+                        <p className="text-[13px] font-medium text-[var(--text-primary)] truncate">{p.entreprise}</p>
                         {p.telephone && (
-                          <p className="text-[11px] text-t-tertiary tabular-nums">{p.telephone}</p>
+                          <p className="text-[11px] text-[var(--text-tertiary)] tabular-nums">{p.telephone}</p>
                         )}
                       </div>
                       <StatutBadge statut={p.statut} compact />
-                      <ChevronRight size={13} className="text-t-tertiary group-hover:text-t-primary" />
+                      <ChevronRight size={13} className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)]" />
                     </Link>
                   </li>
                 ))}
@@ -257,31 +257,31 @@ export default function CrmHub() {
           </div>
 
           {/* Right : prochains RDV */}
-          <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
+          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-5">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
-                <Calendar size={15} className="text-dopa-cyan" />
+                <Calendar size={15} className="text-[var(--accent-cyan)]" />
                 <h3 className="text-[13.5px] font-semibold">Prochains RDV</h3>
               </div>
             </div>
             {prochainsRdv.length === 0 ? (
-              <p className="text-[12.5px] text-t-tertiary italic py-4">Aucun RDV en stock. Decroche, propose, book.</p>
+              <p className="text-[12.5px] text-[var(--text-tertiary)] italic py-4">Aucun RDV en stock. Decroche, propose, book.</p>
             ) : (
               <ul className="space-y-1">
                 {prochainsRdv.map((p) => (
                   <li key={p.id}>
                     <Link
                       href={`/prospects/${p.id}`}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors group"
+                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors group"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-t-primary truncate">{p.entreprise}</p>
-                        <p className="text-[11px] text-dopa-cyan tabular-nums font-semibold">
+                        <p className="text-[13px] font-medium text-[var(--text-primary)] truncate">{p.entreprise}</p>
+                        <p className="text-[11px] text-[var(--accent-cyan)] tabular-nums font-semibold">
                           {new Date(p.date_rdv!).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
                         </p>
                       </div>
                       <StatutBadge statut={p.statut} compact />
-                      <ChevronRight size={13} className="text-t-tertiary group-hover:text-t-primary" />
+                      <ChevronRight size={13} className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)]" />
                     </Link>
                   </li>
                 ))}
@@ -291,33 +291,33 @@ export default function CrmHub() {
         </div>
 
         {/* ACTIVITE RECENTE */}
-        <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
+        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-5">
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
-              <Clock size={15} className="text-dopa-violet" />
+              <Clock size={15} className="text-[var(--accent-purple)]" />
               <h3 className="text-[13.5px] font-semibold">Activite recente</h3>
             </div>
-            <p className="text-[11px] text-t-tertiary">
+            <p className="text-[11px] text-[var(--text-tertiary)]">
               {calls.filter((c) => isToday(c.date) && c.compte_mission).length} appel(s) aujourd&apos;hui
             </p>
           </div>
           {recentCalls.length === 0 ? (
-            <p className="text-[12.5px] text-t-tertiary italic py-4">
+            <p className="text-[12.5px] text-[var(--text-tertiary)] italic py-4">
               Aucun appel log encore. Ouvre un prospect et passe ton premier appel.
             </p>
           ) : (
-            <ul className="divide-y divide-surface-3">
+            <ul className="divide-y divide-[var(--border-primary)]">
               {recentCalls.map((c) => {
                 const p = prospects.find((x) => x.id === c.prospect_id);
                 return (
                   <li key={c.id} className="py-2 flex items-center justify-between gap-3">
                     <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-[11px] font-mono text-t-tertiary tabular-nums w-24 shrink-0">
+                      <span className="text-[11px] font-mono text-[var(--text-tertiary)] tabular-nums w-24 shrink-0">
                         {new Date(c.date).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </span>
                       <Link
                         href={`/prospects/${c.prospect_id}`}
-                        className="text-[13px] font-medium text-t-primary truncate hover:text-dopa-cyan"
+                        className="text-[13px] font-medium text-[var(--text-primary)] truncate hover:text-[var(--accent-cyan)]"
                       >
                         {p?.entreprise || "Prospect supprime"}
                       </Link>
@@ -339,15 +339,15 @@ export default function CrmHub() {
         </div>
 
         {prospects.length === 0 && (
-          <div className="rounded-2xl border border-dashed border-surface-3 bg-surface-1/50 p-12 text-center">
+          <div className="rounded-xl border border-dashed border-[var(--border-secondary)] bg-[var(--surface-1)] p-12 text-center">
             <div className="text-[42px] mb-3">@_@</div>
             <p className="text-[14px] font-semibold mb-1">Ton CRM est vide</p>
-            <p className="text-[12.5px] text-t-tertiary mb-4">
+            <p className="text-[12.5px] text-[var(--text-tertiary)] mb-4">
               Importe ton CSV existant ou ajoute ton premier prospect.
             </p>
             <button
               onClick={() => setShowImport(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-dopa-cyan text-black rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/90"
+              className="inline-flex items-center gap-2 h-9 px-3.5 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-xl text-[12.5px] font-medium hover:bg-[var(--surface-2)]"
             >
               <Upload size={14} /> Importer mon CSV
             </button>
@@ -368,24 +368,4 @@ function MiniStat({
   value: number | string;
   color: string;
   suffix?: string;
-  highlight?: boolean;
-}) {
-  return (
-    <div
-      className={`rounded-xl border p-4 ${highlight ? "ring-1 ring-dopa-orange/30" : ""}`}
-      style={{
-        background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
-        borderColor: `${color}33`,
-      }}
-    >
-      <div className="flex items-center gap-1.5 mb-1" style={{ color }}>
-        {icon}
-        <p className="text-[10px] uppercase tracking-wider font-semibold">{label}</p>
-      </div>
-      <p className="text-[22px] font-black tabular-nums tracking-tight flex items-baseline gap-1" style={{ color }}>
-        {value}
-        {suffix && <span className="text-[11px] font-semibold text-t-tertiary">{suffix}</span>}
-      </p>
-    </div>
-  );
-}
+  highlight?: boo

@@ -90,12 +90,12 @@ function CreateSprintForm({ onSubmit, onCancel }: {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 8 }}
-      className="p-4 bg-surface border border-b-primary rounded-2xl"
+      className="p-4 bg-surface border border-b-primary rounded-xl"
     >
-      <h3 className="text-sm font-semibold text-t-primary mb-4">Créer un nouveau sprint</h3>
+      <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Créer un nouveau sprint</h3>
       <div className="space-y-3">
         <div>
-          <label className="text-xs font-medium text-t-secondary block mb-1.5">
+          <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">
             Nom du sprint
           </label>
           <input
@@ -103,40 +103,40 @@ function CreateSprintForm({ onSubmit, onCancel }: {
             value={form.name}
             onChange={(e) => setForm({ ...form, name: e.target.value })}
             placeholder="ex: Sprint Q1 - Refactor"
-            className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-t-primary placeholder-text-t-tertiary focus:outline-none focus:ring-2 focus:ring-offset-1"
+            className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-[var(--text-primary)] placeholder-text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-offset-1"
             style={{ boxShadow: "0 0 0 3px var(--accent-blue)" }}
           />
         </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-medium text-t-secondary block mb-1.5">
+            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">
               Date de début
             </label>
             <input
               type="date"
               value={form.startDate}
               onChange={(e) => setForm({ ...form, startDate: e.target.value })}
-              className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-t-primary focus:outline-none focus:ring-2 focus:ring-offset-1"
+              className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1"
               style={{ boxShadow: "0 0 0 3px var(--accent-blue)" }}
             />
           </div>
           <div>
-            <label className="text-xs font-medium text-t-secondary block mb-1.5">
+            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">
               Date de fin
             </label>
             <input
               type="date"
               value={form.endDate}
               onChange={(e) => setForm({ ...form, endDate: e.target.value })}
-              className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-t-primary focus:outline-none focus:ring-2 focus:ring-offset-1"
+              className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-offset-1"
               style={{ boxShadow: "0 0 0 3px var(--accent-blue)" }}
             />
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-medium text-t-secondary block mb-1.5">
+          <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">
             Objectif du sprint
           </label>
           <textarea
@@ -144,7 +144,7 @@ function CreateSprintForm({ onSubmit, onCancel }: {
             onChange={(e) => setForm({ ...form, goal: e.target.value })}
             placeholder="Décris l'objectif principal de ce sprint..."
             rows={2}
-            className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-t-primary placeholder-text-t-tertiary focus:outline-none focus:ring-2 focus:ring-offset-1 resize-none"
+            className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-[var(--text-primary)] placeholder-text-[var(--text-tertiary)] focus:outline-none focus:ring-2 focus:ring-offset-1 resize-none"
             style={{ boxShadow: "0 0 0 3px var(--accent-blue)" }}
           />
         </div>
@@ -159,7 +159,7 @@ function CreateSprintForm({ onSubmit, onCancel }: {
           </button>
           <button
             onClick={onCancel}
-            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg border border-b-primary text-t-primary hover:bg-surface-2 transition-colors"
+            className="flex-1 px-3 py-2 text-sm font-medium rounded-lg border border-b-primary text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
           >
             Annuler
           </button>
@@ -187,14 +187,14 @@ function SprintStats({ sprint, tasksInSprint }: {
     <div className="grid grid-cols-4 gap-2 mb-4">
       {/* Progress */}
       <div className="p-3 bg-surface border border-b-primary rounded-xl">
-        <div className="text-xs text-t-tertiary mb-1.5">Complétées</div>
+        <div className="text-xs text-[var(--text-tertiary)] mb-1.5">Complétées</div>
         <div className="flex items-end gap-1">
-          <span className="text-lg font-bold text-t-primary">{completed}</span>
-          <span className="text-xs text-t-secondary">/ {total}</span>
+          <span className="text-lg font-bold text-[var(--text-primary)]">{completed}</span>
+          <span className="text-xs text-[var(--text-secondary)]">/ {total}</span>
         </div>
-        <div className="mt-1.5 h-1 bg-surface-2 rounded-full overflow-hidden">
+        <div className="mt-1.5 h-1 bg-[var(--surface-2)] rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r"
+            className="h-full bg-[var(--surface-1)]-r"
             style={{
               backgroundImage: "linear-gradient(90deg, var(--accent-green), var(--accent-blue))",
             }}
@@ -207,24 +207,24 @@ function SprintStats({ sprint, tasksInSprint }: {
 
       {/* Velocity */}
       <div className="p-3 bg-surface border border-b-primary rounded-xl">
-        <div className="text-xs text-t-tertiary mb-1.5">Vélocité</div>
+        <div className="text-xs text-[var(--text-tertiary)] mb-1.5">Vélocité</div>
         <div className="flex items-end gap-1">
-          <span className="text-lg font-bold text-t-primary">{velocity}</span>
-          <span className="text-xs text-t-secondary">tasks/j</span>
+          <span className="text-lg font-bold text-[var(--text-primary)]">{velocity}</span>
+          <span className="text-xs text-[var(--text-secondary)]">tasks/j</span>
         </div>
       </div>
 
       {/* Days Elapsed */}
       <div className="p-3 bg-surface border border-b-primary rounded-xl">
-        <div className="text-xs text-t-tertiary mb-1.5">Jours écoulés</div>
-        <div className="text-lg font-bold text-t-primary">{elapsed}</div>
-        <div className="text-xs text-t-secondary">/ {duration}j</div>
+        <div className="text-xs text-[var(--text-tertiary)] mb-1.5">Jours écoulés</div>
+        <div className="text-lg font-bold text-[var(--text-primary)]">{elapsed}</div>
+        <div className="text-xs text-[var(--text-secondary)]">/ {duration}j</div>
       </div>
 
       {/* Days Remaining */}
       <div className="p-3 bg-surface border border-b-primary rounded-xl">
-        <div className="text-xs text-t-tertiary mb-1.5">Restant</div>
-        <div className={`text-lg font-bold ${remaining <= 2 ? "text-accent-red" : "text-t-primary"}`}>
+        <div className="text-xs text-[var(--text-tertiary)] mb-1.5">Restant</div>
+        <div className={`text-lg font-bold ${remaining <= 2 ? "text-accent-red" : "text-[var(--text-primary)]"}`}>
           {remaining}j
         </div>
       </div>
@@ -247,10 +247,10 @@ function BurndownChart({ sprint, tasksInSprint }: {
   const maxTasks = Math.max(total, 10);
 
   return (
-    <div className="p-4 bg-surface border border-b-primary rounded-2xl mb-4">
+    <div className="p-4 bg-surface border border-b-primary rounded-xl mb-4">
       <div className="flex items-center gap-2 mb-4">
-        <BarChart3 size={16} className="text-t-secondary" />
-        <h3 className="text-sm font-semibold text-t-primary">Burndown</h3>
+        <BarChart3 size={16} className="text-[var(--text-secondary)]" />
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Burndown</h3>
       </div>
 
       <div className="relative h-40 flex items-end gap-1">
@@ -287,7 +287,7 @@ function BurndownChart({ sprint, tasksInSprint }: {
             animate={{ height: `${(idealTasks / maxTasks) * 100}%` }}
             transition={{ type: "spring", stiffness: 60 }}
           />
-          <span className="text-xs text-t-tertiary">Idéal</span>
+          <span className="text-xs text-[var(--text-tertiary)]">Idéal</span>
         </div>
 
         {/* Actual remaining bar */}
@@ -305,11 +305,11 @@ function BurndownChart({ sprint, tasksInSprint }: {
             animate={{ height: `${(currentRemaining / maxTasks) * 100}%` }}
             transition={{ type: "spring", stiffness: 60 }}
           />
-          <span className="text-xs text-t-tertiary">Réel</span>
+          <span className="text-xs text-[var(--text-tertiary)]">Réel</span>
         </div>
       </div>
 
-      <div className="mt-4 text-xs text-t-secondary">
+      <div className="mt-4 text-xs text-[var(--text-secondary)]">
         {currentRemaining} tâches restantes • Idéal: {idealTasks.toFixed(1)}
       </div>
     </div>
@@ -331,7 +331,7 @@ function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
     <div className="space-y-3">
       {remaining.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-t-secondary mb-2 uppercase tracking-wide">
+          <h4 className="text-xs font-semibold text-[var(--text-secondary)] mb-2 uppercase tracking-wide">
             À faire ({remaining.length})
           </h4>
           <div className="space-y-1">
@@ -343,14 +343,14 @@ function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
               >
                 <div className="w-4 h-4 rounded-full border-2 border-b-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-t-primary break-words">{task.text}</p>
+                  <p className="text-sm text-[var(--text-primary)] break-words">{task.text}</p>
                   {task.description && (
-                    <p className="text-xs text-t-tertiary mt-0.5">{task.description}</p>
+                    <p className="text-xs text-[var(--text-tertiary)] mt-0.5">{task.description}</p>
                   )}
                 </div>
                 <button
                   onClick={() => onAssign(task.id, undefined)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1 text-t-tertiary hover:text-accent-red"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 p-1 text-[var(--text-tertiary)] hover:text-accent-red"
                   title="Remove from sprint"
                 >
                   <X size={14} />
@@ -363,7 +363,7 @@ function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
 
       {completed.length > 0 && (
         <div>
-          <h4 className="text-xs font-semibold text-t-secondary mb-2 uppercase tracking-wide">
+          <h4 className="text-xs font-semibold text-[var(--text-secondary)] mb-2 uppercase tracking-wide">
             Complétées ({completed.length})
           </h4>
           <div className="space-y-1">
@@ -375,7 +375,7 @@ function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
               >
                 <Check size={16} className="text-accent-green mt-0.5 flex-shrink-0" />
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-t-primary line-through">{task.text}</p>
+                  <p className="text-sm text-[var(--text-primary)] line-through">{task.text}</p>
                 </div>
               </motion.div>
             ))}
@@ -385,8 +385,8 @@ function SprintTaskList({ tasksInSprint, sprintId, onAssign }: {
 
       {tasksInSprint.length === 0 && (
         <div className="p-6 text-center">
-          <Target size={24} className="mx-auto mb-2 text-t-tertiary" />
-          <p className="text-sm text-t-secondary">
+          <Target size={24} className="mx-auto mb-2 text-[var(--text-tertiary)]" />
+          <p className="text-sm text-[var(--text-secondary)]">
             Aucune tâche assignée à ce sprint
           </p>
         </div>
@@ -407,10 +407,10 @@ function AssignTasksPanel({ unassignedTasks, sprintId, onAssign }: {
   if (unassignedTasks.length === 0) return null;
 
   return (
-    <div className="mt-4 p-4 bg-surface border border-b-primary rounded-2xl">
+    <div className="mt-4 p-4 bg-surface border border-b-primary rounded-xl">
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center justify-between text-sm font-semibold text-t-primary hover:text-accent-blue transition-colors"
+        className="w-full flex items-center justify-between text-sm font-semibold text-[var(--text-primary)] hover:text-accent-blue transition-colors"
       >
         <span>Ajouter des tâches ({unassignedTasks.length})</span>
         <motion.div
@@ -434,10 +434,10 @@ function AssignTasksPanel({ unassignedTasks, sprintId, onAssign }: {
                 key={task.id}
                 layout
                 onClick={() => onAssign(task.id, sprintId)}
-                className="w-full p-2.5 text-left text-sm bg-surface-2 border border-b-primary rounded-lg text-t-primary hover:border-accent-blue hover:bg-surface-3 transition-colors flex items-center justify-between gap-2 group"
+                className="w-full p-2.5 text-left text-sm bg-[var(--surface-2)] border border-b-primary rounded-lg text-[var(--text-primary)] hover:border-accent-blue hover:bg-surface-3 transition-colors flex items-center justify-between gap-2 group"
               >
                 <span className="flex-1 truncate">{task.text}</span>
-                <Plus size={14} className="flex-shrink-0 text-t-tertiary group-hover:text-accent-blue" />
+                <Plus size={14} className="flex-shrink-0 text-[var(--text-tertiary)] group-hover:text-accent-blue" />
               </motion.button>
             ))}
           </motion.div>
@@ -464,12 +464,12 @@ function SprintCard({ sprint, tasksInSprint, onSelect, onEdit, onDelete }: {
     <motion.button
       onClick={onSelect}
       layout
-      className="w-full p-4 bg-surface border border-b-primary rounded-2xl text-left hover:border-b-secondary hover:shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.05)] transition-all group"
+      className="w-full p-4 bg-surface border border-b-primary rounded-xl text-left hover:border-b-secondary hover:shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.05)] transition-all group"
     >
       <div className="flex items-start justify-between gap-3 mb-3">
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-t-primary mb-1">{sprint.name}</h3>
-          <p className="text-xs text-t-tertiary line-clamp-2">{sprint.goal}</p>
+          <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">{sprint.name}</h3>
+          <p className="text-xs text-[var(--text-tertiary)] line-clamp-2">{sprint.goal}</p>
         </div>
         <div className="flex gap-1 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
           <button
@@ -477,17 +477,17 @@ function SprintCard({ sprint, tasksInSprint, onSelect, onEdit, onDelete }: {
               e.stopPropagation();
               onEdit(sprint);
             }}
-            className="p-1.5 hover:bg-surface-2 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-[var(--surface-2)] rounded-lg transition-colors"
             title="Edit"
           >
-            <Edit2 size={14} className="text-t-secondary" />
+            <Edit2 size={14} className="text-[var(--text-secondary)]" />
           </button>
           <button
             onClick={(e) => {
               e.stopPropagation();
               onDelete(sprint.id);
             }}
-            className="p-1.5 hover:bg-surface-2 rounded-lg transition-colors"
+            className="p-1.5 hover:bg-[var(--surface-2)] rounded-lg transition-colors"
             title="Delete"
           >
             <Trash2 size={14} className="text-accent-red" />
@@ -506,16 +506,16 @@ function SprintCard({ sprint, tasksInSprint, onSelect, onEdit, onDelete }: {
         >
           {getStatusLabel(sprint.status)}
         </div>
-        <span className="text-xs text-t-tertiary flex items-center gap-1">
+        <span className="text-xs text-[var(--text-tertiary)] flex items-center gap-1">
           <Calendar size={12} />
           {formatDate(sprint.startDate)} → {formatDate(sprint.endDate)}
         </span>
       </div>
 
       <div className="flex items-center gap-2">
-        <div className="flex-1 h-1.5 bg-surface-2 rounded-full overflow-hidden">
+        <div className="flex-1 h-1.5 bg-[var(--surface-2)] rounded-full overflow-hidden">
           <motion.div
-            className="h-full bg-gradient-to-r"
+            className="h-full bg-[var(--surface-1)]-r"
             style={{
               backgroundImage: "linear-gradient(90deg, var(--accent-green), var(--accent-blue))",
             }}
@@ -524,7 +524,7 @@ function SprintCard({ sprint, tasksInSprint, onSelect, onEdit, onDelete }: {
             transition={{ type: "spring", stiffness: 60 }}
           />
         </div>
-        <span className="text-xs font-medium text-t-secondary">
+        <span className="text-xs font-medium text-[var(--text-secondary)]">
           {completed}/{total}
         </span>
       </div>
@@ -633,15 +633,15 @@ export default function SprintsBoard() {
   // Render list view
   if (viewMode === "list") {
     return (
-      <div className="min-h-screen bg-surface-2">
+      <div className="min-h-screen bg-[var(--surface-2)]">
         <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
           {/* Header */}
           <div className="border-b border-b-primary pb-6">
             <div className="flex items-center gap-3 mb-2">
               <Rocket size={28} className="text-accent-blue" />
-              <h1 className="text-3xl font-bold text-t-primary">Sprints</h1>
+              <h1 className="text-3xl font-bold text-[var(--text-primary)]">Sprints</h1>
             </div>
-            <p className="text-sm text-t-secondary">
+            <p className="text-sm text-[var(--text-secondary)]">
               Gérez vos sprints et suivez votre avancement
             </p>
           </div>
@@ -671,7 +671,7 @@ export default function SprintsBoard() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              className="p-4 bg-gradient-to-r from-accent-green from-0% to-accent-blue to-100% rounded-2xl text-white cursor-pointer hover:shadow-lg transition-shadow"
+              className="p-4 bg-[var(--surface-1)]-r from-accent-green from-0% to-accent-blue to-100% rounded-xl text-white cursor-pointer hover:shadow-lg transition-shadow"
               onClick={() => handleSelectSprint(currentActiveSprint)}
             >
               <div className="flex items-center gap-2 mb-2">
@@ -702,31 +702,31 @@ export default function SprintsBoard() {
                   animate={{ scale: 1 }}
                   exit={{ scale: 0.95 }}
                   onClick={(e) => e.stopPropagation()}
-                  className="bg-surface border border-b-primary rounded-2xl p-6 w-full max-w-md"
+                  className="bg-surface border border-b-primary rounded-xl p-6 w-full max-w-md"
                 >
-                  <h2 className="text-lg font-bold text-t-primary mb-4">Modifier le sprint</h2>
+                  <h2 className="text-lg font-bold text-[var(--text-primary)] mb-4">Modifier le sprint</h2>
                   <div className="space-y-3 mb-4">
                     <div>
-                      <label className="text-xs font-medium text-t-secondary block mb-1.5">
+                      <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">
                         Nom
                       </label>
                       <input
                         type="text"
                         value={editForm.name || ""}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
-                        className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-t-primary focus:outline-none focus:ring-2"
+                        className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2"
                         style={{ boxShadow: "0 0 0 3px var(--accent-blue)" }}
                       />
                     </div>
                     <div>
-                      <label className="text-xs font-medium text-t-secondary block mb-1.5">
+                      <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">
                         Objectif
                       </label>
                       <textarea
                         value={editForm.goal || ""}
                         onChange={(e) => setEditForm({ ...editForm, goal: e.target.value })}
                         rows={3}
-                        className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-t-primary focus:outline-none focus:ring-2 resize-none"
+                        className="w-full px-3 py-2 text-sm bg-surface border border-b-primary rounded-lg text-[var(--text-primary)] focus:outline-none focus:ring-2 resize-none"
                         style={{ boxShadow: "0 0 0 3px var(--accent-blue)" }}
                       />
                     </div>
@@ -740,7 +740,7 @@ export default function SprintsBoard() {
                     </button>
                     <button
                       onClick={() => setEditingSprint(null)}
-                      className="flex-1 px-4 py-2 text-sm font-medium rounded-lg border border-b-primary text-t-primary hover:bg-surface-2 transition-colors"
+                      className="flex-1 px-4 py-2 text-sm font-medium rounded-lg border border-b-primary text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
                     >
                       Annuler
                     </button>
@@ -756,7 +756,7 @@ export default function SprintsBoard() {
 
             return (
               <div key={status}>
-                <h2 className="text-sm font-semibold text-t-secondary mb-3 uppercase tracking-wide">
+                <h2 className="text-sm font-semibold text-[var(--text-secondary)] mb-3 uppercase tracking-wide">
                   {getStatusLabel(status)} ({sprints.length})
                 </h2>
                 <div className="space-y-2">
@@ -777,9 +777,9 @@ export default function SprintsBoard() {
 
           {store.sprints.length === 0 && (
             <div className="py-12 text-center">
-              <Flag size={32} className="mx-auto mb-3 text-t-tertiary" />
-              <h3 className="text-sm font-semibold text-t-primary mb-1">Aucun sprint</h3>
-              <p className="text-xs text-t-secondary">
+              <Flag size={32} className="mx-auto mb-3 text-[var(--text-tertiary)]" />
+              <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-1">Aucun sprint</h3>
+              <p className="text-xs text-[var(--text-secondary)]">
                 Créez votre premier sprint pour commencer
               </p>
             </div>
@@ -795,7 +795,7 @@ export default function SprintsBoard() {
     const unassignedForThisSprint = unassignedTasks;
 
     return (
-      <div className="min-h-screen bg-surface-2">
+      <div className="min-h-screen bg-[var(--surface-2)]">
         <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
           {/* Header with back button */}
           <div>
@@ -808,8 +808,8 @@ export default function SprintsBoard() {
             <div className="border-b border-b-primary pb-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h1 className="text-3xl font-bold text-t-primary">{activeSprint.name}</h1>
-                  <p className="text-sm text-t-secondary mt-1">{activeSprint.goal}</p>
+                  <h1 className="text-3xl font-bold text-[var(--text-primary)]">{activeSprint.name}</h1>
+                  <p className="text-sm text-[var(--text-secondary)] mt-1">{activeSprint.goal}</p>
                 </div>
                 <div className="flex gap-2">
                   {activeSprint.status === "active" && (
@@ -823,7 +823,7 @@ export default function SprintsBoard() {
                   )}
                   <button
                     onClick={() => setViewMode("list")}
-                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-b-primary text-t-primary hover:bg-surface-2 transition-colors"
+                    className="px-3 py-1.5 text-sm font-medium rounded-lg border border-b-primary text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
                   >
                     Fermer
                   </button>
@@ -840,7 +840,7 @@ export default function SprintsBoard() {
                     Activer
                   </button>
                 )}
-                <span className="text-xs text-t-secondary flex items-center gap-1">
+                <span className="text-xs text-[var(--text-secondary)] flex items-center gap-1">
                   <Calendar size={12} />
                   {formatDate(activeSprint.startDate)} → {formatDate(activeSprint.endDate)}
                 </span>
@@ -855,8 +855,8 @@ export default function SprintsBoard() {
           <BurndownChart sprint={activeSprint} tasksInSprint={tasksInSprint} />
 
           {/* Tasks */}
-          <div className="bg-surface border border-b-primary rounded-2xl p-4">
-            <h3 className="text-sm font-semibold text-t-primary mb-4 flex items-center gap-2">
+          <div className="bg-surface border border-b-primary rounded-xl p-4">
+            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
               <Target size={16} />
               Tâches du sprint
             </h3>
