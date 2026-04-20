@@ -3,47 +3,50 @@
 import { useState, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Plus, GripVertical, Check, Clock, Bookmark,
-  ChevronDown, ChevronRight, X, Trash2,
-  Sparkles, Timer, Flag, Search, ArrowUpDown,
+  Plus, Check,
+  ChevronDown, X, Trash2, Sparkles, Timer, Flag, Search,
+  SlidersHorizontal, ArrowUpDown, MoreHorizontal,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { Task, TaskStatus, IncupTag } from "@/store/useAppStore";
 import TaskDetailModal from "./TaskDetailModal";
 
+/* ─── Columns ──────────────────────────────────────────────────────── */
+
 interface KanbanColumn {
   id: TaskStatus;
   label: string;
-  dotColor: string;
-  Icon: typeof Clock;
+  accent: string;
+  accentSoft: string;
 }
 
 const COLUMNS: KanbanColumn[] = [
-  { id: "todo",        label: "À faire",    dotColor: "var(--accent-red)", Icon: Plus     },
-  { id: "in_progress", label: "En cours",   dotColor: "var(--accent-blue)", Icon: Clock    },
-  { id: "completed",   label: "Terminé",    dotColor: "var(--accent-green)", Icon: Check    },
-  { id: "saved",       label: "Sauvegarde", dotColor: "var(--accent-orange)", Icon: Bookmark },
+  { id: "todo",        label: "À faire",    accent: "var(--accent-red)",    accentSoft: "var(--accent-red-light)"    },
+  { id: "in_progress", label: "En cours",   accent: "var(--accent-blue)",   accentSoft: "var(--accent-blue-light)"   },
+  { id: "completed",   label: "Terminé",    accent: "var(--accent-green)",  accentSoft: "var(--accent-green-light)"  },
+  { id: "saved",       label: "Sauvegarde", accent: "var(--accent-orange)", accentSoft: "var(--accent-orange-light)" },
 ];
 
 const INCUP_COLORS: Record<IncupTag, string> = {
-  "Intérêt": "var(--accent-cyan)",
+  "Intérêt":   "var(--accent-cyan)",
   "Nouveauté": "var(--accent-purple)",
   "Challenge": "var(--accent-orange)",
-  "Urgence": "var(--accent-red)",
-  "Passion": "var(--accent-green)",
+  "Urgence":   "var(--accent-red)",
+  "Passion":   "var(--accent-green)",
 };
 
-const INCUP_LIGHT_COLORS: Record<IncupTag, string> = {
-  "Intérêt": "var(--accent-cyan-light)",
+const INCUP_LIGHT: Record<IncupTag, string> = {
+  "Intérêt":   "var(--accent-cyan-light, rgba(95, 163, 184, 0.12))",
   "Nouveauté": "var(--accent-purple-light)",
   "Challenge": "var(--accent-orange-light)",
-  "Urgence": "var(--accent-red-light)",
-  "Passion": "var(--accent-green-light)",
+  "Urgence":   "var(--accent-red-light)",
+  "Passion":   "var(--accent-green-light)",
 };
 
 type SortOption = "date" | "priority" | "time";
 
-/* ─── AI Magic Breakup Placeholder ─────────────────────────────────── */
+/* ─── Magic Breakup ────────────────────────────────────────────────── */
+
 function generateMicroSteps(taskText: string): { id: string; text: string; done: boolean }[] {
   const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
   const lower = taskText.toLowerCase();
@@ -91,43 +94,42 @@ function estimateMinutes(taskText: string): number {
   return 20;
 }
 
-/* ─── Kanban Card ──────────────────────────────────────────────────── */
+/* ─── Card ─────────────────────────────────────────────────────────── */
 
 interface KanbanCardProps {
   task: Task;
   onOpenDetail: (task: Task) => void;
   isSelected: boolean;
   onSelect: (taskId: string) => void;
+  accent: string;
 }
 
-function KanbanCard({ task, onOpenDetail, isSelected, onSelect }: KanbanCardProps) {
-  const { updateTaskStatus, deleteTask, toggleTag, toggleExpand, addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps, updateTask } = useAppStore();
-  const [microInput, setMicroInput] = useState("");
+function KanbanCard({ task, onOpenDetail, isSelected, onSelect, accent }: KanbanCardProps) {
+  const { updateTaskStatus, deleteTask, setMicroSteps, updateTask } = useAppStore();
+  const [isDragging, setIsDragging] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
   const doneCount = task.microSteps.filter((ms) => ms.done).length;
   const totalSteps = task.microSteps.length;
-  const [isDragging, setIsDragging] = useState(false);
+  const progress = totalSteps > 0 ? (doneCount / totalSteps) * 100 : 0;
+  const isDone = task.status === "completed";
 
-  const handleAddMicro = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!microInput.trim()) return;
-    addMicroStep(task.id, microInput.trim());
-    setMicroInput("");
-  };
-
-  const handleMagicBreakup = () => {
+  const handleMagicBreakup = (e: React.MouseEvent) => {
+    e.stopPropagation();
     const steps = generateMicroSteps(task.text);
     setMicroSteps(task.id, steps);
-    const est = estimateMinutes(task.text);
-    updateTask(task.id, { estimatedMinutes: est });
-    if (!task.expanded) toggleExpand(task.id);
+    if (!task.estimatedMinutes) {
+      updateTask(task.id, { estimatedMinutes: estimateMinutes(task.text) });
+    }
   };
 
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.97 }}
-      animate={{ opacity: 1, scale: 1 }}
+      initial={{ opacity: 0, y: 4 }}
+      animate={{ opacity: isDragging ? 0.5 : 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.97 }}
+      transition={{ duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
       draggable
       onDragStart={(e) => {
         setIsDragging(true);
@@ -138,118 +140,140 @@ function KanbanCard({ task, onOpenDetail, isSelected, onSelect }: KanbanCardProp
         }
       }}
       onDragEnd={() => setIsDragging(false)}
-      className={`rounded-2xl overflow-hidden group cursor-grab active:cursor-grabbing select-none transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_24px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] bg-surface border-2 ${
-        isSelected ? "border-accent-blue" : "border-b-primary"
-      } ${isDragging ? "opacity-50" : "opacity-100"}`}
+      onClick={() => onOpenDetail(task)}
+      className="group relative cursor-grab active:cursor-grabbing rounded-lg bg-[var(--card-bg)] border transition-colors duration-150 hover:bg-[var(--surface-2)]"
+      style={{
+        borderColor: isSelected ? accent : "var(--border-primary)",
+        boxShadow: isSelected ? `0 0 0 1px ${accent}` : "none",
+      }}
     >
-      <div className="flex items-start gap-2 px-5 py-4">
+
+      <div className="px-4 py-3.5 flex items-start gap-3">
+        {/* Checkbox */}
         <button
           onClick={(e) => { e.stopPropagation(); onSelect(task.id); }}
-          className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
-            isSelected ? "border-accent-blue bg-accent-blue" : "border-b-primary hover:border-accent-blue"
-          }`}
+          className="shrink-0 mt-[2px] w-[18px] h-[18px] rounded-md border flex items-center justify-center transition-all"
+          style={{
+            borderColor: isSelected ? accent : "var(--checkbox-border)",
+            background: isSelected ? accent : "transparent",
+          }}
+          aria-label="Sélectionner"
         >
-          {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+          {isSelected && <Check size={11} className="text-white" strokeWidth={3} />}
         </button>
-        <GripVertical size={11} className="text-b-hover mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
-        <div
-          className="flex-1 min-w-0 cursor-pointer"
-          onClick={(e) => { e.stopPropagation(); onOpenDetail(task); }}
-        >
-          <p className="text-[15px] text-t-primary leading-snug transition-colors" style={{ fontWeight: 450 }}>{task.text}</p>
-          {task.estimatedMinutes && (
-            <div className="flex items-center gap-1 mt-1">
-              <Timer size={9} className="text-t-secondary" />
-              <span className="text-[9px] text-t-secondary">~{task.estimatedMinutes} min</span>
+
+        {/* Body */}
+        <div className="flex-1 min-w-0">
+          <p
+            className="text-[14px] leading-snug text-[var(--text-primary)] break-words"
+            style={{
+              fontWeight: 500,
+              textDecoration: isDone ? "line-through" : "none",
+              opacity: isDone ? 0.55 : 1,
+            }}
+          >
+            {task.text}
+          </p>
+
+          {/* Meta row */}
+          {(task.estimatedMinutes || task.tags.length > 0) && (
+            <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {task.estimatedMinutes && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-tertiary)] tabular-nums">
+                  <Timer size={10} strokeWidth={2} />
+                  {task.estimatedMinutes}m
+                </span>
+              )}
+              {task.tags.map((tag) => (
+                <span
+                  key={tag}
+                  className="text-[10px] px-1.5 py-[2px] rounded-md font-medium tracking-wide"
+                  style={{
+                    color: INCUP_COLORS[tag as IncupTag],
+                    background: INCUP_LIGHT[tag as IncupTag],
+                  }}
+                >
+                  {tag}
+                </span>
+              ))}
             </div>
           )}
-          {task.tags.length > 0 && (
-            <div className="flex flex-wrap gap-1.5 mt-2.5">
-              {task.tags.map((tag) => {
-                const tagColor = INCUP_COLORS[tag as IncupTag];
-                const tagLightColor = INCUP_LIGHT_COLORS[tag as IncupTag];
-                return (
-                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-[6px] font-medium"
-                    style={{ color: tagColor, background: tagLightColor }}
-                  >{tag}</span>
-                );
-              })}
-            </div>
-          )}
+
+          {/* Progress */}
           {totalSteps > 0 && (
-            <div className="flex items-center gap-2 mt-2">
-              <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--border-primary)" }}>
-                <div className="h-full rounded-full transition-all" style={{ width: `${(doneCount / totalSteps) * 100}%`, background: "var(--accent-blue)" }} />
+            <div className="flex items-center gap-2 mt-2.5">
+              <div
+                className="flex-1 h-[3px] rounded-full overflow-hidden"
+                style={{ background: "var(--surface-3)" }}
+              >
+                <motion.div
+                  className="h-full rounded-full"
+                  style={{ background: accent }}
+                  animate={{ width: `${progress}%` }}
+                  transition={{ duration: 0.4, ease: "easeOut" }}
+                />
               </div>
-              <span className="text-[9px] text-t-secondary font-mono">{doneCount}/{totalSteps}</span>
+              <span className="text-[10px] text-[var(--text-tertiary)] tabular-nums font-mono">
+                {doneCount}/{totalSteps}
+              </span>
             </div>
           )}
         </div>
-        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
-          {/* Magic Breakup button */}
+
+        {/* Actions */}
+        <div className="shrink-0 flex items-center opacity-0 group-hover:opacity-100 transition-opacity">
           {task.microSteps.length === 0 && (
             <button
-              onClick={(e) => { e.stopPropagation(); handleMagicBreakup(); }}
-              title="Magic Breakup — Découper en micro-étapes"
-              className="text-accent-blue hover:text-accent-blue/70 transition-colors opacity-0 group-hover:opacity-100"
+              onClick={handleMagicBreakup}
+              title="Découper en micro-étapes"
+              className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--accent-blue)] hover:bg-[var(--surface-2)] transition-colors"
             >
-              <Sparkles size={12} />
+              <Sparkles size={13} />
             </button>
           )}
-          <select
-            value={task.status}
-            onChange={(e) => updateTaskStatus(task.id, e.target.value as TaskStatus)}
-            onClick={(e) => e.stopPropagation()}
-            className="text-[10px] bg-surface border text-t-secondary rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer border border-b-primary shadow-sm"
+          <button
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v); }}
+            className="w-7 h-7 rounded-lg flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+            aria-label="Actions"
           >
-            {COLUMNS.map((c) => <option key={c.id} value={c.id}>{c.label}</option>)}
-          </select>
-          <button onClick={(e) => { e.stopPropagation(); toggleExpand(task.id); }} className="text-t-secondary hover:text-t-primary transition-colors">
-            {task.expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+            <MoreHorizontal size={14} />
           </button>
         </div>
       </div>
 
+      {/* Inline menu */}
       <AnimatePresence>
-        {task.expanded && (
-          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="overflow-hidden">
-            <div className="px-4 pb-3 pt-1 flex flex-col gap-2.5 border-t-b-primary">
-              <div className="flex flex-wrap gap-1.5">
-                {(Object.keys(INCUP_COLORS) as IncupTag[]).map((tag) => {
-                  const active = task.tags.includes(tag);
-                  const tagColor = INCUP_COLORS[tag];
-                  const tagLightColor = INCUP_LIGHT_COLORS[tag];
-                  return (
-                    <button key={tag} onClick={() => toggleTag(task.id, tag)} className="text-[10px] px-2 py-1 rounded-[6px] font-medium transition-all"
-                      style={{ color: active ? tagColor : "var(--text-secondary)", background: active ? tagLightColor : "var(--surface)", border: `1px solid ${active ? "transparent" : "var(--border-primary)"}` }}
-                    >{tag}</button>
-                  );
-                })}
+        {menuOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -4 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -4 }}
+            transition={{ duration: 0.12 }}
+            onClick={(e) => e.stopPropagation()}
+            className="absolute right-2 top-12 z-20 bg-[var(--card-bg)] border border-[var(--border-primary)] rounded-xl overflow-hidden"
+            style={{ boxShadow: "var(--shadow-elevated)" }}
+          >
+            <div className="py-1.5 min-w-[160px]">
+              <div className="px-3 pt-1 pb-1 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">
+                Déplacer vers
               </div>
-              {task.microSteps.map((ms) => (
-                <div key={ms.id} className="flex items-center gap-2 group/ms">
-                  <button onClick={() => toggleMicroStep(task.id, ms.id)} className="shrink-0 w-3.5 h-3.5 rounded-md border flex items-center justify-center transition-colors"
-                    style={{ borderColor: ms.done ? "var(--accent-blue)" : "var(--border-hover)", background: ms.done ? "var(--accent-blue-light)" : "transparent" }}
-                  >{ms.done && <Check size={7} style={{ color: "var(--accent-blue)" }} strokeWidth={3} />}</button>
-                  <span className="flex-1 text-[10px]" style={{ color: ms.done ? "var(--text-secondary)" : "var(--text-primary)", textDecoration: ms.done ? "line-through" : "none" }}>{ms.text}</span>
-                  <button onClick={() => deleteMicroStep(task.id, ms.id)} className="opacity-0 group-hover/ms:opacity-100 text-t-secondary hover:text-accent-red"><X size={9} /></button>
-                </div>
-              ))}
-              <form onSubmit={handleAddMicro} className="flex items-center gap-2">
-                <input value={microInput} onChange={(e) => setMicroInput(e.target.value)} placeholder="+ micro-étape"
-                  className="flex-1 text-[10px] bg-transparent border-b py-1 text-t-primary placeholder:text-t-tertiary focus:outline-none border border-b-primary" />
-              </form>
-              <div className="flex items-center justify-between">
+              {COLUMNS.filter((c) => c.id !== task.status).map((c) => (
                 <button
-                  onClick={() => onOpenDetail(task)}
-                  className="text-[10px] text-t-secondary hover:text-t-primary transition-colors"
+                  key={c.id}
+                  onClick={() => { updateTaskStatus(task.id, c.id); setMenuOpen(false); }}
+                  className="w-full text-left px-3 py-1.5 text-[12px] text-[var(--text-primary)] hover:bg-[var(--surface-2)] flex items-center gap-2"
                 >
-                  Ouvrir le détail →
+                  <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.accent }} />
+                  {c.label}
                 </button>
-                <button onClick={() => deleteTask(task.id)} className="flex items-center gap-1.5 text-[10px] text-t-secondary hover:text-accent-red transition-colors">
-                  <Trash2 size={9} /> Supprimer
-                </button>
-              </div>
+              ))}
+              <div className="h-px bg-[var(--border-primary)] my-1" />
+              <button
+                onClick={() => { deleteTask(task.id); setMenuOpen(false); }}
+                className="w-full text-left px-3 py-1.5 text-[12px] text-[var(--accent-red)] hover:bg-[var(--surface-2)] flex items-center gap-2"
+              >
+                <Trash2 size={11} /> Supprimer
+              </button>
             </div>
           </motion.div>
         )}
@@ -258,7 +282,7 @@ function KanbanCard({ task, onOpenDetail, isSelected, onSelect }: KanbanCardProp
   );
 }
 
-/* ─── Kanban Column ────────────────────────────────────────────────── */
+/* ─── Column ───────────────────────────────────────────────────────── */
 
 interface KanbanColumnComponentProps {
   column: KanbanColumn;
@@ -298,7 +322,13 @@ function KanbanColumnComponent({
 
   return (
     <div
-      className="flex flex-col h-full min-w-0 transition-colors"
+      className="flex flex-col min-w-0 h-full rounded-xl transition-colors"
+      style={{
+        background: isOver
+          ? `color-mix(in srgb, ${column.accent} 6%, var(--surface-1))`
+          : "var(--surface-1)",
+        boxShadow: isOver ? `inset 0 0 0 1.5px ${column.accent}` : `inset 0 0 0 1px var(--border-primary)`,
+      }}
       onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; onDragOver(column.id); }}
       onDrop={(e) => { e.preventDefault(); onDrop(column.id, e); }}
       onDragLeave={(e) => {
@@ -308,28 +338,42 @@ function KanbanColumnComponent({
           onDragLeave();
         }
       }}
-      style={{ background: isOver ? `color-mix(in srgb, ${column.dotColor} 10%, transparent)` : "transparent", borderRight: "1px solid var(--surface-4)" }}
     >
-      <div className="flex items-center gap-3 px-6 pt-8 pb-5 shrink-0">
-        <div className="w-2 h-2 rounded-full shrink-0" style={{ background: column.dotColor }} />
-        <span className="text-[17px] font-medium text-t-primary">{column.label}</span>
-        <motion.div
-          initial={{ scale: 0.8, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
+      {/* Column header — Notion-style status pill */}
+      <div className="shrink-0 px-3 pt-5 pb-3 flex items-center gap-2">
+        <span
+          className="inline-flex items-center text-[12px] font-medium px-2 py-[3px] rounded-md tracking-tight"
+          style={{ background: column.accentSoft, color: column.accent }}
+        >
+          {column.label}
+        </span>
+        <motion.span
           key={tasks.length}
-          className="ml-auto flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-mono font-semibold"
-          style={{ background: column.dotColor, color: "white" }}
+          initial={{ scale: 0.85, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{ duration: 0.18 }}
+          className="text-[12px] font-medium text-[var(--text-tertiary)] tabular-nums"
         >
           {tasks.length}
-        </motion.div>
+        </motion.span>
+
+        <button
+          onClick={() => setAdding(true)}
+          className="ml-auto w-7 h-7 rounded-md flex items-center justify-center text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+          aria-label="Nouvelle tâche"
+        >
+          <Plus size={14} />
+        </button>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-4 pb-4 flex flex-col gap-2.5">
-        <AnimatePresence mode="popLayout">
+      {/* Column body */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 pb-4 flex flex-col gap-2">
+        <AnimatePresence mode="popLayout" initial={false}>
           {tasks.map((task) => (
             <KanbanCard
               key={task.id}
               task={task}
+              accent={column.accent}
               onOpenDetail={onOpenDetail}
               isSelected={selectedTasks.has(task.id)}
               onSelect={onSelectTask}
@@ -337,53 +381,32 @@ function KanbanColumnComponent({
           ))}
         </AnimatePresence>
 
-        {isOver && (
-          <div className="rounded-3xl border-2 border-dashed h-12 flex items-center justify-center text-[10px] transition-all"
-            style={{ borderColor: column.dotColor, color: column.dotColor, background: `color-mix(in srgb, ${column.dotColor} 10%, transparent)` }}>
-            Déposer ici
-          </div>
-        )}
-
+        {/* Add task inline */}
         {adding ? (
           <form onSubmit={handleAdd} className="mt-1">
-            <input value={input} onChange={(e) => setInput(e.target.value)} onBlur={() => { if (!input.trim()) setAdding(false); }} autoFocus
-              placeholder="Nom de la tâche…"
-              className="w-full text-sm rounded-2xl px-4 py-3 text-t-primary placeholder:text-t-tertiary focus:outline-none transition-all shadow-sm focus:shadow-md bg-surface border border-b-primary"
+            <input
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onBlur={() => { if (!input.trim()) setAdding(false); }}
+              onKeyDown={(e) => { if (e.key === "Escape") { setAdding(false); setInput(""); } }}
+              autoFocus
+              placeholder="Nouvelle tâche…"
+              className="w-full text-[13px] rounded-xl px-3.5 py-2.5 bg-[var(--card-bg)] border text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none transition-all"
+              style={{ borderColor: column.accent, boxShadow: `0 0 0 3px ${column.accentSoft}` }}
             />
-            <div className="flex gap-2 mt-2">
-              <button type="submit" className="text-[10px] px-3 py-1.5 rounded-lg font-medium" style={{ background: "var(--accent-blue-light)", color: "var(--accent-blue)" }}>Créer</button>
-              <button type="button" onClick={() => setAdding(false)} className="text-[10px] px-3 py-1.5 text-t-secondary hover:text-t-primary">Annuler</button>
-            </div>
           </form>
-        ) : (
-          <button onClick={() => setAdding(true)} className="flex items-center gap-2 px-4 py-3 rounded-3xl text-[11px] text-t-secondary hover:text-t-primary transition-all mt-1 border border-b-primary">
-            <Plus size={12} /> Nouvelle tâche
+        ) : tasks.length === 0 ? (
+          <button
+            onClick={() => setAdding(true)}
+            className="mt-1 w-full rounded-xl border border-dashed py-4 text-[12px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:border-[var(--border-hover)] transition-colors"
+            style={{ borderColor: "var(--border-primary)" }}
+          >
+            Glisse une tâche ici
           </button>
-        )}
+        ) : null}
       </div>
     </div>
   );
-}
-
-/* ─── Stats Summary ────────────────────────────────────────────────── */
-interface StatsSummary {
-  totalTasks: number;
-  avgEstimatedTime: number;
-  byPriority: Record<number, number>;
-}
-
-function calculateStats(tasks: Task[]): StatsSummary {
-  const filtered = tasks.filter((t) => ["todo", "in_progress", "completed", "saved"].includes(t.status));
-  const total = filtered.length;
-  const withTime = filtered.filter((t) => t.estimatedMinutes);
-  const avgTime = withTime.length > 0 ? Math.round(withTime.reduce((sum, t) => sum + (t.estimatedMinutes || 0), 0) / withTime.length) : 0;
-
-  const byPriority: Record<string, number> = { low: 0, medium: 0, high: 0 };
-  filtered.forEach((t) => {
-    if (t.priority !== undefined) byPriority[t.priority]++;
-  });
-
-  return { totalTasks: total, avgEstimatedTime: avgTime, byPriority };
 }
 
 /* ─── Main Board ───────────────────────────────────────────────────── */
@@ -400,50 +423,36 @@ export default function KanbanBoard() {
   const [selectedProject, setSelectedProject] = useState<string>("");
   const [selectedIncupTag, setSelectedIncupTag] = useState<IncupTag | "">("");
   const [selectedPriority, setSelectedPriority] = useState<"low" | "medium" | "high" | "">("");
+  const [showFilters, setShowFilters] = useState(false);
 
-  // Sort state
+  // Sort
   const [sortBy, setSortBy] = useState<SortOption>("date");
 
-  // Batch selection state
+  // Batch selection
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [showBatchMenu, setShowBatchMenu] = useState(false);
 
   const handleDrop = useCallback((colId: TaskStatus, e: React.DragEvent) => {
     const taskId = e.dataTransfer.getData("text/plain");
-    if (taskId) {
-      updateTaskStatus(taskId, colId);
-    }
+    if (taskId) updateTaskStatus(taskId, colId);
     setDragOverCol(null);
   }, [updateTaskStatus]);
 
-  // Filter tasks
   const filteredTasks = useMemo(() => {
     let filtered = tasks.filter((t) => ["todo", "in_progress", "completed", "saved"].includes(t.status));
-
     if (searchText) {
-      const lowerSearch = searchText.toLowerCase();
-      filtered = filtered.filter((t) => t.text.toLowerCase().includes(lowerSearch));
+      const lower = searchText.toLowerCase();
+      filtered = filtered.filter((t) => t.text.toLowerCase().includes(lower));
     }
-
-    if (selectedProject) {
-      filtered = filtered.filter((t) => t.projectId === selectedProject);
-    }
-
-    if (selectedIncupTag) {
-      filtered = filtered.filter((t) => t.tags.includes(selectedIncupTag));
-    }
-
-    if (selectedPriority !== "") {
-      filtered = filtered.filter((t) => t.priority === selectedPriority);
-    }
-
+    if (selectedProject) filtered = filtered.filter((t) => t.projectId === selectedProject);
+    if (selectedIncupTag) filtered = filtered.filter((t) => t.tags.includes(selectedIncupTag));
+    if (selectedPriority) filtered = filtered.filter((t) => t.priority === selectedPriority);
     return filtered;
   }, [tasks, searchText, selectedProject, selectedIncupTag, selectedPriority]);
 
-  // Sort tasks
   const sortedAndFiltered = useMemo(() => {
     const sorted = [...filteredTasks];
-    const priorityMap = { low: 1, medium: 2, high: 3 };
+    const priorityMap: Record<string, number> = { low: 1, medium: 2, high: 3 };
     sorted.sort((a, b) => {
       switch (sortBy) {
         case "priority":
@@ -460,7 +469,11 @@ export default function KanbanBoard() {
 
   const kanbanTasks = sortedAndFiltered;
   const todayCount = tasks.filter((t) => t.status === "today").length;
-  const stats = calculateStats(kanbanTasks);
+
+  const activeFilters =
+    (selectedProject ? 1 : 0) +
+    (selectedIncupTag ? 1 : 0) +
+    (selectedPriority ? 1 : 0);
 
   const handleAddPriority = (e: React.FormEvent) => {
     e.preventDefault();
@@ -471,159 +484,155 @@ export default function KanbanBoard() {
   };
 
   const handleSelectTask = (taskId: string) => {
-    const newSelected = new Set(selectedTasks);
-    if (newSelected.has(taskId)) {
-      newSelected.delete(taskId);
-    } else {
-      newSelected.add(taskId);
-    }
-    setSelectedTasks(newSelected);
+    const next = new Set(selectedTasks);
+    if (next.has(taskId)) next.delete(taskId); else next.add(taskId);
+    setSelectedTasks(next);
   };
 
   const handleBatchMove = (status: TaskStatus) => {
-    selectedTasks.forEach((taskId) => {
-      updateTaskStatus(taskId, status);
-    });
+    selectedTasks.forEach((id) => updateTaskStatus(id, status));
     setSelectedTasks(new Set());
     setShowBatchMenu(false);
   };
 
   const handleBatchDelete = () => {
     if (confirm(`Supprimer ${selectedTasks.size} tâche(s) ?`)) {
-      selectedTasks.forEach((taskId) => {
-        deleteTask(taskId);
-      });
+      selectedTasks.forEach((id) => deleteTask(id));
       setSelectedTasks(new Set());
       setShowBatchMenu(false);
     }
   };
 
-  // Get fresh task data for the modal
-  const currentDetailTask = detailTask ? tasks.find(t => t.id === detailTask.id) || null : null;
+  const clearFilters = () => {
+    setSelectedProject("");
+    setSelectedIncupTag("");
+    setSelectedPriority("");
+  };
+
+  const currentDetailTask = detailTask ? tasks.find((t) => t.id === detailTask.id) || null : null;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden">
-      {/* Header with Title */}
-      <div className="shrink-0 px-8 pt-7 pb-5 border-b border-b-primary">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-t-primary tracking-tight">Tâches</h1>
-            <p className="text-xs text-t-secondary mt-1">{kanbanTasks.length} tâches · Glisse pour changer le statut</p>
+    <div className="flex flex-col h-full overflow-hidden bg-[var(--surface-0)]">
+      {/* ─── Header ─────────────────────────────────────────────────── */}
+      <div className="shrink-0 px-8 pt-8 pb-5">
+        <div className="flex items-end justify-between gap-6">
+          <div className="min-w-0">
+            <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">
+              Tâches
+            </h1>
+            <p className="text-[13px] text-[var(--text-secondary)] mt-2">
+              {kanbanTasks.length} {kanbanTasks.length > 1 ? "tâches" : "tâche"}
+              <span className="mx-2 text-[var(--text-ghost)]">·</span>
+              Glisse pour changer le statut
+            </p>
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center gap-2 shrink-0">
             {showPriorityAdd ? (
               <form onSubmit={handleAddPriority} className="flex items-center gap-2">
                 <input
                   value={priorityInput}
                   onChange={(e) => setPriorityInput(e.target.value)}
-                  placeholder="Nom de la tâche prioritaire…"
+                  onKeyDown={(e) => { if (e.key === "Escape") { setShowPriorityAdd(false); setPriorityInput(""); } }}
+                  placeholder="Tâche prioritaire…"
                   autoFocus
-                  className="text-sm rounded-2xl px-4 py-2 text-t-primary placeholder:text-t-tertiary focus:outline-none bg-surface border border-b-primary"
-                  style={{ border: "1px solid var(--border-primary)", minWidth: 220 }}
+                  className="text-[13px] rounded-xl h-9 px-3.5 text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none bg-[var(--card-bg)] border"
+                  style={{ borderColor: "var(--accent-red)", boxShadow: "0 0 0 3px var(--accent-red-light)", minWidth: 240 }}
                 />
-                <button type="submit" className="text-[11px] px-3 py-2 rounded-xl font-medium text-white" style={{ background: "var(--accent-red)" }}>
+                <button
+                  type="submit"
+                  className="h-9 px-3.5 rounded-xl text-[12px] font-medium text-white transition-transform active:scale-95"
+                  style={{ background: "var(--accent-red)" }}
+                >
                   Ajouter
                 </button>
-                <button type="button" onClick={() => { setShowPriorityAdd(false); setPriorityInput(""); }} className="text-[11px] text-t-secondary hover:text-t-primary px-2 py-2">
+                <button
+                  type="button"
+                  onClick={() => { setShowPriorityAdd(false); setPriorityInput(""); }}
+                  className="h-9 px-2 rounded-xl text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                >
                   Annuler
                 </button>
                 {todayCount >= 5 && (
-                  <span className="text-[10px] text-accent-orange font-medium">5/5 max</span>
+                  <span className="text-[11px] text-[var(--accent-orange)] font-medium">5/5 max</span>
                 )}
               </form>
             ) : (
               <button
                 onClick={() => setShowPriorityAdd(true)}
-                className="flex items-center gap-2 px-4 h-9 rounded-xl text-[12px] font-medium transition-all hover:scale-[1.02] active:scale-[0.98] border"
-                style={{ background: "color-mix(in srgb, var(--accent-red) 12%, transparent)", color: "var(--accent-red)", borderColor: "color-mix(in srgb, var(--accent-red) 30%, transparent)" }}
+                className="flex items-center gap-2 h-9 px-3.5 rounded-xl text-[12.5px] font-medium transition-all hover:scale-[1.02] active:scale-[0.98] border"
+                style={{
+                  background: "var(--accent-red-light)",
+                  color: "var(--accent-red)",
+                  borderColor: "color-mix(in srgb, var(--accent-red) 25%, transparent)",
+                }}
               >
-                <Flag size={13} /> Ajout prioritaire
+                <Flag size={13} strokeWidth={2.2} />
+                Ajout prioritaire
               </button>
             )}
           </div>
         </div>
+      </div>
 
-        {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-2 mb-5">
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--accent-blue)" }} />
-            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Total</p>
-            <p className="text-xl font-semibold text-t-primary tabular-nums">{stats.totalTasks}</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--accent-cyan)" }} />
-            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Temps moyen</p>
-            <p className="text-xl font-semibold text-t-primary tabular-nums">{stats.avgEstimatedTime}<span className="text-sm text-t-secondary ml-0.5">m</span></p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--accent-red)" }} />
-            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Haute priorité</p>
-            <p className="text-xl font-semibold text-t-primary tabular-nums">{stats.byPriority[5] || 0}</p>
-          </motion.div>
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
-            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: selectedTasks.size > 0 ? "var(--accent-purple)" : "var(--border-primary)" }} />
-            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Sélection batch</p>
-            <p className="text-xl font-semibold text-t-primary tabular-nums">{selectedTasks.size}</p>
-          </motion.div>
-        </div>
-
-        {/* Filter & Sort Bar */}
-        <div className="flex items-center gap-2 flex-nowrap">
+      {/* ─── Toolbar ────────────────────────────────────────────────── */}
+      <div className="shrink-0 px-8 pb-4">
+        <div className="flex items-center gap-2">
           {/* Search */}
-          <div className="flex items-center gap-2 px-3.5 h-9 rounded-xl bg-surface border border-b-primary flex-1 min-w-0 focus-within:border-accent-blue/50 transition-colors">
-            <Search size={12} className="text-t-secondary" />
+          <div
+            className="flex items-center gap-2 h-9 px-3 rounded-xl border flex-1 min-w-0 max-w-md transition-colors bg-[var(--card-bg)]"
+            style={{ borderColor: "var(--border-primary)" }}
+          >
+            <Search size={13} className="text-[var(--text-tertiary)] shrink-0" />
             <input
               type="text"
-              placeholder="Rechercher…"
+              placeholder="Rechercher une tâche…"
               value={searchText}
               onChange={(e) => setSearchText(e.target.value)}
-              className="flex-1 text-[12px] bg-transparent text-t-primary placeholder:text-t-tertiary focus:outline-none"
+              className="flex-1 min-w-0 text-[13px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
             />
+            {searchText && (
+              <button
+                onClick={() => setSearchText("")}
+                className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+              >
+                <X size={12} />
+              </button>
+            )}
           </div>
 
-          {/* Project Filter */}
-          <select
-            value={selectedProject}
-            onChange={(e) => setSelectedProject(e.target.value)}
-            className="text-[12px] h-9 px-3 rounded-xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer hover:border-t-tertiary transition-colors"
-                >
-                  <option value="">Tous les projets</option>
-            {projects?.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
-
-          {/* INCUP Tag Filter */}
-          <select
-            value={selectedIncupTag}
-            onChange={(e) => setSelectedIncupTag(e.target.value as IncupTag | "")}
-            className="text-[12px] h-9 px-3 rounded-xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer hover:border-t-tertiary transition-colors"
-                >
-                  <option value="">Tous les tags</option>
-            {(Object.keys(INCUP_COLORS) as IncupTag[]).map((tag) => (
-              <option key={tag} value={tag}>{tag}</option>
-            ))}
-          </select>
-
-          {/* Priority Filter */}
-          <select
-            value={selectedPriority}
-            onChange={(e) => setSelectedPriority(e.target.value as "" | "high" | "low" | "medium")}
-            className="text-[12px] h-9 px-3 rounded-xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer hover:border-t-tertiary transition-colors"
-                >
-                  <option value="">Toutes priorités</option>
-            <option value="high">Haute</option>
-            <option value="medium">Moyenne</option>
-            <option value="low">Basse</option>
-          </select>
+          {/* Filters toggle */}
+          <button
+            onClick={() => setShowFilters((v) => !v)}
+            className="flex items-center gap-1.5 h-9 px-3 rounded-xl text-[12.5px] font-medium border transition-colors bg-[var(--card-bg)]"
+            style={{
+              borderColor: showFilters || activeFilters > 0 ? "var(--accent-blue)" : "var(--border-primary)",
+              color: showFilters || activeFilters > 0 ? "var(--accent-blue)" : "var(--text-secondary)",
+              background: activeFilters > 0 ? "var(--accent-blue-light)" : "var(--card-bg)",
+            }}
+          >
+            <SlidersHorizontal size={12} />
+            Filtres
+            {activeFilters > 0 && (
+              <span
+                className="ml-1 min-w-[16px] h-[16px] px-1 rounded-full text-[10px] font-semibold flex items-center justify-center tabular-nums text-white"
+                style={{ background: "var(--accent-blue)" }}
+              >
+                {activeFilters}
+              </span>
+            )}
+          </button>
 
           {/* Sort */}
-          <div className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface border border-b-primary hover:border-t-tertiary transition-colors">
-                <ArrowUpDown size={12} className="text-t-secondary" />
+          <div
+            className="flex items-center gap-1 h-9 px-2.5 rounded-xl border bg-[var(--card-bg)]"
+            style={{ borderColor: "var(--border-primary)" }}
+          >
+            <ArrowUpDown size={12} className="text-[var(--text-tertiary)]" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}
-              className="text-[11px] bg-transparent text-t-primary focus:outline-none cursor-pointer"
+              className="text-[12.5px] bg-transparent text-[var(--text-primary)] focus:outline-none cursor-pointer pr-1"
             >
               <option value="date">Par date</option>
               <option value="priority">Par priorité</option>
@@ -631,48 +640,125 @@ export default function KanbanBoard() {
             </select>
           </div>
 
-          {/* Batch Actions */}
+          {/* Batch actions */}
           {selectedTasks.size > 0 && (
             <div className="relative">
               <button
-                onClick={() => setShowBatchMenu(!showBatchMenu)}
-                className="flex items-center gap-2 px-3 py-2 rounded-2xl text-[11px] font-medium transition-all"
-                style={{ background: "color-mix(in srgb, var(--accent-blue) 15%, transparent)", color: "var(--accent-blue)", border: "1px solid color-mix(in srgb, var(--accent-blue) 25%, transparent)" }}
+                onClick={() => setShowBatchMenu((v) => !v)}
+                className="flex items-center gap-2 h-9 px-3 rounded-xl text-[12.5px] font-medium border transition-colors"
+                style={{
+                  background: "var(--accent-blue-light)",
+                  color: "var(--accent-blue)",
+                  borderColor: "color-mix(in srgb, var(--accent-blue) 30%, transparent)",
+                }}
               >
-                Actions ({selectedTasks.size})
+                {selectedTasks.size} sélectionnée{selectedTasks.size > 1 ? "s" : ""}
+                <ChevronDown size={12} />
               </button>
-              {showBatchMenu && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="absolute top-full right-0 mt-2 bg-surface border border-b-primary rounded-2xl shadow-lg overflow-hidden z-10"
-                >
-                  <div className="py-2">
-                    {COLUMNS.map((col) => (
+              <AnimatePresence>
+                {showBatchMenu && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -4 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -4 }}
+                    transition={{ duration: 0.12 }}
+                    className="absolute top-full right-0 mt-2 bg-[var(--card-bg)] border border-[var(--border-primary)] rounded-xl overflow-hidden z-20 min-w-[200px]"
+                    style={{ boxShadow: "var(--shadow-elevated)" }}
+                  >
+                    <div className="py-1.5">
+                      <div className="px-3 pt-1 pb-1 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">
+                        Déplacer vers
+                      </div>
+                      {COLUMNS.map((c) => (
+                        <button
+                          key={c.id}
+                          onClick={() => handleBatchMove(c.id)}
+                          className="w-full text-left px-3 py-1.5 text-[12.5px] text-[var(--text-primary)] hover:bg-[var(--surface-2)] flex items-center gap-2"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full" style={{ background: c.accent }} />
+                          {c.label}
+                        </button>
+                      ))}
+                      <div className="h-px bg-[var(--border-primary)] my-1" />
                       <button
-                        key={col.id}
-                        onClick={() => handleBatchMove(col.id)}
-                        className="w-full text-left px-4 py-2 text-[11px] text-t-primary hover:bg-surface-2 transition-colors"
+                        onClick={handleBatchDelete}
+                        className="w-full text-left px-3 py-1.5 text-[12.5px] text-[var(--accent-red)] hover:bg-[var(--surface-2)] flex items-center gap-2"
                       >
-                        Déplacer vers {col.label}
+                        <Trash2 size={11} /> Supprimer
                       </button>
-                    ))}
-                    <div className="h-px bg-b-primary my-1" />
-                    <button
-                      onClick={handleBatchDelete}
-                      className="w-full text-left px-4 py-2 text-[11px] text-accent-red hover:bg-surface-2 transition-colors"
-                    >
-                      Supprimer tout
-                    </button>
-                  </div>
-                </motion.div>
-              )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           )}
         </div>
+
+        {/* Expanded filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: "auto", opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+              className="overflow-hidden"
+            >
+              <div className="flex items-center gap-2 flex-wrap pt-3">
+                <select
+                  value={selectedProject}
+                  onChange={(e) => setSelectedProject(e.target.value)}
+                  className="text-[12.5px] h-8 px-3 rounded-lg border bg-[var(--card-bg)] text-[var(--text-primary)] focus:outline-none cursor-pointer"
+                  style={{ borderColor: "var(--border-primary)" }}
+                >
+                  <option value="">Tous les projets</option>
+                  {projects?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                </select>
+
+                <select
+                  value={selectedIncupTag}
+                  onChange={(e) => setSelectedIncupTag(e.target.value as IncupTag | "")}
+                  className="text-[12.5px] h-8 px-3 rounded-lg border bg-[var(--card-bg)] text-[var(--text-primary)] focus:outline-none cursor-pointer"
+                  style={{ borderColor: "var(--border-primary)" }}
+                >
+                  <option value="">Tous les tags INCUP</option>
+                  {(Object.keys(INCUP_COLORS) as IncupTag[]).map((tag) => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+
+                <select
+                  value={selectedPriority}
+                  onChange={(e) => setSelectedPriority(e.target.value as "" | "high" | "low" | "medium")}
+                  className="text-[12.5px] h-8 px-3 rounded-lg border bg-[var(--card-bg)] text-[var(--text-primary)] focus:outline-none cursor-pointer"
+                  style={{ borderColor: "var(--border-primary)" }}
+                >
+                  <option value="">Toutes priorités</option>
+                  <option value="high">Haute</option>
+                  <option value="medium">Moyenne</option>
+                  <option value="low">Basse</option>
+                </select>
+
+                {activeFilters > 0 && (
+                  <button
+                    onClick={clearFilters}
+                    className="text-[12px] h-8 px-3 text-[var(--text-secondary)] hover:text-[var(--accent-red)] transition-colors"
+                  >
+                    Réinitialiser
+                  </button>
+                )}
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
-      <div className="flex-1 min-h-0 overflow-x-auto">
-        <div className="grid grid-cols-4 gap-0 h-full">
+
+      {/* ─── Board ──────────────────────────────────────────────────── */}
+      <div
+        className="flex-1 min-h-0 overflow-x-auto border-t"
+        style={{ borderColor: "var(--border-primary)" }}
+      >
+        <div className="grid grid-cols-4 gap-3 h-full px-5 py-3">
           {COLUMNS.map((col) => (
             <KanbanColumnComponent
               key={col.id}
@@ -690,7 +776,7 @@ export default function KanbanBoard() {
         </div>
       </div>
 
-      {/* Task Detail Modal */}
+      {/* Detail Modal */}
       <AnimatePresence>
         {currentDetailTask && (
           <TaskDetailModal task={currentDetailTask} onClose={() => setDetailTask(null)} />
