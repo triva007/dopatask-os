@@ -1,0 +1,51 @@
+// lines 251-300
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
+  );
+}
+
+/* ─── Kanban Column ────────────────────────────────────────────────── */
+
+interface KanbanColumnComponentProps {
+  column: KanbanColumn;
+  tasks: Task[];
+  dragOverCol: TaskStatus | null;
+  onDragOver: (colId: TaskStatus) => void;
+  onDrop: (colId: TaskStatus, e: React.DragEvent) => void;
+  onDragLeave: () => void;
+  onOpenDetail: (task: Task) => void;
+  selectedTasks: Set<string>;
+  onSelectTask: (taskId: string) => void;
+}
+
+function KanbanColumnComponent({
+  column,
+  tasks,
+  dragOverCol,
+  onDragOver,
+  onDrop,
+  onDragLeave,
+  onOpenDetail,
+  selectedTasks,
+  onSelectTask,
+}: KanbanColumnComponentProps) {
+  const { addTask } = useAppStore();
+  const [adding, setAdding] = useState(false);
+  const [input, setInput] = useState("");
+  const isOver = dragOverCol === column.id;
+
+  const handleAdd = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!input.trim()) return;
+    addTask(input.trim(), column.id);
+    setInput("");
+    setAdding(false);
+  };
+
+  return (
+    <div

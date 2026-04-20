@@ -504,7 +504,7 @@ export default function KanbanBoard() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header with Title */}
-      <div className="shrink-0 px-10 pt-10 pb-6 border-b border-b-primary">
+      <div className="shrink-0 px-8 pt-7 pb-5 border-b border-b-primary">
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-2xl font-semibold text-t-primary tracking-tight">Tâches</h1>
@@ -533,7 +533,10 @@ export default function KanbanBoard() {
               </form>
             ) : (
               <button
-                onClick={() => setShowPriorityAdd(true)}
+                  onClick={() => setShowPriorityAdd(true)}
+                  className="flex items-center gap-2 px-4 h-9 rounded-xl text-[12px] font-medium transition-all hover:scale-[1.02] active:scale-[0.98] border"
+                  style={{ background: "color-mix(in srgb, var(--accent-red) 12%, transparent)", color: "var(--accent-red)", borderColor: "color-mix(in srgb, var(--accent-red) 30%, transparent)" }}
+                > setShowPriorityAdd(true)}
                 className="flex items-center gap-2 px-4 py-2 rounded-2xl text-[12px] font-medium transition-all hover:scale-[1.02]"
                 style={{ background: "color-mix(in srgb, var(--accent-red) 10%, transparent)", color: "var(--accent-red)", border: "1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)" }}
               >
@@ -544,29 +547,33 @@ export default function KanbanBoard() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-4 gap-3 mb-6">
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="px-4 py-3 rounded-2xl bg-surface border border-b-primary">
-            <p className="text-[10px] text-t-secondary mb-1">Total</p>
-            <p className="text-lg font-semibold text-t-primary">{stats.totalTasks}</p>
+        <div className="grid grid-cols-4 gap-2 mb-5">
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--accent-blue)" }} />
+            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Total</p>
+            <p className="text-xl font-semibold text-t-primary tabular-nums">{stats.totalTasks}</p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="px-4 py-3 rounded-2xl bg-surface border border-b-primary">
-            <p className="text-[10px] text-t-secondary mb-1">Temps moyen</p>
-            <p className="text-lg font-semibold text-t-primary">{stats.avgEstimatedTime}m</p>
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--accent-cyan)" }} />
+            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Temps moyen</p>
+            <p className="text-xl font-semibold text-t-primary tabular-nums">{stats.avgEstimatedTime}<span className="text-sm text-t-secondary ml-0.5">m</span></p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="px-4 py-3 rounded-2xl bg-surface border border-b-primary">
-            <p className="text-[10px] text-t-secondary mb-1">Haute priorité</p>
-            <p className="text-lg font-semibold text-t-primary">{stats.byPriority[5] || 0}</p>
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: "var(--accent-red)" }} />
+            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Haute priorité</p>
+            <p className="text-xl font-semibold text-t-primary tabular-nums">{stats.byPriority[5] || 0}</p>
           </motion.div>
-          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="px-4 py-3 rounded-2xl bg-surface border border-b-primary">
-            <p className="text-[10px] text-t-secondary mb-1">Sélection batch</p>
-            <p className="text-lg font-semibold text-t-primary">{selectedTasks.size}</p>
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }} className="relative px-4 py-3 rounded-xl bg-surface border border-b-primary overflow-hidden">
+            <div className="absolute left-0 top-0 bottom-0 w-1" style={{ background: selectedTasks.size > 0 ? "var(--accent-purple)" : "var(--border-primary)" }} />
+            <p className="text-[10px] uppercase tracking-wider text-t-tertiary mb-1 font-medium">Sélection batch</p>
+            <p className="text-xl font-semibold text-t-primary tabular-nums">{selectedTasks.size}</p>
           </motion.div>
         </div>
 
         {/* Filter & Sort Bar */}
-        <div className="flex flex-wrap items-center gap-3">
+        <div className="flex items-center gap-2 flex-nowrap">
           {/* Search */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-surface border border-b-primary flex-1 min-w-[200px]">
+          <div className="flex items-center gap-2 px-3.5 h-9 rounded-xl bg-surface border border-b-primary flex-1 min-w-0 focus-within:border-accent-blue/50 transition-colors">
             <Search size={12} className="text-t-secondary" />
             <input
               type="text"
@@ -581,9 +588,9 @@ export default function KanbanBoard() {
           <select
             value={selectedProject}
             onChange={(e) => setSelectedProject(e.target.value)}
-            className="text-[11px] px-3 py-2 rounded-2xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer"
-          >
-            <option value="">Tous les projets</option>
+            className="text-[12px] h-9 px-3 rounded-xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer hover:border-t-tertiary transition-colors"
+                >
+                  <option value="">Tous les projets</option>
             {projects?.map((p) => (
               <option key={p.id} value={p.id}>{p.name}</option>
             ))}
@@ -593,9 +600,9 @@ export default function KanbanBoard() {
           <select
             value={selectedIncupTag}
             onChange={(e) => setSelectedIncupTag(e.target.value as IncupTag | "")}
-            className="text-[11px] px-3 py-2 rounded-2xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer"
-          >
-            <option value="">Tous les tags</option>
+            className="text-[12px] h-9 px-3 rounded-xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer hover:border-t-tertiary transition-colors"
+                >
+                  <option value="">Tous les tags</option>
             {(Object.keys(INCUP_COLORS) as IncupTag[]).map((tag) => (
               <option key={tag} value={tag}>{tag}</option>
             ))}
@@ -605,17 +612,17 @@ export default function KanbanBoard() {
           <select
             value={selectedPriority}
             onChange={(e) => setSelectedPriority(e.target.value as "" | "high" | "low" | "medium")}
-            className="text-[11px] px-3 py-2 rounded-2xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer"
-          >
-            <option value="">Toutes priorités</option>
+            className="text-[12px] h-9 px-3 rounded-xl bg-surface border border-b-primary text-t-primary focus:outline-none cursor-pointer hover:border-t-tertiary transition-colors"
+                >
+                  <option value="">Toutes priorités</option>
             <option value="high">Haute</option>
             <option value="medium">Moyenne</option>
             <option value="low">Basse</option>
           </select>
 
           {/* Sort */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-2xl bg-surface border border-b-primary">
-            <ArrowUpDown size={12} className="text-t-secondary" />
+          <div className="flex items-center gap-1.5 px-3 h-9 rounded-xl bg-surface border border-b-primary hover:border-t-tertiary transition-colors">
+                <ArrowUpDown size={12} className="text-t-secondary" />
             <select
               value={sortBy}
               onChange={(e) => setSortBy(e.target.value as SortOption)}

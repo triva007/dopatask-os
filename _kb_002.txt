@@ -1,0 +1,51 @@
+// lines 101-150
+}
+
+function KanbanCard({ task, onOpenDetail, isSelected, onSelect }: KanbanCardProps) {
+  const { updateTaskStatus, deleteTask, toggleTag, toggleExpand, addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps, updateTask } = useAppStore();
+  const [microInput, setMicroInput] = useState("");
+  const doneCount = task.microSteps.filter((ms) => ms.done).length;
+  const totalSteps = task.microSteps.length;
+  const [isDragging, setIsDragging] = useState(false);
+
+  const handleAddMicro = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!microInput.trim()) return;
+    addMicroStep(task.id, microInput.trim());
+    setMicroInput("");
+  };
+
+  const handleMagicBreakup = () => {
+    const steps = generateMicroSteps(task.text);
+    setMicroSteps(task.id, steps);
+    const est = estimateMinutes(task.text);
+    updateTask(task.id, { estimatedMinutes: est });
+    if (!task.expanded) toggleExpand(task.id);
+  };
+
+  return (
+    <motion.div
+      layout
+      initial={{ opacity: 0, scale: 0.97 }}
+      animate={{ opacity: 1, scale: 1 }}
+      exit={{ opacity: 0, scale: 0.97 }}
+      draggable
+      onDragStart={(e) => {
+        setIsDragging(true);
+        const de = e as unknown as DragEvent;
+        if (de.dataTransfer) {
+          de.dataTransfer.setData("text/plain", task.id);
+          de.dataTransfer.effectAllowed = "move";
+        }
+      }}
+      onDragEnd={() => setIsDragging(false)}
+      className={`rounded-2xl overflow-hidden group cursor-grab active:cursor-grabbing select-none transition-all shadow-[0_1px_2px_rgba(0,0,0,0.02),0_4px_12px_rgba(0,0,0,0.03)] hover:shadow-[0_2px_4px_rgba(0,0,0,0.02),0_8px_24px_rgba(0,0,0,0.05)] hover:-translate-y-[1px] bg-surface border-2 ${
+        isSelected ? "border-accent-blue" : "border-b-primary"
+      } ${isDragging ? "opacity-50" : "opacity-100"}`}
+    >
+      <div className="flex items-start gap-2 px-5 py-4">
+        <button
+          onClick={(e) => { e.stopPropagation(); onSelect(task.id); }}
+          className={`w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${
+            isSelected ? "border-accent-blue bg-accent-blue" : "border-b-primary hover:border-accent-blue"
+          }`}

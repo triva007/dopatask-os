@@ -1,0 +1,51 @@
+// lines 501-550
+  // Get fresh task data for the modal
+  const currentDetailTask = detailTask ? tasks.find(t => t.id === detailTask.id) || null : null;
+
+  return (
+    <div className="flex flex-col h-full overflow-hidden">
+      {/* Header with Title */}
+      <div className="shrink-0 px-10 pt-10 pb-6 border-b border-b-primary">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-semibold text-t-primary tracking-tight">Tâches</h1>
+            <p className="text-xs text-t-secondary mt-1">{kanbanTasks.length} tâches · Glisse pour changer le statut</p>
+          </div>
+          <div className="flex items-center gap-2">
+            {showPriorityAdd ? (
+              <form onSubmit={handleAddPriority} className="flex items-center gap-2">
+                <input
+                  value={priorityInput}
+                  onChange={(e) => setPriorityInput(e.target.value)}
+                  placeholder="Nom de la tâche prioritaire…"
+                  autoFocus
+                  className="text-sm rounded-2xl px-4 py-2 text-t-primary placeholder:text-t-tertiary focus:outline-none bg-surface border border-b-primary"
+                  style={{ border: "1px solid var(--border-primary)", minWidth: 220 }}
+                />
+                <button type="submit" className="text-[11px] px-3 py-2 rounded-xl font-medium text-white" style={{ background: "var(--accent-red)" }}>
+                  Ajouter
+                </button>
+                <button type="button" onClick={() => { setShowPriorityAdd(false); setPriorityInput(""); }} className="text-[11px] text-t-secondary hover:text-t-primary px-2 py-2">
+                  Annuler
+                </button>
+                {todayCount >= 5 && (
+                  <span className="text-[10px] text-accent-orange font-medium">5/5 max</span>
+                )}
+              </form>
+            ) : (
+              <button
+                onClick={() => setShowPriorityAdd(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-2xl text-[12px] font-medium transition-all hover:scale-[1.02]"
+                style={{ background: "color-mix(in srgb, var(--accent-red) 10%, transparent)", color: "var(--accent-red)", border: "1px solid color-mix(in srgb, var(--accent-red) 25%, transparent)" }}
+              >
+                <Flag size={13} /> Ajout prioritaire
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-4 gap-3 mb-6">
+          <motion.div initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="px-4 py-3 rounded-2xl bg-surface border border-b-primary">
+            <p className="text-[10px] text-t-secondary mb-1">Total</p>
+            <p className="text-lg font-semibold text-t-primary">{stats.totalTasks}</p>

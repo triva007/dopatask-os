@@ -1,0 +1,51 @@
+// lines 151-200
+        >
+          {isSelected && <Check size={10} className="text-white" strokeWidth={3} />}
+        </button>
+        <GripVertical size={11} className="text-b-hover mt-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+        <div
+          className="flex-1 min-w-0 cursor-pointer"
+          onClick={(e) => { e.stopPropagation(); onOpenDetail(task); }}
+        >
+          <p className="text-[15px] text-t-primary leading-snug transition-colors" style={{ fontWeight: 450 }}>{task.text}</p>
+          {task.estimatedMinutes && (
+            <div className="flex items-center gap-1 mt-1">
+              <Timer size={9} className="text-t-secondary" />
+              <span className="text-[9px] text-t-secondary">~{task.estimatedMinutes} min</span>
+            </div>
+          )}
+          {task.tags.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mt-2.5">
+              {task.tags.map((tag) => {
+                const tagColor = INCUP_COLORS[tag as IncupTag];
+                const tagLightColor = INCUP_LIGHT_COLORS[tag as IncupTag];
+                return (
+                  <span key={tag} className="text-[10px] px-2 py-0.5 rounded-[6px] font-medium"
+                    style={{ color: tagColor, background: tagLightColor }}
+                  >{tag}</span>
+                );
+              })}
+            </div>
+          )}
+          {totalSteps > 0 && (
+            <div className="flex items-center gap-2 mt-2">
+              <div className="flex-1 h-1 rounded-full overflow-hidden" style={{ background: "var(--border-primary)" }}>
+                <div className="h-full rounded-full transition-all" style={{ width: `${(doneCount / totalSteps) * 100}%`, background: "var(--accent-blue)" }} />
+              </div>
+              <span className="text-[9px] text-t-secondary font-mono">{doneCount}/{totalSteps}</span>
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0 mt-0.5">
+          {/* Magic Breakup button */}
+          {task.microSteps.length === 0 && (
+            <button
+              onClick={(e) => { e.stopPropagation(); handleMagicBreakup(); }}
+              title="Magic Breakup — Découper en micro-étapes"
+              className="text-accent-blue hover:text-accent-blue/70 transition-colors opacity-0 group-hover:opacity-100"
+            >
+              <Sparkles size={12} />
+            </button>
+          )}
+          <select
+            value={task.status}
