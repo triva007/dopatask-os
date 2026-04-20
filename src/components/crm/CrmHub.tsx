@@ -15,6 +15,7 @@ import type { StatutProspect } from "@/lib/crmTypes";
 import { computeStatsMois, isToday } from "@/lib/crmLogic";
 import StatutBadge from "./StatutBadge";
 import ImportCsvModal from "./ImportCsvModal";
+import ColdCallSession from "./ColdCallSession";
 import { celebrate } from "@/lib/dopamineFeedback";
 
 // Statuts affiches dans le pipeline kanban (on cache les terminaux)
@@ -35,10 +36,24 @@ export default function CrmHub() {
   const [showImport, setShowImport] = useState(false);
   const [repairing, setRepairing] = useState(false);
   const [repairResult, setRepairResult] = useState<{ fixed: number; scanned: number } | null>(null);
+  const [coldCallMode, setColdCallMode] = useState(false);
 
   useEffect(() => {
     if (!loaded) loadAll();
   }, [loaded, loadAll]);
+
+  // Auto-refresh des données quand la page est visible
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") loadAll();
+    };
+    const id = window.setInterval(refresh, 20000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loadAll]);
 
   const actifs = useMemo(() => prospects.filter((p) => !p.archived), [prospects]);
   const archives = useMemo(() => prospects.filter((p) => p.archived), [prospects]);
@@ -106,6 +121,11 @@ export default function CrmHub() {
     );
   }
 
+  // Mode session cold-call : on remplace tout le hub par le composant focus
+  if (coldCallMode) {
+    return <ColdCallSession onExit={() => setColdCallMode(false)} />;
+  }
+
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-6">
@@ -156,6 +176,44 @@ export default function CrmHub() {
               : `Aucun statut cache dans les notes (${repairResult.scanned} prospect(s) scannes).`}
           </div>
         )}
+
+        {/* CTA XL SESSION COLD-CALL */}
+        <button
+          onClick={() => setColdCallMode(true)}
+          disabled={aAppeler.length === 0}
+          className="w-full group relative overflow-hidden rounded-2xl border-2 border-dopa-cyan bg-gradient-to-br from-dopa-cyan/15 via-dopa-cyan/5 to-transparent p-6 transition-all hover:scale-[1.005] hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+        >
+          <div className="flex items-center justify-between gap-6">
+            <div className="flex items-center gap-4 text-left">
+              <div className="w-14 h-14 rounded-2xl bg-dopa-cyan text-black flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform">
+                <Phone size={24} strokeWidth={2.5} />
+              </div>
+              <div>
+                <p className="text-[11px] uppercase tracking-widest font-bold text-dopa-cyan mb-1">
+                  Mode focus · Zéro distraction
+                </p>
+                <h2 className="text-[22px] font-bold leading-tight">
+                  {aAppeler.length > 0 ? "Démarrer session cold-call" : "Aucun prospect à appeler"}
+                </h2>
+                <p className="text-[12.5px] text-t-tertiary mt-1">
+                  {aAppeler.length > 0
+                    ? `${aAppeler.length} prospects en file · boutons XL · raccourcis clavier · auto-advance`
+                    : "Importe un CSV pour lancer une session"}
+                </p>
+              </div>
+            </div>
+            {aAppeler.length > 0 && (
+              <div className="text-right shrink-0">
+                <p className="text-[44px] font-black leading-none tabular-nums text-dopa-cyan">
+                  {aAppeler.length}
+                </p>
+                <p className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold">
+                  à appeler
+                </p>
+              </div>
+            )}
+          </div>
+        </button>
 
         {/* STATS CRM : 5 mini-cards */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">

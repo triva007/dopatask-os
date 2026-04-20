@@ -12,9 +12,11 @@ import { useAppStore } from "@/store/useAppStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 
 /* ───────────────────── Utils ───────────────────── */
+// Jours ouvrés RESTANTS jusqu'à target, sans compter aujourd'hui (on commence demain).
 function businessDaysUntil(target: Date, from: Date = new Date()): number {
   let count = 0;
   const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  cur.setDate(cur.getDate() + 1); // exclure aujourd'hui
   const end = new Date(target.getFullYear(), target.getMonth(), target.getDate());
   while (cur < end) {
     const d = cur.getDay();
@@ -45,6 +47,21 @@ export default function CrmDashboard() {
   useEffect(() => {
     if (!loaded) loadAll();
   }, [loaded, loadAll]);
+
+  // Auto-refresh : toutes les 20s si la page est visible + au retour de tab
+  useEffect(() => {
+    const refresh = () => {
+      if (document.visibilityState === "visible") loadAll();
+    };
+    const id = window.setInterval(refresh, 20000);
+    document.addEventListener("visibilitychange", refresh);
+    // Refresh aussi au montage pour avoir des données fraîches même si 'loaded' est true
+    refresh();
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loadAll]);
 
   const stats = useMemo(() => computeStatsMois(calls, revenus), [calls, revenus]);
 
