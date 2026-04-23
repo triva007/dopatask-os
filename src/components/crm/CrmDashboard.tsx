@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
@@ -48,18 +48,45 @@ export default function CrmDashboard() {
     if (!loaded) loadAll();
   }, [loaded, loadAll]);
 
-  // Auto-refresh : toutes les 20s si la page est visible + au retour de tab
+  // Tick interne (force un re-render toutes les 15s pour recalculer les stats
+  // qui dépendent de Date.now() — ex: doneToday quand on passe minuit)
+  const [, setTick] = useState(0);
+
+  // Auto-refresh :
+  // - CRM store rechargé depuis Supabase toutes les 15s + au retour de tab
+  // - useAppStore (persist localStorage) re-hydraté si modifié dans un autre onglet
+  // - tick forcé pour re-render même sans nouvelle donnée
   useEffect(() => {
-    const refresh = () => {
-      if (document.visibilityState === "visible") loadAll();
+    const refreshAll = () => {
+      if (document.visibilityState !== "visible") return;
+      loadAll();
+      // Re-hydrate le store zustand persist (au cas où un autre onglet a écrit)
+      try {
+        // @ts-expect-error zustand persist API
+        if (useAppStore.persist?.rehydrate) useAppStore.persist.rehydrate();
+      } catch {}
+      setTick((t) => t + 1);
     };
-    const id = window.setInterval(refresh, 20000);
-    document.addEventListener("visibilitychange", refresh);
-    // Refresh aussi au montage pour avoir des données fraîches même si 'loaded' est true
-    refresh();
+    const id = window.setInterval(refreshAll, 15000);
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "dopatask-storage") {
+        try {
+          // @ts-expect-error zustand persist API
+          if (useAppStore.persist?.rehydrate) useAppStore.persist.rehydrate();
+        } catch {}
+        setTick((t) => t + 1);
+      }
+    };
+    document.addEventListener("visibilitychange", refreshAll);
+    window.addEventListener("focus", refreshAll);
+    window.addEventListener("storage", onStorage);
+    // Refresh au montage
+    refreshAll();
     return () => {
       window.clearInterval(id);
-      document.removeEventListener("visibilitychange", refresh);
+      document.removeEventListener("visibilitychange", refreshAll);
+      window.removeEventListener("focus", refreshAll);
+      window.removeEventListener("storage", onStorage);
     };
   }, [loadAll]);
 
