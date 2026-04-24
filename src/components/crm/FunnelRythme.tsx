@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { motion } from "framer-motion";
-import { Phone, CheckCircle2, Calendar, Banknote, TrendingUp, AlertTriangle, Flame } from "lucide-react";
+import { Phone, CheckCircle2, Calendar, Banknote, TrendingUp, Flame, Target, ChevronRight } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { isToday, isThisMonth, computeStreak } from "@/lib/crmLogic";
 
@@ -106,70 +106,23 @@ export default function FunnelRythme() {
   const deadline = useMemo(() => new Date(deadlineStr + "T00:00:00"), [deadlineStr]);
   const joursOuvresRestants = useMemo(() => businessDaysUntil(deadline), [deadline]);
 
-  // Projection : si Aaron continue à ce rythme de calls/jour ouvré
-  // rythme moyen = callsMois / jours ouvrés écoulés dans le mois
-  const joursOuvresEcoulesMois = useMemo(() => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), now.getMonth(), 1);
-    let count = 0;
-    const cur = new Date(start);
-    while (cur <= now) {
-      const d = cur.getDay();
-      if (d !== 0 && d !== 6) count++;
-      cur.setDate(cur.getDate() + 1);
-    }
-    return Math.max(1, count);
-  }, []);
-
-  const rythmeMoyen = data.callsMoisTotal / joursOuvresEcoulesMois; // calls/jour ouvré
-  const joursOuvresFinMois = useMemo(() => {
-    const now = new Date();
-    const fin = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-    let count = 0;
-    const cur = new Date(now.getFullYear(), now.getMonth(), 1);
-    while (cur <= fin) {
-      const d = cur.getDay();
-      if (d !== 0 && d !== 6) count++;
-      cur.setDate(cur.getDate() + 1);
-    }
-    return count;
-  }, []);
-
-  const callsProjetesFinMois = Math.round(rythmeMoyen * joursOuvresFinMois);
-  const rdvProjetes = callsProjetesFinMois * data.ratios.tauxDecroche * data.ratios.tauxRdvParDecroche;
-  const ventesProjetees = rdvProjetes * data.ratios.tauxClosing;
-  const revenuProjete = Math.round(ventesProjetees * prixSite);
-  const manqueProjete = Math.max(0, objectif - revenuProjete);
-
-  // Rythme nécessaire pour atteindre objectif à deadline
-  const ventesManquantes = Math.max(0, (objectif - data.revenuMois) / prixSite);
-  const rdvNecessaires = ventesManquantes / data.ratios.tauxClosing;
-  const decrochesNecessaires = rdvNecessaires / data.ratios.tauxRdvParDecroche;
-  const callsNecessaires = decrochesNecessaires / data.ratios.tauxDecroche;
+  // Plan d'action : ce qu'il reste à faire pour tenir l'objectif
+  const ventesObjectif = Math.ceil(objectif / prixSite);
+  const ventesRestantes = Math.max(0, ventesObjectif - data.ventesMois);
+  const rdvNecessaires = Math.ceil(ventesRestantes / data.ratios.tauxClosing);
+  const decrochesNecessaires = Math.ceil(rdvNecessaires / data.ratios.tauxRdvParDecroche);
+  const callsNecessaires = Math.ceil(decrochesNecessaires / data.ratios.tauxDecroche);
   const callsParJourNecessaires = joursOuvresRestants > 0
     ? Math.ceil(callsNecessaires / joursOuvresRestants)
-    : Math.ceil(callsNecessaires);
+    : callsNecessaires;
+  // On ne descend jamais sous le minimum quotidien (règle d'Aaron : 10/j quoi qu'il arrive)
+  const callsParJourTarget = Math.max(dailyTarget, callsParJourNecessaires);
+  const callsResteAuj = Math.max(0, callsParJourTarget - data.callsAujMission);
 
-  const progressPct = Math.min(100, Math.round((data.callsAujMission / dailyTarget) * 100));
-  const dailyDone = data.callsAujMission >= dailyTarget;
+  const progressPct = Math.min(100, Math.round((data.callsAujMission / callsParJourTarget) * 100));
+  const dailyDone = data.callsAujMission >= callsParJourTarget;
   const weekend = isWeekend();
-
-  // Message principal
-  let projectionMessage: string;
-  let projectionColor = "var(--text-secondary)";
-  if (data.revenuMois >= objectif) {
-    projectionMessage = `Objectif ${objectif}€ déjà atteint. Tout ce qui vient est du bonus.`;
-    projectionColor = "var(--accent-green)";
-  } else if (data.callsMoisTotal === 0) {
-    projectionMessage = `Lance les hostilités : ${dailyTarget} calls / jour pour rester dans la course.`;
-    projectionColor = "var(--accent-orange)";
-  } else if (manqueProjete > 0) {
-    projectionMessage = `À ce rythme → ~${ventesProjetees.toFixed(1)} ventes = ${revenuProjete.toLocaleString("fr-FR")} € fin du mois. Manque ${manqueProjete.toLocaleString("fr-FR")} €.`;
-    projectionColor = "var(--accent-red)";
-  } else {
-    projectionMessage = `À ce rythme → ~${ventesProjetees.toFixed(1)} ventes = ${revenuProjete.toLocaleString("fr-FR")} € fin du mois. Objectif tenu.`;
-    projectionColor = "var(--accent-green)";
-  }
+  const objectifAtteint = data.revenuMois >= objectif;
 
   return (
     <div className="rounded-2xl border p-6 bg-[var(--surface-1)]"
@@ -229,16 +182,16 @@ export default function FunnelRythme() {
       </div>
 
       {/* Progress bar objectif du jour */}
-      <div className="mb-4">
+      <div className="mb-5">
         <div className="flex items-center justify-between text-[11px] mb-1.5">
           <span className="text-[var(--text-secondary)] font-medium">
-            {data.callsAujMission} / {dailyTarget} calls
+            {data.callsAujMission} / {callsParJourTarget} calls aujourd&apos;hui
           </span>
           <span className="font-semibold tabular-nums" style={{
             color: dailyDone ? "var(--accent-green)" : data.callsAujMission > 0 ? "var(--accent-orange)" : "var(--text-tertiary)",
           }}>
             {progressPct}%
-            {dailyDone && " ✓ mission faite"}
+            {dailyDone && " ✓ objectif du jour"}
           </span>
         </div>
         <div className="relative h-[6px] rounded-full overflow-hidden bg-[var(--surface-2)]">
@@ -256,38 +209,92 @@ export default function FunnelRythme() {
         </div>
       </div>
 
-      {/* Projection */}
-      <div className="p-3 rounded-lg text-[12.5px] flex items-start gap-2 mb-3"
-        style={{ background: "var(--surface-2)" }}>
-        <AlertTriangle size={13} className="shrink-0 mt-0.5" style={{ color: projectionColor }} />
-        <div className="flex-1">
-          <p style={{ color: projectionColor }} className="font-semibold leading-snug">
-            {projectionMessage}
-          </p>
-          {manqueProjete > 0 && !weekend && (
-            <p className="text-[var(--text-secondary)] mt-1 leading-relaxed">
-              Pour finir à {objectif.toLocaleString("fr-FR")} € → passe{" "}
-              <span className="font-bold text-[var(--text-primary)]">
-                {callsParJourNecessaires} calls / jour ouvré
-              </span>{" "}
-              d&apos;ici le {new Date(deadlineStr).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}.
-              {data.callsAujMission < callsParJourNecessaires && (
+      {/* ─── PLAN D'ACTION ───────────────────────────────────── */}
+      {!objectifAtteint ? (
+        <div
+          className="rounded-xl p-4 mb-4"
+          style={{
+            background: "linear-gradient(135deg, color-mix(in srgb, var(--accent-cyan) 8%, transparent), transparent)",
+            border: "1px solid color-mix(in srgb, var(--accent-cyan) 30%, transparent)",
+          }}
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <Target size={14} className="text-[var(--accent-cyan)]" />
+            <p className="text-[11px] uppercase tracking-wider font-bold text-[var(--accent-cyan)]">
+              Plan pour atteindre {ventesObjectif} ventes = {objectif.toLocaleString("fr-FR")} €
+            </p>
+          </div>
+
+          {/* Chaîne décomposée */}
+          <div className="flex items-center flex-wrap gap-y-2 text-[12.5px]">
+            <PlanStep value={ventesRestantes} label="ventes" color="var(--accent-green)" strong />
+            <ChevronRight size={13} className="text-[var(--text-tertiary)] mx-1.5" />
+            <PlanStep value={rdvNecessaires} label="RDV" color="var(--accent-purple)" />
+            <ChevronRight size={13} className="text-[var(--text-tertiary)] mx-1.5" />
+            <PlanStep value={decrochesNecessaires} label="décrochés" color="var(--accent-blue)" />
+            <ChevronRight size={13} className="text-[var(--text-tertiary)] mx-1.5" />
+            <PlanStep value={callsNecessaires} label="calls total" color="var(--accent-orange)" />
+          </div>
+
+          {/* Calcul par jour */}
+          <div className="mt-4 pt-3 border-t flex items-center justify-between gap-3 flex-wrap"
+            style={{ borderColor: "color-mix(in srgb, var(--accent-cyan) 20%, transparent)" }}>
+            <div className="text-[12px] text-[var(--text-secondary)]">
+              Sur <span className="font-semibold text-[var(--text-primary)]">{joursOuvresRestants} jours ouvrés</span> restants
+              {callsParJourNecessaires < dailyTarget && (
+                <span className="ml-1 text-[11px] text-[var(--text-tertiary)]">
+                  (minimum {dailyTarget}/j imposé)
+                </span>
+              )}
+            </div>
+            <div className="text-right">
+              <p className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)]">À faire / jour</p>
+              <p className="text-[26px] font-black tabular-nums leading-none text-[var(--accent-cyan)]">
+                {callsParJourTarget} <span className="text-[12px] font-semibold text-[var(--text-tertiary)]">calls</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Reste aujourd'hui */}
+          {!weekend && (
+            <div className="mt-3 px-3 py-2 rounded-lg flex items-center justify-between gap-3"
+              style={{ background: "var(--surface-2)" }}>
+              {dailyDone ? (
+                <p className="text-[12.5px] font-semibold text-[var(--accent-green)]">
+                  ✓ Objectif du jour atteint. Chaque call en plus rapproche du 30.
+                </p>
+              ) : (
                 <>
-                  {" "}Aujourd&apos;hui il te reste{" "}
-                  <span className="font-bold text-[var(--accent-red)]">
-                    {callsParJourNecessaires - data.callsAujMission} calls
-                  </span>.
+                  <p className="text-[12.5px] text-[var(--text-secondary)]">
+                    Reste aujourd&apos;hui :
+                  </p>
+                  <p className="text-[18px] font-black tabular-nums text-[var(--accent-orange)]">
+                    {callsResteAuj} <span className="text-[11px] font-semibold text-[var(--text-tertiary)]">calls</span>
+                  </p>
                 </>
               )}
-            </p>
+            </div>
           )}
           {weekend && (
-            <p className="text-[var(--text-tertiary)] mt-1 leading-relaxed italic">
-              Week-end — pas d&apos;objectif imposé. Reprise lundi.
+            <p className="mt-3 text-[11.5px] text-[var(--text-tertiary)] italic">
+              Week-end — pas d&apos;objectif imposé. Reprise lundi avec {callsParJourTarget} calls.
             </p>
           )}
         </div>
-      </div>
+      ) : (
+        <div className="p-4 rounded-xl mb-4 text-center"
+          style={{
+            background: "color-mix(in srgb, var(--accent-green) 12%, transparent)",
+            border: "1px solid color-mix(in srgb, var(--accent-green) 40%, transparent)",
+          }}>
+          <p className="text-[14px] font-bold text-[var(--accent-green)]">
+            ✓ Objectif {objectif.toLocaleString("fr-FR")} € atteint
+          </p>
+          <p className="text-[11.5px] text-[var(--text-secondary)] mt-1">
+            Tout ce qui vient est du bonus. Continue pour construire le mois suivant.
+          </p>
+        </div>
+      )}
 
       {/* Mini-stats mois */}
       <div className="grid grid-cols-4 gap-2 text-[11px]">
@@ -338,6 +345,29 @@ function FunnelCell({
         )}
       </p>
       {sub && <p className="text-[10px] text-[var(--text-tertiary)] mt-1.5">{sub}</p>}
+    </div>
+  );
+}
+
+function PlanStep({
+  value, label, color, strong,
+}: {
+  value: number;
+  label: string;
+  color: string;
+  strong?: boolean;
+}) {
+  return (
+    <div className="inline-flex items-baseline gap-1.5">
+      <span
+        className={`tabular-nums leading-none ${strong ? "text-[22px] font-black" : "text-[18px] font-bold"}`}
+        style={{ color }}
+      >
+        {value}
+      </span>
+      <span className="text-[11px] font-medium text-[var(--text-secondary)] uppercase tracking-wide">
+        {label}
+      </span>
     </div>
   );
 }
