@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings, Brain, Shield, Download, Upload, Trash2, ChevronRight,
-  Volume2, VolumeX, Users, Zap, Target, BarChart3, AlertCircle
+  Volume2, VolumeX, Users, Zap, Target, BarChart3, AlertCircle,
+  Phone, Save, Check, Loader2,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useCrmStore } from "@/store/useCrmStore";
 
 function SettingRow({ icon: Icon, label, description, badge, color = "var(--text-secondary)", onClick, isClickable = false }: {
   icon: typeof Settings; label: string; description: string; badge?: string; color?: string; onClick?: () => void; isClickable?: boolean;
@@ -339,6 +341,9 @@ export default function ReglagesPanel() {
             </button>
           </Section>
 
+          {/* CRM cold-call config */}
+          <CrmConfigSection />
+
           {/* Sound & Body Doubling Settings */}
           <Section title="Audio et focus">
             <div className="px-4 py-3.5 rounded-3xl bg-surface border border-b-primary flex items-center justify-between">
@@ -612,6 +617,161 @@ export default function ReglagesPanel() {
           onCancel={() => setShowResetModal(false)}
         />
       )}
+    </div>
+  );
+}
+
+// ─── Section CRM : config cold-call (objectif, prix, deadline, calls/jour) ───
+function CrmConfigSection() {
+  const loaded = useCrmStore((s) => s.loaded);
+  const config = useCrmStore((s) => s.config);
+  const loadAll = useCrmStore((s) => s.loadAll);
+  const updateConfig = useCrmStore((s) => s.updateConfig);
+
+  const [form, setForm] = useState({
+    objectif_mensuel: 0,
+    deadline_date: "",
+    prix_site: 0,
+    mission_daily_target: 0,
+    motivation_default: "",
+    boule_a_z_message: "",
+  });
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  useEffect(() => {
+    if (!loaded) loadAll();
+  }, [loaded, loadAll]);
+
+  useEffect(() => {
+    if (config) {
+      setForm({
+        objectif_mensuel: config.objectif_mensuel,
+        deadline_date: config.deadline_date,
+        prix_site: config.prix_site,
+        mission_daily_target: config.mission_daily_target,
+        motivation_default: config.motivation_default || "",
+        boule_a_z_message: config.boule_a_z_message || "",
+      });
+    }
+  }, [config]);
+
+  const onSave = async () => {
+    setSaving(true);
+    await updateConfig(form);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 1500);
+  };
+
+  return (
+    <Section title="Mission cold-call">
+      <div className="rounded-3xl bg-surface border border-b-primary p-5 space-y-4">
+        <div className="flex items-center gap-3 pb-2 border-b border-b-primary">
+          <div className="w-8 h-8 rounded-xl flex items-center justify-center"
+            style={{ background: "var(--accent-cyan)12" }}>
+            <Phone size={15} style={{ color: "var(--accent-cyan)" }} />
+          </div>
+          <div>
+            <p className="text-[13.5px] font-semibold text-[var(--text-primary)]">Objectifs BTP</p>
+            <p className="text-[11px] text-[var(--text-secondary)]">Ces chiffres alimentent le Funnel & le Rythme du dashboard CRM.</p>
+          </div>
+        </div>
+
+        {!config && loaded ? (
+          <p className="text-[12px] text-[var(--text-secondary)] italic">Aucune config trouvée — crée la ligne id=1 dans Supabase.</p>
+        ) : !loaded ? (
+          <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+            <Loader2 size={13} className="animate-spin" /> Chargement...
+          </div>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 gap-3">
+              <ConfigField label="Objectif mensuel (ventes)">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.objectif_mensuel}
+                  onChange={(e) => setForm({ ...form, objectif_mensuel: Number(e.target.value) })}
+                  className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13.5px] tabular-nums font-semibold focus:outline-none focus:ring-1 focus:ring-accent-cyan"
+                />
+              </ConfigField>
+              <ConfigField label="Prix d'un site (€)">
+                <input
+                  type="number"
+                  min={0}
+                  value={form.prix_site}
+                  onChange={(e) => setForm({ ...form, prix_site: Number(e.target.value) })}
+                  className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13.5px] tabular-nums font-semibold focus:outline-none focus:ring-1 focus:ring-accent-cyan"
+                />
+              </ConfigField>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <ConfigField label="Deadline">
+                <input
+                  type="date"
+                  value={form.deadline_date}
+                  onChange={(e) => setForm({ ...form, deadline_date: e.target.value })}
+                  className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent-cyan"
+                />
+              </ConfigField>
+              <ConfigField label="Calls / jour minimum">
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={form.mission_daily_target}
+                  onChange={(e) => setForm({ ...form, mission_daily_target: Number(e.target.value) })}
+                  className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13.5px] tabular-nums font-semibold focus:outline-none focus:ring-1 focus:ring-accent-cyan"
+                />
+              </ConfigField>
+            </div>
+
+            <ConfigField label="Message motivation (affiché dans le hub)">
+              <input
+                type="text"
+                value={form.motivation_default}
+                onChange={(e) => setForm({ ...form, motivation_default: e.target.value })}
+                placeholder="Pas de RDV = pas de rasage."
+                className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent-cyan"
+              />
+            </ConfigField>
+
+            <ConfigField label="Challenge / gage courant">
+              <textarea
+                value={form.boule_a_z_message}
+                onChange={(e) => setForm({ ...form, boule_a_z_message: e.target.value })}
+                rows={2}
+                placeholder="Rasage total si 3 ventes pas atteintes d'ici le 30."
+                className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-1 focus:ring-accent-cyan resize-none"
+              />
+            </ConfigField>
+
+            <div className="flex justify-end pt-2">
+              <button
+                onClick={onSave}
+                disabled={saving}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-accent-cyan text-black rounded-lg text-[13px] font-semibold hover:opacity-90 disabled:opacity-50"
+              >
+                {saving ? <Loader2 size={13} className="animate-spin" /> : saved ? <Check size={13} /> : <Save size={13} />}
+                {saved ? "Enregistré" : "Enregistrer"}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </Section>
+  );
+}
+
+function ConfigField({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-1.5 font-semibold">
+        {label}
+      </label>
+      {children}
     </div>
   );
 }

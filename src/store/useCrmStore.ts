@@ -31,6 +31,8 @@ type CrmState = {
   updateConfig: (patch: Partial<Config>) => Promise<void>;
   repairProspectsFromNotes: () => Promise<{ fixed: number; scanned: number }>;
   deleteProspect: (id: string) => Promise<void>;
+  bulkUpdateProspects: (ids: string[], patch: Partial<Prospect>) => Promise<number>;
+  bulkDeleteProspects: (ids: string[]) => Promise<number>;
 };
 
 export const useCrmStore = create<CrmState>((set, get) => ({
@@ -255,5 +257,38 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       return;
     }
     set({ prospects: get().prospects.filter((p) => p.id !== id) });
+  },
+
+  bulkUpdateProspects: async (ids, patch) => {
+    if (ids.length === 0) return 0;
+    const { data, error } = await supabase
+      .from("prospects")
+      .update(patch)
+      .in("id", ids)
+      .select("*");
+    if (error) {
+      set({ error: error.message });
+      return 0;
+    }
+    const updated = (data || []) as Prospect[];
+    const byId = new Map(updated.map((p) => [p.id, p]));
+    set({
+      prospects: get().prospects.map((p) => byId.get(p.id) || p),
+    });
+    return updated.length;
+  },
+
+  bulkDeleteProspects: async (ids) => {
+    if (ids.length === 0) return 0;
+    const { error } = await supabase.from("prospects").delete().in("id", ids);
+    if (error) {
+      set({ error: error.message });
+      return 0;
+    }
+    const idSet = new Set(ids);
+    set({
+      prospects: get().prospects.filter((p) => !idSet.has(p.id)),
+    });
+    return ids.length;
   },
 }));

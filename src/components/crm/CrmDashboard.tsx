@@ -4,12 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import {
-  Phone, Target, CheckCircle2, ListChecks, FolderKanban, Inbox,
-  Skull, AlertTriangle, Loader2, ArrowRight, Flame, Banknote,
+  Phone, Target, ListChecks, FolderKanban, Inbox,
+  Skull, AlertTriangle, Loader2, ArrowRight,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
+import FunnelRythme from "./FunnelRythme";
 
 /* ───────────────────── Utils ───────────────────── */
 // Jours ouvrés RESTANTS jusqu'à target, sans compter aujourd'hui (on commence demain).
@@ -258,6 +259,9 @@ export default function CrmDashboard() {
           </div>
         </motion.div>
 
+        {/* ═══ RYTHME DU JOUR + PROJECTION ═══ */}
+        <FunnelRythme />
+
         {/* ═══ CTA CRM unique ═══ */}
         <Link
           href="/crm"
@@ -301,21 +305,6 @@ export default function CrmDashboard() {
               value={activeGoals} sub="en cours" accent="purple" />
             <MiniStat href="/projets" icon={<FolderKanban size={14} />} label="Projets"
               value={activeProjects} sub="actifs" accent="cyan" />
-          </div>
-        </div>
-
-        {/* ═══ CRM — résumé chiffres clés ═══ */}
-        <div>
-          <p className="text-[10px] font-semibold tracking-[0.18em] uppercase text-[var(--text-tertiary)] mb-4">
-            CRM · mois en cours
-          </p>
-          <div className="grid grid-cols-4 gap-3">
-            <MiniStat icon={<Phone size={14} />} label="Appels" value={stats.appelsTotal} sub="ce mois" accent="orange" />
-            <MiniStat icon={<Flame size={14} />} label="RDV" value={stats.rdvObtenus} sub="obtenus" accent="blue" />
-            <MiniStat icon={<CheckCircle2 size={14} />} label="Vendus" value={stats.sitesVendus} sub="sites" accent="purple" />
-            <MiniStat icon={<Banknote size={14} />} label="Revenu"
-              value={`${stats.revenuTotal.toLocaleString("fr-FR")} €`} sub={`/ ${objectif.toLocaleString("fr-FR")} €`}
-              accent="green" />
           </div>
         </div>
 

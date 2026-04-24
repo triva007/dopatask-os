@@ -4,52 +4,106 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import { Search, Filter, Upload, Phone, MapPin, ExternalLink, Plus, Loader2, AlertTriangle, ArrowLeft } from "lucide-react";
+import {
+  Search, Filter, Upload, Phone, MapPin, ExternalLink, Plus, Loader2,
+  AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, Clock,
+} from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI } from "@/lib/crmLabels";
 import type { StatutProspect } from "@/lib/crmTypes";
 import StatutBadge from "./StatutBadge";
 import ImportCsvModal from "./ImportCsvModal";
 
-type SortKey = "entreprise" | "statut" | "date_relance" | "created_at";
+type SortKey = "entreprise" | "statut" | "date_relance" | "created_at" | "last_activity" | "call_count";
+
+function daysSince(iso: string): number {
+  const d = new Date(iso).getTime();
+  return Math.floor((Date.now() - d) / 86400000);
+}
 
 export default function ProspectsTable() {
   const loaded = useCrmStore((s) => s.loaded);
   const loading = useCrmStore((s) => s.loading);
   const error = useCrmStore((s) => s.error);
   const prospects = useCrmStore((s) => s.prospects);
+  const calls = useCrmStore((s) => s.calls);
   const loadAll = useCrmStore((s) => s.loadAll);
   const createProspect = useCrmStore((s) => s.createProspect);
+  const bulkUpdateProspects = useCrmStore((s) => s.bulkUpdateProspects);
+  const bulkDeleteProspects = useCrmStore((s) => s.bulkDeleteProspects);
 
   const searchParams = useSearchParams();
   const initialStatut = searchParams.get("statut");
+  const initialNiche = searchParams.get("niche");
   const [query, setQuery] = useState("");
-  const [filterStatut, setFilterStatut] = useState<StatutProspect | "ALL" | "ACTIFS">(
+  const [filterStatut, setFilterStatut] = useState<StatutProspect | "ALL" | "ACTIFS" | "ARCHIVES" | "JAMAIS_APPELES" | "A_RAPPELER_AUJ">(
     (initialStatut as StatutProspect) || "ACTIFS"
   );
-  const [sortKey, setSortKey] = useState<SortKey>("created_at");
+  const [filterNiche, setFilterNiche] = useState<string>(initialNiche || "ALL");
+  const [sortKey, setSortKey] = useState<SortKey>("last_activity");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
   const [showImport, setShowImport] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkBusy, setBulkBusy] = useState(false);
+  const [flash, setFlash] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loaded) loadAll();
   }, [loaded, loadAll]);
 
+  // Index : calls par prospect_id
+  const callsByProspect = useMemo(() => {
+    const map = new Map<string, typeof calls>();
+    for (const c of calls) {
+      const arr = map.get(c.prospect_id) || [];
+      arr.push(c);
+      map.set(c.prospect_id, arr);
+    }
+    return map;
+  }, [calls]);
+
+  const lastCallAt = (id: string): string | null => {
+    const list = callsByProspect.get(id);
+    if (!list || list.length === 0) return null;
+    // list est déjà triée desc par date (store)
+    return list[0].date;
+  };
+  const callCountFor = (id: string) => callsByProspect.get(id)?.length || 0;
+
+  // Niches distinctes pour le filtre
+  const niches = useMemo(() => {
+    const set = new Set<string>();
+    for (const p of prospects) if (p.niche) set.add(p.niche);
+    return Array.from(set).sort();
+  }, [prospects]);
+
   const filtered = useMemo(() => {
     let arr = prospects;
-    // Filtrage par statut
+    // Filtrage par statut (meta-filtres d'abord)
+    const today = new Date().toISOString().slice(0, 10);
     if (filterStatut === "ACTIFS") {
       arr = arr.filter((p) => !p.archived);
+    } else if (filterStatut === "ARCHIVES") {
+      arr = arr.filter((p) => p.archived);
+    } else if (filterStatut === "JAMAIS_APPELES") {
+      arr = arr.filter((p) => !p.archived && callCountFor(p.id) === 0);
+    } else if (filterStatut === "A_RAPPELER_AUJ") {
+      arr = arr.filter((p) => !p.archived && p.date_relance && p.date_relance <= today);
     } else if (filterStatut !== "ALL") {
       arr = arr.filter((p) => p.statut === filterStatut);
+    }
+    // Filtrage par niche
+    if (filterNiche !== "ALL") {
+      if (filterNiche === "__NONE__") arr = arr.filter((p) => !p.niche);
+      else arr = arr.filter((p) => p.niche === filterNiche);
     }
     // Recherche plein texte
     if (query.trim()) {
       const q = query.toLowerCase();
       arr = arr.filter((p) =>
-        [p.entreprise, p.telephone, p.notes, p.feedback, p.gmb_url, p.site_url]
+        [p.entreprise, p.telephone, p.notes, p.feedback, p.gmb_url, p.site_url, p.niche]
           .filter(Boolean)
           .some((v) => (v as string).toLowerCase().includes(q))
       );
@@ -74,18 +128,27 @@ export default function ProspectsTable() {
           va = a.created_at;
           vb = b.created_at;
           break;
+        case "last_activity":
+          va = lastCallAt(a.id) || a.created_at;
+          vb = lastCallAt(b.id) || b.created_at;
+          break;
+        case "call_count":
+          va = callCountFor(a.id);
+          vb = callCountFor(b.id);
+          break;
       }
       const cmp = va < vb ? -1 : va > vb ? 1 : 0;
       return sortDir === "asc" ? cmp : -cmp;
     });
     return arr;
-  }, [prospects, query, filterStatut, sortKey, sortDir]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prospects, query, filterStatut, filterNiche, sortKey, sortDir, callsByProspect]);
 
   const toggleSort = (k: SortKey) => {
     if (sortKey === k) setSortDir(sortDir === "asc" ? "desc" : "asc");
     else {
       setSortKey(k);
-      setSortDir("asc");
+      setSortDir(k === "entreprise" ? "asc" : "desc");
     }
   };
 
@@ -95,6 +158,78 @@ export default function ProspectsTable() {
     await createProspect({ entreprise: newName.trim() });
     setNewName("");
     setCreating(false);
+  };
+
+  // Selection helpers
+  const allSelectedInView = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
+  const someSelectedInView = filtered.some((p) => selected.has(p.id));
+  const toggleSelectAll = () => {
+    if (allSelectedInView) {
+      const next = new Set(selected);
+      for (const p of filtered) next.delete(p.id);
+      setSelected(next);
+    } else {
+      const next = new Set(selected);
+      for (const p of filtered) next.add(p.id);
+      setSelected(next);
+    }
+  };
+  const toggleSelectOne = (id: string) => {
+    const next = new Set(selected);
+    if (next.has(id)) next.delete(id);
+    else next.add(id);
+    setSelected(next);
+  };
+  const clearSelection = () => setSelected(new Set());
+
+  const doBulkArchive = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Archiver ${selected.size} prospect(s) ?`)) return;
+    setBulkBusy(true);
+    const n = await bulkUpdateProspects(Array.from(selected), { archived: true });
+    setBulkBusy(false);
+    setFlash(`${n} prospect(s) archivé(s)`);
+    setTimeout(() => setFlash(null), 2500);
+    clearSelection();
+  };
+  const doBulkUnarchive = async () => {
+    if (selected.size === 0) return;
+    setBulkBusy(true);
+    const n = await bulkUpdateProspects(Array.from(selected), { archived: false });
+    setBulkBusy(false);
+    setFlash(`${n} prospect(s) désarchivé(s)`);
+    setTimeout(() => setFlash(null), 2500);
+    clearSelection();
+  };
+  const doBulkStatut = async (statut: StatutProspect) => {
+    if (selected.size === 0) return;
+    setBulkBusy(true);
+    const n = await bulkUpdateProspects(Array.from(selected), { statut });
+    setBulkBusy(false);
+    setFlash(`${n} prospect(s) → ${STATUT_LABEL[statut]}`);
+    setTimeout(() => setFlash(null), 2500);
+    clearSelection();
+  };
+  const doBulkNiche = async () => {
+    if (selected.size === 0) return;
+    const nouveauNiche = prompt(`Nouvelle niche pour ${selected.size} prospect(s) ?`, "menuisiers_france");
+    if (!nouveauNiche || !nouveauNiche.trim()) return;
+    setBulkBusy(true);
+    const n = await bulkUpdateProspects(Array.from(selected), { niche: nouveauNiche.trim() });
+    setBulkBusy(false);
+    setFlash(`${n} prospect(s) → niche "${nouveauNiche.trim()}"`);
+    setTimeout(() => setFlash(null), 2500);
+    clearSelection();
+  };
+  const doBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`SUPPRIMER DÉFINITIVEMENT ${selected.size} prospect(s) ? (calls associés supprimés aussi)`)) return;
+    setBulkBusy(true);
+    const n = await bulkDeleteProspects(Array.from(selected));
+    setBulkBusy(false);
+    setFlash(`${n} prospect(s) supprimé(s)`);
+    setTimeout(() => setFlash(null), 2500);
+    clearSelection();
   };
 
   return (
@@ -113,7 +248,7 @@ export default function ProspectsTable() {
             <div>
               <h1 className="text-[22px] font-bold tracking-tight">Prospects</h1>
               <p className="text-[12px] text-t-tertiary mt-0.5">
-                {filtered.length} affiches - {prospects.filter((p) => !p.archived).length} actifs - {prospects.filter((p) => p.archived).length} archives
+                {filtered.length} affichés · {prospects.filter((p) => !p.archived).length} actifs · {prospects.filter((p) => p.archived).length} archivés
               </p>
             </div>
           </div>
@@ -128,6 +263,37 @@ export default function ProspectsTable() {
           </div>
         </div>
 
+        {/* Onglets rapides */}
+        <div className="flex items-center gap-1.5 flex-wrap mb-3">
+          <QuickTab active={filterStatut === "ACTIFS"} onClick={() => setFilterStatut("ACTIFS")}>
+            Actifs ({prospects.filter((p) => !p.archived).length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "A_APPELER"} onClick={() => setFilterStatut("A_APPELER")}>
+            À appeler ({prospects.filter((p) => !p.archived && p.statut === "A_APPELER").length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "REPONDEUR"} onClick={() => setFilterStatut("REPONDEUR")}>
+            Répondeur ({prospects.filter((p) => !p.archived && p.statut === "REPONDEUR").length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "JAMAIS_APPELES"} onClick={() => setFilterStatut("JAMAIS_APPELES")}>
+            Jamais appelés ({prospects.filter((p) => !p.archived && callCountFor(p.id) === 0).length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "A_RAPPELER_AUJ"} onClick={() => setFilterStatut("A_RAPPELER_AUJ")}>
+            À rappeler auj. ({prospects.filter((p) => { const t = new Date().toISOString().slice(0,10); return !p.archived && p.date_relance && p.date_relance <= t; }).length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "RDV_BOOKE"} onClick={() => setFilterStatut("RDV_BOOKE")}>
+            RDV ({prospects.filter((p) => !p.archived && p.statut === "RDV_BOOKE").length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "VENDU"} onClick={() => setFilterStatut("VENDU")}>
+            Vendus ({prospects.filter((p) => p.statut === "VENDU").length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "ARCHIVES"} onClick={() => setFilterStatut("ARCHIVES")}>
+            Archivés ({prospects.filter((p) => p.archived).length})
+          </QuickTab>
+          <QuickTab active={filterStatut === "ALL"} onClick={() => setFilterStatut("ALL")}>
+            Tous
+          </QuickTab>
+        </div>
+
         <div className="flex items-center gap-3 flex-wrap">
           {/* Search */}
           <div className="relative flex-1 min-w-[260px]">
@@ -135,7 +301,7 @@ export default function ProspectsTable() {
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Chercher une entreprise, téléphone, note..."
+              placeholder="Chercher entreprise, téléphone, note, niche..."
               className="w-full pl-9 pr-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] placeholder-t-tertiary focus:outline-none focus:border-dopa-cyan/50"
             />
           </div>
@@ -149,6 +315,9 @@ export default function ProspectsTable() {
               className="pl-9 pr-8 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] focus:outline-none focus:border-dopa-cyan/50 appearance-none cursor-pointer"
             >
               <option value="ACTIFS">Actifs uniquement</option>
+              <option value="ARCHIVES">Archivés uniquement</option>
+              <option value="JAMAIS_APPELES">Jamais appelés</option>
+              <option value="A_RAPPELER_AUJ">À rappeler aujourd&apos;hui</option>
               <option value="ALL">Tous (incl. archivés)</option>
               {STATUTS_ORDRE.map((s) => (
                 <option key={s} value={s}>
@@ -157,6 +326,25 @@ export default function ProspectsTable() {
               ))}
             </select>
           </div>
+
+          {/* Filter niche */}
+          {niches.length > 0 && (
+            <div className="relative">
+              <select
+                value={filterNiche}
+                onChange={(e) => setFilterNiche(e.target.value)}
+                className="pl-3 pr-8 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] focus:outline-none focus:border-dopa-cyan/50 appearance-none cursor-pointer"
+              >
+                <option value="ALL">Toutes les niches</option>
+                <option value="__NONE__">Sans niche</option>
+                {niches.map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {/* Quick add */}
           <div className="flex items-center gap-2">
@@ -178,6 +366,67 @@ export default function ProspectsTable() {
           </div>
         </div>
       </div>
+
+      {/* Bulk action bar (sticky en haut du tableau quand selection > 0) */}
+      {selected.size > 0 && (
+        <div className="px-6 py-2.5 bg-dopa-cyan/10 border-b border-dopa-cyan/30 flex items-center justify-between gap-3 flex-wrap">
+          <div className="text-[12.5px] font-semibold text-dopa-cyan inline-flex items-center gap-2">
+            <Check size={14} />
+            {selected.size} sélectionné(s)
+            <button onClick={clearSelection} className="ml-1 text-t-tertiary hover:text-t-primary inline-flex items-center gap-0.5 text-[11px]">
+              <X size={11} /> désélectionner
+            </button>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={doBulkArchive}
+              disabled={bulkBusy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dopa-orange/15 text-dopa-orange rounded-lg text-[12px] font-semibold hover:bg-dopa-orange/25 disabled:opacity-40"
+            >
+              <Archive size={13} /> Archiver
+            </button>
+            <button
+              onClick={doBulkUnarchive}
+              disabled={bulkBusy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-surface-2 text-t-secondary rounded-lg text-[12px] font-semibold hover:bg-surface-3 disabled:opacity-40"
+            >
+              Désarchiver
+            </button>
+            <button
+              onClick={doBulkNiche}
+              disabled={bulkBusy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dopa-violet/15 text-dopa-violet rounded-lg text-[12px] font-semibold hover:bg-dopa-violet/25 disabled:opacity-40"
+            >
+              Changer niche…
+            </button>
+            <select
+              onChange={(e) => { if (e.target.value) { doBulkStatut(e.target.value as StatutProspect); e.target.value = ""; } }}
+              disabled={bulkBusy}
+              className="px-2.5 py-1.5 bg-surface-2 text-t-secondary rounded-lg text-[12px] font-semibold border border-surface-3 disabled:opacity-40 cursor-pointer"
+              defaultValue=""
+            >
+              <option value="" disabled>Changer statut…</option>
+              {STATUTS_ORDRE.map((s) => (
+                <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
+              ))}
+            </select>
+            <button
+              onClick={doBulkDelete}
+              disabled={bulkBusy}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dopa-red/15 text-dopa-red rounded-lg text-[12px] font-semibold hover:bg-dopa-red/25 disabled:opacity-40"
+            >
+              <Trash2 size={13} /> Supprimer
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Flash */}
+      {flash && (
+        <div className="px-6 py-2 bg-dopa-green/10 border-b border-dopa-green/30 text-[12.5px] text-dopa-green font-semibold">
+          ✓ {flash}
+        </div>
+      )}
 
       {/* Body */}
       <div className="flex-1 overflow-auto">
@@ -214,14 +463,24 @@ export default function ProspectsTable() {
           <table className="w-full text-[12.5px]">
             <thead className="bg-surface-2 sticky top-0 z-10">
               <tr className="text-left text-t-tertiary uppercase text-[10px] tracking-wider">
+                <th className="px-3 py-3 w-8">
+                  <input
+                    type="checkbox"
+                    checked={allSelectedInView}
+                    ref={(el) => { if (el) el.indeterminate = !allSelectedInView && someSelectedInView; }}
+                    onChange={toggleSelectAll}
+                    className="accent-dopa-cyan cursor-pointer"
+                    title={allSelectedInView ? "Tout désélectionner" : "Tout sélectionner (dans la vue)"}
+                  />
+                </th>
                 <th
                   onClick={() => toggleSort("entreprise")}
                   className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
                 >
                   Entreprise {sortKey === "entreprise" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
+                <th className="px-4 py-3 font-semibold">Niche</th>
                 <th className="px-4 py-3 font-semibold">Téléphone</th>
-                <th className="px-4 py-3 font-semibold">GMB</th>
                 <th
                   onClick={() => toggleSort("statut")}
                   className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
@@ -229,74 +488,116 @@ export default function ProspectsTable() {
                   Statut {sortKey === "statut" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th
+                  onClick={() => toggleSort("call_count")}
+                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold text-center"
+                >
+                  Calls {sortKey === "call_count" && (sortDir === "asc" ? "↑" : "↓")}
+                </th>
+                <th
+                  onClick={() => toggleSort("last_activity")}
+                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
+                >
+                  Dernière activité {sortKey === "last_activity" && (sortDir === "asc" ? "↑" : "↓")}
+                </th>
+                <th
                   onClick={() => toggleSort("date_relance")}
                   className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
                 >
-                  Date RDV / Relance {sortKey === "date_relance" && (sortDir === "asc" ? "↑" : "↓")}
+                  RDV / Relance {sortKey === "date_relance" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
-                <th className="px-4 py-3 font-semibold">Maquette</th>
-                <th className="px-4 py-3 font-semibold">Feedback</th>
                 <th className="px-4 py-3 font-semibold">Notes</th>
               </tr>
             </thead>
             <tbody>
-              {filtered.map((p, idx) => (
-                <motion.tr
-                  key={p.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: Math.min(idx * 0.01, 0.2) }}
-                  className={`border-b border-surface-3 hover:bg-surface-2/60 transition-colors ${
-                    idx % 2 === 0 ? "bg-surface-1" : "bg-surface-1/50"
-                  } ${p.archived ? "opacity-50" : ""}`}
-                >
-                  <td className="px-4 py-3">
-                    <Link href={`/prospects/${p.id}`} className="font-semibold text-t-primary hover:text-dopa-cyan">
-                      {p.entreprise}
-                    </Link>
-                  </td>
-                  <td className="px-4 py-3 text-t-secondary tabular-nums">
-                    {p.telephone ? (
-                      <a href={`tel:${p.telephone}`} className="inline-flex items-center gap-1.5 hover:text-dopa-green">
-                        <Phone size={11} />
-                        {p.telephone}
-                      </a>
-                    ) : (
-                      <span className="text-t-tertiary">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.gmb_url ? (
-                      <a href={p.gmb_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-dopa-cyan hover:underline">
-                        <MapPin size={11} /> Fiche
-                      </a>
-                    ) : (
-                      <span className="text-t-tertiary">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3">
-                    <StatutBadge statut={p.statut} compact />
-                  </td>
-                  <td className="px-4 py-3 text-t-secondary tabular-nums">
-                    {p.date_rdv ? `RDV ${p.date_rdv}` : p.date_relance ? `Relance ${p.date_relance}` : "—"}
-                  </td>
-                  <td className="px-4 py-3">
-                    {p.lien_maquette ? (
-                      <a href={p.lien_maquette} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-dopa-violet hover:underline">
-                        <ExternalLink size={11} /> Lien
-                      </a>
-                    ) : (
-                      <span className="text-t-tertiary">—</span>
-                    )}
-                  </td>
-                  <td className="px-4 py-3 text-t-secondary max-w-[220px] truncate" title={p.feedback || ""}>
-                    {p.feedback || "—"}
-                  </td>
-                  <td className="px-4 py-3 text-t-tertiary max-w-[200px] truncate" title={p.notes || ""}>
-                    {p.notes || "—"}
-                  </td>
-                </motion.tr>
-              ))}
+              {filtered.map((p, idx) => {
+                const isSel = selected.has(p.id);
+                const last = lastCallAt(p.id);
+                const nbCalls = callCountFor(p.id);
+                const relanceDue = p.date_relance && p.date_relance <= new Date().toISOString().slice(0, 10);
+                return (
+                  <motion.tr
+                    key={p.id}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ delay: Math.min(idx * 0.008, 0.15) }}
+                    className={`border-b border-surface-3 hover:bg-surface-2/60 transition-colors ${
+                      isSel ? "bg-dopa-cyan/5" : idx % 2 === 0 ? "bg-surface-1" : "bg-surface-1/50"
+                    } ${p.archived ? "opacity-50" : ""}`}
+                  >
+                    <td className="px-3 py-3">
+                      <input
+                        type="checkbox"
+                        checked={isSel}
+                        onChange={() => toggleSelectOne(p.id)}
+                        className="accent-dopa-cyan cursor-pointer"
+                      />
+                    </td>
+                    <td className="px-4 py-3">
+                      <Link href={`/prospects/${p.id}`} className="font-semibold text-t-primary hover:text-dopa-cyan">
+                        {p.entreprise}
+                      </Link>
+                      {p.gmb_url && (
+                        <a href={p.gmb_url} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
+                          <MapPin size={9} /> GMB
+                        </a>
+                      )}
+                      {p.site_url && (
+                        <a href={p.site_url} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
+                          <ExternalLink size={9} /> Site
+                        </a>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-t-tertiary text-[11px]">
+                      {p.niche || "—"}
+                    </td>
+                    <td className="px-4 py-3 text-t-secondary tabular-nums">
+                      {p.telephone ? (
+                        <a href={`tel:${p.telephone}`} className="inline-flex items-center gap-1.5 hover:text-dopa-green">
+                          <Phone size={11} />
+                          {p.telephone}
+                        </a>
+                      ) : (
+                        <span className="text-t-tertiary">—</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <StatutBadge statut={p.statut} compact />
+                    </td>
+                    <td className="px-4 py-3 text-center tabular-nums">
+                      {nbCalls === 0 ? (
+                        <span className="text-t-tertiary text-[11px]">—</span>
+                      ) : (
+                        <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-surface-2 text-t-secondary text-[10px] font-semibold">
+                          {nbCalls}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-t-tertiary tabular-nums whitespace-nowrap">
+                      {last ? (
+                        <span className="inline-flex items-center gap-1">
+                          <Clock size={10} /> il y a {daysSince(last)}j
+                        </span>
+                      ) : (
+                        <span className="text-[11px] italic">jamais</span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-t-secondary tabular-nums">
+                      {p.date_rdv ? (
+                        <span className="text-dopa-cyan font-semibold">RDV {p.date_rdv}</span>
+                      ) : p.date_relance ? (
+                        <span className={relanceDue ? "text-dopa-red font-semibold" : ""}>
+                          Relance {p.date_relance}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                    <td className="px-4 py-3 text-t-tertiary max-w-[260px] truncate" title={p.notes || p.feedback || ""}>
+                      {p.notes || p.feedback || "—"}
+                    </td>
+                  </motion.tr>
+                );
+              })}
             </tbody>
           </table>
         )}
@@ -304,5 +605,26 @@ export default function ProspectsTable() {
 
       {showImport && <ImportCsvModal onClose={() => setShowImport(false)} />}
     </div>
+  );
+}
+
+function QuickTab({
+  active, onClick, children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={`px-2.5 py-1 rounded-md text-[11.5px] font-semibold whitespace-nowrap transition-colors ${
+        active
+          ? "bg-dopa-cyan text-black"
+          : "bg-surface-2 text-t-secondary hover:bg-surface-3 hover:text-t-primary"
+      }`}
+    >
+      {children}
+    </button>
   );
 }

@@ -2,17 +2,34 @@
 
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   ArrowLeft, Phone, MapPin, ExternalLink, Save, Check,
   Loader2, DollarSign, PhoneOff, Voicemail, Calendar, Frown,
+  ChevronLeft, ChevronRight,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import type { Prospect, ResultatAppel } from "@/lib/crmTypes";
 import StatutBadge from "./StatutBadge";
 import { STATUT_LABEL, STATUT_EMOJI, STATUTS_ORDRE } from "@/lib/crmLabels";
 
+function addDaysISO(baseISO: string | null, days: number): string {
+  const d = baseISO ? new Date(baseISO) : new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+function nextMondayISO(): string {
+  const d = new Date();
+  const day = d.getDay(); // 0 = dim, 1 = lun
+  const delta = day === 0 ? 1 : day === 1 ? 7 : 8 - day;
+  d.setDate(d.getDate() + delta);
+  return d.toISOString().slice(0, 10);
+}
+
 export default function ProspectDetail({ id }: { id: string }) {
+  const router = useRouter();
   const loaded = useCrmStore((s) => s.loaded);
   const prospects = useCrmStore((s) => s.prospects);
   const calls = useCrmStore((s) => s.calls);
@@ -27,6 +44,19 @@ export default function ProspectDetail({ id }: { id: string }) {
     () => calls.filter((c) => c.prospect_id === id).sort((a, b) => b.date.localeCompare(a.date)),
     [calls, id]
   );
+
+  // Navigation Prev/Next parmi les prospects non archivés (ordre d'arrivée)
+  const { prevId, nextId, position, total } = useMemo(() => {
+    const list = prospects.filter((p) => !p.archived);
+    const idx = list.findIndex((p) => p.id === id);
+    if (idx === -1) return { prevId: null, nextId: null, position: 0, total: list.length };
+    return {
+      prevId: idx > 0 ? list[idx - 1].id : null,
+      nextId: idx < list.length - 1 ? list[idx + 1].id : null,
+      position: idx + 1,
+      total: list.length,
+    };
+  }, [prospects, id]);
 
   const [form, setForm] = useState<Partial<Prospect>>({});
   const [saving, setSaving] = useState(false);
@@ -98,6 +128,28 @@ export default function ProspectDetail({ id }: { id: string }) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Prev / Next */}
+          <div className="flex items-center gap-1 mr-2">
+            <button
+              onClick={() => prevId && router.push(`/prospects/${prevId}`)}
+              disabled={!prevId}
+              title="Prospect précédent"
+              className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronLeft size={16} />
+            </button>
+            <span className="text-[11px] tabular-nums text-[var(--text-tertiary)] px-1">
+              {position}/{total}
+            </span>
+            <button
+              onClick={() => nextId && router.push(`/prospects/${nextId}`)}
+              disabled={!nextId}
+              title="Prospect suivant"
+              className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] disabled:opacity-30 disabled:cursor-not-allowed"
+            >
+              <ChevronRight size={16} />
+            </button>
+          </div>
           <button
             onClick={onSave}
             disabled={saving}
@@ -111,7 +163,7 @@ export default function ProspectDetail({ id }: { id: string }) {
 
       {/* Action bar gros boutons résultats appel */}
       <div className="px-6 py-4 border-b border-[var(--border-primary)] bg-[var(--surface-1)]">
-        <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">Résultat de l'appel</p>
+        <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">Résultat de l&apos;appel</p>
         <div className="grid grid-cols-5 gap-2">
           <ResultBtn icon={<Calendar size={16} />} label="RDV calé" color="blue" onClick={() => onAction("RDV")} disabled={acting} />
           <ResultBtn icon={<Voicemail size={16} />} label="Répondeur" color="orange" onClick={() => onAction("REPONDEUR")} disabled={acting} />
@@ -230,6 +282,32 @@ export default function ProspectDetail({ id }: { id: string }) {
                 onChange={(e) => setForm({ ...form, date_relance: e.target.value || null })}
                 className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
               />
+              <div className="flex gap-1 mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, date_relance: addDaysISO(null, 3) })}
+                  className="flex-1 px-2 py-1 text-[10.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-md hover:border-[var(--accent-cyan)]/50 hover:text-[var(--accent-cyan)] text-[var(--text-secondary)]"
+                  title="Relance dans 3 jours"
+                >
+                  J+3
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, date_relance: addDaysISO(null, 7) })}
+                  className="flex-1 px-2 py-1 text-[10.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-md hover:border-[var(--accent-cyan)]/50 hover:text-[var(--accent-cyan)] text-[var(--text-secondary)]"
+                  title="Relance dans 7 jours"
+                >
+                  J+7
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setForm({ ...form, date_relance: nextMondayISO() })}
+                  className="flex-1 px-2 py-1 text-[10.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-md hover:border-[var(--accent-cyan)]/50 hover:text-[var(--accent-cyan)] text-[var(--text-secondary)]"
+                  title="Lundi prochain"
+                >
+                  Lundi
+                </button>
+              </div>
             </Field>
           </div>
 
