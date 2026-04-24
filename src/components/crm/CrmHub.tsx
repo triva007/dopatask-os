@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Phone, Calendar, Upload, Wrench, Users, Clock,
   TrendingUp, Banknote, AlertTriangle, Loader2, ChevronRight,
-  Trophy, CalendarClock,
+  Trophy, CalendarClock, BarChart3,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import {
@@ -154,6 +154,12 @@ export default function CrmHub() {
                   {relancesDue}
                 </span>
               )}
+            </Link>
+            <Link
+              href="/crm/analytics"
+              className="inline-flex items-center gap-2 px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] font-semibold hover:bg-surface-3"
+            >
+              <BarChart3 size={14} /> Analytique
             </Link>
             <Link
               href="/prospects"

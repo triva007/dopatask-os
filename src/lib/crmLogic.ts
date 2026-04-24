@@ -239,3 +239,11 @@ export function thermometreColor(revenuTotal: number, objectif: number): string 
 
 // Paliers achievement à déclencher (celebrate) quand le total monte dessus
 export const THERMO_PALIERS = [500, 1000, 1500, 2000, 3000];
+
+// ============================================================
+// Compteur de tentatives par prospect
+// ============================================================
+// Retourne le nombre total d'appels passés à un prospect (toutes résultats confondus)
+export function countAttempts(calls: Call[], prospectId: string): number {
+  return calls.filter((c) => c.prospect_id === prospectId).length;
+}

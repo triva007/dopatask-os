@@ -177,6 +177,12 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       d.setDate(d.getDate() + 3);
       patch.date_rdv = d.toISOString().slice(0, 10);
     }
+    // Si Répondeur ou Pas joignable → auto "à rappeler" demain (J+1)
+    if (resultat === "REPONDEUR" || resultat === "PAS_JOIGNABLE") {
+      const d = new Date();
+      d.setDate(d.getDate() + 1);
+      patch.date_relance = d.toISOString().slice(0, 10);
+    }
 
     await get().updateProspect(prospectId, patch);
     set({ calls: [callRow as Call, ...get().calls] });

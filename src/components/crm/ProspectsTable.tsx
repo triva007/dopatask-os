@@ -460,10 +460,10 @@ export default function ProspectsTable() {
             )}
           </div>
         ) : (
-          <table className="w-full text-[12.5px]">
+          <table className="w-full text-[13px]">
             <thead className="bg-surface-2 sticky top-0 z-10">
               <tr className="text-left text-t-tertiary uppercase text-[10px] tracking-wider">
-                <th className="px-3 py-3 w-8">
+                <th className="pl-4 pr-2 py-2.5 w-8">
                   <input
                     type="checkbox"
                     checked={allSelectedInView}
@@ -475,37 +475,29 @@ export default function ProspectsTable() {
                 </th>
                 <th
                   onClick={() => toggleSort("entreprise")}
-                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
+                  className="px-4 py-2.5 cursor-pointer hover:text-t-primary font-semibold"
                 >
-                  Entreprise {sortKey === "entreprise" && (sortDir === "asc" ? "↑" : "↓")}
+                  Prospect {sortKey === "entreprise" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
-                <th className="px-4 py-3 font-semibold">Niche</th>
-                <th className="px-4 py-3 font-semibold">Téléphone</th>
+                <th className="px-3 py-2.5 font-semibold">Téléphone</th>
                 <th
                   onClick={() => toggleSort("statut")}
-                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
+                  className="px-3 py-2.5 cursor-pointer hover:text-t-primary font-semibold"
                 >
                   Statut {sortKey === "statut" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th
-                  onClick={() => toggleSort("call_count")}
-                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold text-center"
-                >
-                  Calls {sortKey === "call_count" && (sortDir === "asc" ? "↑" : "↓")}
-                </th>
-                <th
                   onClick={() => toggleSort("last_activity")}
-                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
+                  className="px-3 py-2.5 cursor-pointer hover:text-t-primary font-semibold whitespace-nowrap"
                 >
-                  Dernière activité {sortKey === "last_activity" && (sortDir === "asc" ? "↑" : "↓")}
+                  Activité {sortKey === "last_activity" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
                 <th
                   onClick={() => toggleSort("date_relance")}
-                  className="px-4 py-3 cursor-pointer hover:text-t-primary font-semibold"
+                  className="px-3 py-2.5 cursor-pointer hover:text-t-primary font-semibold whitespace-nowrap"
                 >
-                  RDV / Relance {sortKey === "date_relance" && (sortDir === "asc" ? "↑" : "↓")}
+                  À faire {sortKey === "date_relance" && (sortDir === "asc" ? "↑" : "↓")}
                 </th>
-                <th className="px-4 py-3 font-semibold">Notes</th>
               </tr>
             </thead>
             <tbody>
@@ -513,7 +505,9 @@ export default function ProspectsTable() {
                 const isSel = selected.has(p.id);
                 const last = lastCallAt(p.id);
                 const nbCalls = callCountFor(p.id);
-                const relanceDue = p.date_relance && p.date_relance <= new Date().toISOString().slice(0, 10);
+                const today = new Date().toISOString().slice(0, 10);
+                const relanceDue = p.date_relance && p.date_relance <= today;
+                const rdvFutur = p.date_rdv && p.date_rdv >= today;
                 return (
                   <motion.tr
                     key={p.id}
@@ -524,76 +518,89 @@ export default function ProspectsTable() {
                       isSel ? "bg-dopa-cyan/5" : idx % 2 === 0 ? "bg-surface-1" : "bg-surface-1/50"
                     } ${p.archived ? "opacity-50" : ""}`}
                   >
-                    <td className="px-3 py-3">
+                    <td className="pl-4 pr-2 py-3 align-top">
                       <input
                         type="checkbox"
                         checked={isSel}
                         onChange={() => toggleSelectOne(p.id)}
-                        className="accent-dopa-cyan cursor-pointer"
+                        className="accent-dopa-cyan cursor-pointer mt-0.5"
                       />
                     </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/prospects/${p.id}`} className="font-semibold text-t-primary hover:text-dopa-cyan">
+                    <td className="px-4 py-3 align-top">
+                      <Link href={`/prospects/${p.id}`} className="block font-bold text-[14px] text-t-primary hover:text-dopa-cyan leading-tight">
                         {p.entreprise}
                       </Link>
-                      {p.gmb_url && (
-                        <a href={p.gmb_url} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
-                          <MapPin size={9} /> GMB
-                        </a>
-                      )}
-                      {p.site_url && (
-                        <a href={p.site_url} target="_blank" rel="noreferrer" className="ml-2 inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
-                          <ExternalLink size={9} /> Site
-                        </a>
-                      )}
+                      <div className="flex items-center gap-2 mt-1">
+                        {p.niche && (
+                          <span className="text-[10px] text-t-tertiary uppercase tracking-wider">
+                            {p.niche}
+                          </span>
+                        )}
+                        {p.gmb_url && (
+                          <a href={p.gmb_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
+                            <MapPin size={9} /> GMB
+                          </a>
+                        )}
+                        {p.site_url && (
+                          <a href={p.site_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
+                            <ExternalLink size={9} /> Site
+                          </a>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-t-tertiary text-[11px]">
-                      {p.niche || "—"}
-                    </td>
-                    <td className="px-4 py-3 text-t-secondary tabular-nums">
+                    <td className="px-3 py-3 align-top">
                       {p.telephone ? (
-                        <a href={`tel:${p.telephone}`} className="inline-flex items-center gap-1.5 hover:text-dopa-green">
-                          <Phone size={11} />
+                        <a href={`tel:${p.telephone}`} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-t-primary hover:text-dopa-green tabular-nums">
+                          <Phone size={12} />
                           {p.telephone}
                         </a>
                       ) : (
-                        <span className="text-t-tertiary">—</span>
+                        <span className="text-t-tertiary text-[11px]">pas de tel</span>
                       )}
                     </td>
-                    <td className="px-4 py-3">
-                      <StatutBadge statut={p.statut} compact />
+                    <td className="px-3 py-3 align-top">
+                      <div className="flex flex-col items-start gap-1">
+                        <StatutBadge statut={p.statut} compact />
+                        {nbCalls > 0 && (
+                          <span
+                            className={`inline-flex items-center gap-0.5 text-[9.5px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
+                              nbCalls >= 3
+                                ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]"
+                                : "bg-surface-2 text-t-secondary"
+                            }`}
+                            title={`${nbCalls} appel(s) passé(s)`}
+                          >
+                            {nbCalls}× appelé
+                          </span>
+                        )}
+                      </div>
                     </td>
-                    <td className="px-4 py-3 text-center tabular-nums">
-                      {nbCalls === 0 ? (
-                        <span className="text-t-tertiary text-[11px]">—</span>
-                      ) : (
-                        <span className="inline-flex items-center justify-center min-w-[20px] h-[18px] px-1 rounded bg-surface-2 text-t-secondary text-[10px] font-semibold">
-                          {nbCalls}
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3 text-t-tertiary tabular-nums whitespace-nowrap">
+                    <td className="px-3 py-3 align-top text-[11.5px] text-t-tertiary whitespace-nowrap">
                       {last ? (
                         <span className="inline-flex items-center gap-1">
                           <Clock size={10} /> il y a {daysSince(last)}j
                         </span>
                       ) : (
-                        <span className="text-[11px] italic">jamais</span>
+                        <span className="italic">jamais</span>
                       )}
                     </td>
-                    <td className="px-4 py-3 text-t-secondary tabular-nums">
-                      {p.date_rdv ? (
-                        <span className="text-dopa-cyan font-semibold">RDV {p.date_rdv}</span>
+                    <td className="px-3 py-3 align-top tabular-nums whitespace-nowrap">
+                      {rdvFutur ? (
+                        <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] font-semibold text-[11px]">
+                          📅 RDV {new Date(p.date_rdv!).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                        </span>
                       ) : p.date_relance ? (
-                        <span className={relanceDue ? "text-dopa-red font-semibold" : ""}>
-                          Relance {p.date_relance}
+                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded font-semibold text-[11px] ${
+                          relanceDue
+                            ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]"
+                            : "bg-surface-2 text-t-secondary"
+                        }`}>
+                          {relanceDue ? "⚠ " : "⏰ "}
+                          {new Date(p.date_relance).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                         </span>
                       ) : (
-                        "—"
+                        <span className="text-t-tertiary text-[11px]">—</span>
                       )}
-                    </td>
-                    <td className="px-4 py-3 text-t-tertiary max-w-[260px] truncate" title={p.notes || p.feedback || ""}>
-                      {p.notes || p.feedback || "—"}
                     </td>
                   </motion.tr>
                 );
