@@ -408,4 +408,573 @@ export default function ProspectsListCompact({
             onSelect={onSelect}
             onDragStart={onDragStartProspect}
             onDrop={onDropOnColumn}
-     
+            dragOverStatut={dragOverStatut}
+            setDragOverStatut={setDragOverStatut}
+            callCountFor={callCountFor}
+          />
+        ) : view === "cards" ? (
+          <CardsView
+            prospects={filtered}
+            onSelect={onSelect}
+            onChangeStatut={onChangeStatut}
+            callCountFor={callCountFor}
+            lastCallFor={lastCallFor}
+          />
+        ) : (
+          <ListView
+            prospects={filtered}
+            selectedId={selectedId}
+            selected={selected}
+            onSelect={onSelect}
+            toggleSelectOne={toggleSelectOne}
+            onChangeStatut={onChangeStatut}
+            callCountFor={callCountFor}
+            lastCallFor={lastCallFor}
+            allSelectedInView={allSelectedInView}
+            someSelectedInView={someSelectedInView}
+            toggleSelectAll={toggleSelectAll}
+          />
+        )}
+      </div>
+
+      {showImport && <ImportCsvModal onClose={() => setShowImport(false)} />}
+    </div>
+  );
+}
+
+// ============================================================
+// VUE LISTE — densité moyenne avec hiérarchie forte
+// ============================================================
+function ListView({
+  prospects, selectedId, selected, onSelect, toggleSelectOne,
+  onChangeStatut, callCountFor, lastCallFor,
+  allSelectedInView, someSelectedInView, toggleSelectAll,
+}: {
+  prospects: Prospect[];
+  selectedId: string | null;
+  selected: Set<string>;
+  onSelect: (id: string) => void;
+  toggleSelectOne: (id: string) => void;
+  onChangeStatut: (id: string, s: StatutProspect) => void;
+  callCountFor: (id: string) => number;
+  lastCallFor: (id: string) => string | null;
+  allSelectedInView: boolean;
+  someSelectedInView: boolean;
+  toggleSelectAll: () => void;
+}) {
+  return (
+    <ul className="py-1">
+      {prospects.length > 5 && (
+        <li className="px-3 py-1.5 flex items-center gap-2 border-b border-surface-3/50 sticky top-0 bg-background z-10 backdrop-blur">
+          <input
+            type="checkbox"
+            checked={allSelectedInView}
+            ref={(el) => { if (el) el.indeterminate = !allSelectedInView && someSelectedInView; }}
+            onChange={toggleSelectAll}
+            className="accent-dopa-cyan cursor-pointer"
+          />
+          <span className="text-[10px] text-t-tertiary uppercase tracking-wider">
+            Tout sélectionner ({prospects.length})
+          </span>
+        </li>
+      )}
+      {prospects.map((p) => {
+        const isSel = selected.has(p.id);
+        const isActive = selectedId === p.id;
+        const nbCalls = callCountFor(p.id);
+        const last = lastCallFor(p.id);
+        const c = STATUT_COLORS[p.statut];
+        return (
+          <li
+            key={p.id}
+            className={`group relative border-b border-surface-3/40 transition-colors ${
+              isActive ? "bg-dopa-cyan/10" : isSel ? "bg-dopa-cyan/5" : "hover:bg-surface-2/60"
+            } ${p.archived ? "opacity-50" : ""}`}
+          >
+            {/* Bord gauche coloré selon statut */}
+            <span
+              aria-hidden
+              className="absolute left-0 top-0 bottom-0 w-[3px]"
+              style={{ background: c.text }}
+            />
+            <div className="flex items-stretch gap-2 pl-3.5 pr-3 py-2.5">
+              <input
+                type="checkbox"
+                checked={isSel}
+                onChange={() => toggleSelectOne(p.id)}
+                onClick={(e) => e.stopPropagation()}
+                className="accent-dopa-cyan cursor-pointer shrink-0 mt-1"
+              />
+              <button
+                onClick={() => onSelect(p.id)}
+                className="flex-1 min-w-0 text-left"
+              >
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[13px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
+                  <p className="text-[14.5px] font-bold text-t-primary truncate leading-tight">
+                    {p.entreprise}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-[10.5px] text-t-tertiary flex-wrap">
+                  {p.telephone && (
+                    <span className="tabular-nums text-t-secondary font-medium">{p.telephone}</span>
+                  )}
+                  {nbCalls > 0 && (
+                    <span
+                      className={`inline-flex items-center gap-0.5 font-bold ${
+                        nbCalls >= 3 ? "text-dopa-orange" : "text-t-secondary"
+                      }`}
+                      title={`${nbCalls} appel(s)`}
+                    >
+                      <RotateCcw size={9} />{nbCalls}
+                    </span>
+                  )}
+                  {last && (
+                    <span className="inline-flex items-center gap-0.5">
+                      <Clock size={9} />{relativeDate(last)}
+                    </span>
+                  )}
+                  {p.niche && (
+                    <span className="px-1.5 py-px rounded bg-surface-2 text-t-tertiary truncate max-w-[100px]">
+                      {p.niche}
+                    </span>
+                  )}
+                  {p.date_rdv && (
+                    <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
+                      <Calendar size={9} />{shortDate(p.date_rdv)}
+                    </span>
+                  )}
+                </div>
+              </button>
+
+              <div className="flex items-center gap-1 shrink-0">
+                {p.telephone && (
+                  <a
+                    href={`tel:${p.telephone}`}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Appeler"
+                    className="inline-flex items-center justify-center w-7 h-7 bg-dopa-green/10 text-dopa-green rounded-md hover:bg-dopa-green/20"
+                  >
+                    <Phone size={12} />
+                  </a>
+                )}
+                {p.gmb_url && (
+                  <a
+                    href={p.gmb_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    title="Ouvrir GMB"
+                    className="inline-flex items-center justify-center w-7 h-7 bg-dopa-cyan/10 text-dopa-cyan rounded-md hover:bg-dopa-cyan/20"
+                  >
+                    <MapPin size={12} />
+                  </a>
+                )}
+                <select
+                  value={p.statut}
+                  onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
+                  onClick={(e) => e.stopPropagation()}
+                  title="Changer le statut"
+                  className="text-[11px] bg-surface-2 border border-surface-3 rounded-md px-1.5 py-1 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[110px]"
+                  style={{ color: c.text }}
+                >
+                  {STATUTS_ORDRE.map((s) => (
+                    <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// ============================================================
+// VUE CARTES — grille visuelle pour scan rapide
+// ============================================================
+function CardsView({
+  prospects, onSelect, onChangeStatut, callCountFor, lastCallFor,
+}: {
+  prospects: Prospect[];
+  onSelect: (id: string) => void;
+  onChangeStatut: (id: string, s: StatutProspect) => void;
+  callCountFor: (id: string) => number;
+  lastCallFor: (id: string) => string | null;
+}) {
+  return (
+    <div className="p-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {prospects.map((p) => {
+        const c = STATUT_COLORS[p.statut];
+        const nbCalls = callCountFor(p.id);
+        const last = lastCallFor(p.id);
+        return (
+          <div
+            key={p.id}
+            className={`group relative rounded-xl border bg-surface-1 hover:bg-surface-2/60 transition-all hover:-translate-y-0.5 hover:shadow-card-hover overflow-hidden ${
+              p.archived ? "opacity-50" : ""
+            }`}
+            style={{ borderColor: c.border }}
+          >
+            {/* Bandeau couleur */}
+            <div className="h-1.5" style={{ background: c.text }} />
+            <button
+              onClick={() => onSelect(p.id)}
+              className="block w-full text-left p-3.5"
+            >
+              <div className="flex items-start justify-between gap-2 mb-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[14px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
+                    <span
+                      className="text-[9.5px] font-bold uppercase tracking-wider"
+                      style={{ color: c.text }}
+                    >
+                      {STATUT_LABEL[p.statut].split(" ")[0]}
+                    </span>
+                  </div>
+                  <h3 className="text-[15px] font-bold text-t-primary leading-tight line-clamp-2">
+                    {p.entreprise}
+                  </h3>
+                </div>
+              </div>
+
+              {p.telephone && (
+                <p className="text-[12px] text-t-secondary tabular-nums font-medium mb-2">
+                  {p.telephone}
+                </p>
+              )}
+
+              <div className="flex items-center gap-2 flex-wrap text-[10.5px] text-t-tertiary mb-3">
+                {nbCalls > 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-2 font-bold">
+                    <RotateCcw size={9} />{nbCalls} appel{nbCalls > 1 ? "s" : ""}
+                  </span>
+                )}
+                {nbCalls === 0 && (
+                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-dopa-violet/15 text-dopa-violet font-bold">
+                    <Sparkles size={9} />Jamais touché
+                  </span>
+                )}
+                {last && (
+                  <span className="inline-flex items-center gap-0.5">
+                    <Clock size={9} />{relativeDate(last)}
+                  </span>
+                )}
+                {p.niche && (
+                  <span className="px-1.5 py-0.5 rounded bg-surface-2 truncate max-w-[100px]">
+                    {p.niche}
+                  </span>
+                )}
+              </div>
+
+              {p.date_rdv && (
+                <div className="px-2 py-1.5 rounded-md bg-dopa-cyan/10 border border-dopa-cyan/20 text-[11px] text-dopa-cyan font-semibold inline-flex items-center gap-1 mb-2">
+                  <Calendar size={11} />
+                  RDV {shortDate(p.date_rdv)}
+                </div>
+              )}
+
+              {p.notes && (
+                <p className="text-[11px] text-t-tertiary line-clamp-2 italic">
+                  {p.notes}
+                </p>
+              )}
+            </button>
+
+            {/* Quick actions */}
+            <div className="flex items-center gap-1 px-3 pb-3 border-t border-surface-3/50 pt-2.5">
+              {p.telephone ? (
+                <a
+                  href={`tel:${p.telephone}`}
+                  onClick={(e) => e.stopPropagation()}
+                  className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-dopa-green/10 text-dopa-green rounded-md text-[11px] font-bold hover:bg-dopa-green/20"
+                >
+                  <Phone size={11} /> Appeler
+                </a>
+              ) : (
+                <span className="flex-1 px-2 py-1.5 text-[10px] text-t-tertiary text-center italic">
+                  Pas de tél
+                </span>
+              )}
+              {p.gmb_url && (
+                <a
+                  href={p.gmb_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center w-8 h-8 bg-dopa-cyan/10 text-dopa-cyan rounded-md hover:bg-dopa-cyan/20"
+                  title="Google Maps"
+                >
+                  <MapPin size={12} />
+                </a>
+              )}
+              {p.site_url && (
+                <a
+                  href={p.site_url}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center justify-center w-8 h-8 bg-surface-2 text-t-secondary rounded-md hover:bg-surface-3"
+                  title="Site web"
+                >
+                  <ExternalLink size={11} />
+                </a>
+              )}
+              <select
+                value={p.statut}
+                onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
+                onClick={(e) => e.stopPropagation()}
+                className="text-[10.5px] bg-surface-2 border border-surface-3 rounded-md px-1.5 py-1.5 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[80px]"
+                title="Statut"
+              >
+                {STATUTS_ORDRE.map((s) => (
+                  <option key={s} value={s}>{STATUT_EMOJI[s]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ============================================================
+// VUE KANBAN — colonnes drag-droppable par statut
+// ============================================================
+function KanbanView({
+  byStatut, onSelect, onDragStart, onDrop, dragOverStatut, setDragOverStatut, callCountFor,
+}: {
+  prospects: Prospect[];
+  byStatut: Record<StatutProspect, Prospect[]>;
+  onSelect: (id: string) => void;
+  onDragStart: (e: React.DragEvent, p: Prospect) => void;
+  onDrop: (e: React.DragEvent, statut: StatutProspect) => void;
+  dragOverStatut: StatutProspect | null;
+  setDragOverStatut: (s: StatutProspect | null) => void;
+  callCountFor: (id: string) => number;
+}) {
+  return (
+    <div className="h-full overflow-x-auto overflow-y-hidden p-3">
+      <div className="flex gap-3 h-full min-w-max pb-2">
+        {PIPELINE_STATUTS.map((s) => {
+          const c = STATUT_COLORS[s];
+          const list = byStatut[s] || [];
+          const isDragOver = dragOverStatut === s;
+          return (
+            <div
+              key={s}
+              onDragOver={(e) => { e.preventDefault(); setDragOverStatut(s); }}
+              onDragLeave={() => setDragOverStatut(null)}
+              onDrop={(e) => onDrop(e, s)}
+              className={`w-[280px] shrink-0 rounded-xl border flex flex-col transition-all ${
+                isDragOver ? "ring-2 ring-dopa-cyan scale-[1.01]" : ""
+              }`}
+              style={{
+                borderColor: c.border,
+                background: `linear-gradient(180deg, ${c.bg}55 0%, transparent 100%)`,
+              }}
+            >
+              {/* Header colonne */}
+              <div
+                className="px-3 py-2.5 border-b flex items-center justify-between sticky top-0 backdrop-blur"
+                style={{ borderColor: c.border, background: `${c.bg}aa` }}
+              >
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <span className="text-[14px]">{STATUT_EMOJI[s]}</span>
+                  <span
+                    className="text-[10.5px] font-bold uppercase tracking-wider truncate"
+                    style={{ color: c.text }}
+                  >
+                    {STATUT_LABEL[s]}
+                  </span>
+                </div>
+                <span
+                  className="text-[11px] font-black tabular-nums px-1.5 py-0.5 rounded"
+                  style={{ color: c.text, background: `${c.text}22` }}
+                >
+                  {list.length}
+                </span>
+              </div>
+
+              {/* Cartes */}
+              <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[200px]">
+                {list.length === 0 ? (
+                  <p className="text-[11px] text-t-tertiary italic text-center py-6">
+                    {isDragOver ? "Lâche ici ↓" : "Vide"}
+                  </p>
+                ) : (
+                  list.map((p) => {
+                    const nb = callCountFor(p.id);
+                    return (
+                      <div
+                        key={p.id}
+                        draggable
+                        onDragStart={(e) => onDragStart(e, p)}
+                        onClick={() => onSelect(p.id)}
+                        className="rounded-lg bg-surface-1 border border-surface-3 p-2.5 cursor-grab active:cursor-grabbing hover:border-dopa-cyan/40 hover:bg-surface-2/60 transition-all"
+                      >
+                        <p className="text-[12.5px] font-bold text-t-primary truncate leading-tight mb-1">
+                          {p.entreprise}
+                        </p>
+                        {p.telephone && (
+                          <p className="text-[10.5px] text-t-tertiary tabular-nums">
+                            {p.telephone}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-1.5 mt-1.5 text-[9.5px] text-t-tertiary">
+                          {nb > 0 && (
+                            <span className="inline-flex items-center gap-0.5 font-bold text-t-secondary">
+                              <RotateCcw size={8} />{nb}
+                            </span>
+                          )}
+                          {p.date_rdv && (
+                            <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
+                              <Calendar size={8} />{shortDate(p.date_rdv)}
+                            </span>
+                          )}
+                          {p.niche && (
+                            <span className="truncate">{p.niche}</span>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// HELPERS UI
+// ============================================================
+function ViewBtn({ active, onClick, icon, label }: {
+  active: boolean; onClick: () => void; icon: React.ReactNode; label: string;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-[10.5px] font-semibold transition-colors ${
+        active
+          ? "bg-dopa-cyan text-black"
+          : "text-t-tertiary hover:text-t-primary hover:bg-surface-3"
+      }`}
+    >
+      {icon}
+    </button>
+  );
+}
+
+function StatPill({ icon, label, value, color, pulse }: {
+  icon: React.ReactNode; label: string; value: number; color: string; pulse?: boolean;
+}) {
+  return (
+    <div
+      className="rounded-lg border px-2.5 py-1.5 flex items-center justify-between gap-2"
+      style={{ background: `${color}12`, borderColor: `${color}33` }}
+    >
+      <div className="flex items-center gap-1.5 min-w-0" style={{ color }}>
+        <span className={pulse && value > 0 ? "animate-pulse" : ""}>{icon}</span>
+        <span className="text-[10px] uppercase tracking-wider font-semibold truncate">{label}</span>
+      </div>
+      <span className="text-[15px] font-black tabular-nums" style={{ color }}>{value}</span>
+    </div>
+  );
+}
+
+function QuickTab({ active, onClick, count, color, children }: {
+  active: boolean; onClick: () => void; count: number; color?: string; children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="px-2 py-0.5 rounded text-[10.5px] font-semibold whitespace-nowrap transition-colors inline-flex items-center gap-1"
+      style={{
+        background: active ? (color || "#22d3ee") : "var(--surface-2, #151518)",
+        color: active ? "#000" : "var(--text-secondary)",
+      }}
+    >
+      <span>{children}</span>
+      <span
+        className="tabular-nums text-[9.5px] font-bold px-1 rounded"
+        style={{
+          background: active ? "rgba(0,0,0,0.18)" : "var(--surface-3, #1a1a1f)",
+          color: active ? "#000" : "var(--text-tertiary)",
+        }}
+      >
+        {count}
+      </span>
+    </button>
+  );
+}
+
+function EmptyState({ hasProspects, onImport }: { hasProspects: boolean; onImport: () => void }) {
+  return (
+    <div className="flex flex-col items-center justify-center h-full text-t-tertiary gap-3 px-6 text-center py-12">
+      <div className="w-14 h-14 rounded-2xl bg-surface-2 border border-surface-3 flex items-center justify-center text-[28px]">
+        {hasProspects ? "🔍" : "📋"}
+      </div>
+      <p className="text-[14px] font-semibold text-t-secondary">
+        {hasProspects ? "Aucun prospect ne correspond" : "Ton CRM est vide"}
+      </p>
+      <p className="text-[12px] text-t-tertiary max-w-[280px]">
+        {hasProspects
+          ? "Change les filtres ou la recherche pour voir d'autres prospects."
+          : "Importe ton CSV existant ou crée ton premier prospect ci-dessus."}
+      </p>
+      {!hasProspects && (
+        <button
+          onClick={onImport}
+          className="mt-1 inline-flex items-center gap-2 px-4 py-2 bg-dopa-cyan text-black rounded-lg text-[12.5px] font-bold hover:bg-dopa-cyan/90"
+        >
+          <Upload size={13} /> Importer un CSV
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ============================================================
+// HELPERS
+// ============================================================
+function groupByStatut(arr: Prospect[]): Record<StatutProspect, Prospect[]> {
+  const map: Record<StatutProspect, Prospect[]> = {
+    A_APPELER: [], REPONDEUR: [], REFUS: [], EXISTE_PAS: [],
+    RDV_BOOKE: [], MAQUETTE_PRETE: [], R1_EFFECTUE: [], VENDU: [], PERDU: [],
+  };
+  for (const p of arr) map[p.statut].push(p);
+  return map;
+}
+
+function shortDate(iso: string) {
+  try {
+    const d = new Date(iso);
+    return d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+  } catch {
+    return iso;
+  }
+}
+
+function relativeDate(iso: string) {
+  try {
+    const d = new Date(iso);
+    const diffMs = Date.now() - d.getTime();
+    const day = 1000 * 60 * 60 * 24;
+    const days = Math.floor(diffMs / day);
+    if (days <= 0) return "auj.";
+    if (days === 1) return "hier";
+    if (days < 7) return `${days}j`;
+    if (days < 30) return `${Math.floor(days / 7)}sem`;
+    return `${Math.floor(days / 30)}mo`;
+  } catch {
+    return "";
+  }
+}

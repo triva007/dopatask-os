@@ -38,4 +38,26 @@ export default function ProspectsSplitView() {
   return (
     <div className="h-full flex overflow-hidden">
       <div
-        className={`${showDetail ? "w-[440px] min-w-[4
+        className={`${showDetail ? "w-[440px] min-w-[400px]" : "w-full"} border-r border-[var(--border-primary)] overflow-hidden transition-all`}
+      >
+        <ProspectsListCompact
+          selectedId={selectedId}
+          onSelect={handleSelect}
+          view={view}
+          onViewChange={handleViewChange}
+          isSplit={showDetail}
+        />
+      </div>
+
+      {showDetail && (
+        <div className="flex-1 overflow-hidden">
+          <ProspectDetail
+            id={selectedId!}
+            onClose={() => setSelected(null)}
+            onNavigate={(id) => setSelected(id)}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
