@@ -3,13 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Search, Upload, MapPin, Plus, Loader2, Phone, Calendar,
   AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, RotateCcw,
   List as ListIcon, LayoutGrid, Columns3, Filter, ArrowUpDown,
-  ExternalLink, Sparkles, Flame, Clock,
+  ExternalLink, Sparkles, Flame, Clock, ListChecks,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
+import { useAppStore } from "@/store/useAppStore";
 import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI, STATUT_COLORS } from "@/lib/crmLabels";
 import type { StatutProspect, Prospect } from "@/lib/crmTypes";
 import ImportCsvModal from "./ImportCsvModal";
@@ -93,6 +95,26 @@ export default function ProspectsListCompact({
     const arr = callsByProspect.get(id);
     return arr && arr.length > 0 ? arr[0].date : null;
   };
+
+  // Tâches liées aux prospects (matching par entreprise dans text/description)
+  const allTasks = useAppStore((s) => s.tasks);
+  const tasksByProspect = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!allTasks?.length || !prospects?.length) return map;
+    for (const p of prospects) {
+      const needle = p.entreprise.trim().toLowerCase();
+      if (needle.length < 2) continue;
+      let count = 0;
+      for (const t of allTasks) {
+        if (t.status === "done" || t.status === "completed") continue;
+        const hay = `${t.text || ""} ${t.description || ""}`.toLowerCase();
+        if (hay.includes(needle)) count++;
+      }
+      if (count > 0) map.set(p.id, count);
+    }
+    return map;
+  }, [allTasks, prospects]);
+  const taskCountFor = (id: string) => tasksByProspect.get(id) || 0;
 
   const niches = useMemo(() => {
     const set = new Set<string>();
@@ -411,6 +433,7 @@ export default function ProspectsListCompact({
             dragOverStatut={dragOverStatut}
             setDragOverStatut={setDragOverStatut}
             callCountFor={callCountFor}
+            taskCountFor={taskCountFor}
           />
         ) : view === "cards" ? (
           <CardsView
@@ -419,6 +442,7 @@ export default function ProspectsListCompact({
             onChangeStatut={onChangeStatut}
             callCountFor={callCountFor}
             lastCallFor={lastCallFor}
+            taskCountFor={taskCountFor}
           />
         ) : (
           <ListView
@@ -430,6 +454,7 @@ export default function ProspectsListCompact({
             onChangeStatut={onChangeStatut}
             callCountFor={callCountFor}
             lastCallFor={lastCallFor}
+            taskCountFor={taskCountFor}
             allSelectedInView={allSelectedInView}
             someSelectedInView={someSelectedInView}
             toggleSelectAll={toggleSelectAll}
@@ -443,11 +468,11 @@ export default function ProspectsListCompact({
 }
 
 // ============================================================
-// VUE LISTE — densité moyenne avec hiérarchie forte
+// VUE LISTE — hiérarchie forte, sans tel, GMB en bouton XL
 // ============================================================
 function ListView({
   prospects, selectedId, selected, onSelect, toggleSelectOne,
-  onChangeStatut, callCountFor, lastCallFor,
+  onChangeStatut, callCountFor, lastCallFor, taskCountFor,
   allSelectedInView, someSelectedInView, toggleSelectAll,
 }: {
   prospects: Prospect[];
@@ -458,6 +483,7 @@ function ListView({
   onChangeStatut: (id: string, s: StatutProspect) => void;
   callCountFor: (id: string) => number;
   lastCallFor: (id: string) => string | null;
+  taskCountFor: (id: string) => number;
   allSelectedInView: boolean;
   someSelectedInView: boolean;
   toggleSelectAll: () => void;
@@ -478,115 +504,134 @@ function ListView({
           </span>
         </li>
       )}
-      {prospects.map((p) => {
-        const isSel = selected.has(p.id);
-        const isActive = selectedId === p.id;
-        const nbCalls = callCountFor(p.id);
-        const last = lastCallFor(p.id);
-        const c = STATUT_COLORS[p.statut];
-        return (
-          <li
-            key={p.id}
-            className={`group relative border-b border-surface-3/40 transition-colors ${
-              isActive ? "bg-dopa-cyan/10" : isSel ? "bg-dopa-cyan/5" : "hover:bg-surface-2/60"
-            } ${p.archived ? "opacity-50" : ""}`}
-          >
-            {/* Bord gauche coloré selon statut */}
-            <span
-              aria-hidden
-              className="absolute left-0 top-0 bottom-0 w-[3px]"
-              style={{ background: c.text }}
-            />
-            <div className="flex items-stretch gap-2 pl-3.5 pr-3 py-2.5">
-              <input
-                type="checkbox"
-                checked={isSel}
-                onChange={() => toggleSelectOne(p.id)}
-                onClick={(e) => e.stopPropagation()}
-                className="accent-dopa-cyan cursor-pointer shrink-0 mt-1"
+      <AnimatePresence initial={false}>
+        {prospects.map((p, idx) => {
+          const isSel = selected.has(p.id);
+          const isActive = selectedId === p.id;
+          const nbCalls = callCountFor(p.id);
+          const nbTasks = taskCountFor(p.id);
+          const last = lastCallFor(p.id);
+          const c = STATUT_COLORS[p.statut];
+          return (
+            <motion.li
+              key={p.id}
+              layout
+              initial={{ opacity: 0, y: 4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{
+                duration: 0.18,
+                delay: Math.min(idx * 0.012, 0.18),
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className={`group relative border-b border-surface-3/40 transition-colors ${
+                isActive ? "bg-dopa-cyan/10" : isSel ? "bg-dopa-cyan/5" : "hover:bg-surface-2/60"
+              } ${p.archived ? "opacity-50" : ""}`}
+            >
+              <span
+                aria-hidden
+                className="absolute left-0 top-0 bottom-0 w-[3px]"
+                style={{ background: c.text }}
               />
-              <button
-                onClick={() => onSelect(p.id)}
-                className="flex-1 min-w-0 text-left"
-              >
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[13px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
-                  <p className="text-[14.5px] font-bold text-t-primary truncate leading-tight">
-                    {p.entreprise}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-[10.5px] text-t-tertiary flex-wrap">
-                  {p.telephone && (
-                    <span className="tabular-nums text-t-secondary font-medium">{p.telephone}</span>
-                  )}
-                  {nbCalls > 0 && (
-                    <span
-                      className={`inline-flex items-center gap-0.5 font-bold ${
-                        nbCalls >= 3 ? "text-dopa-orange" : "text-t-secondary"
-                      }`}
-                      title={`${nbCalls} appel(s)`}
-                    >
-                      <RotateCcw size={9} />{nbCalls}
-                    </span>
-                  )}
-                  {last && (
-                    <span className="inline-flex items-center gap-0.5">
-                      <Clock size={9} />{relativeDate(last)}
-                    </span>
-                  )}
-                  {p.niche && (
-                    <span className="px-1.5 py-px rounded bg-surface-2 text-t-tertiary truncate max-w-[100px]">
-                      {p.niche}
-                    </span>
-                  )}
-                  {p.date_rdv && (
-                    <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
-                      <Calendar size={9} />{shortDate(p.date_rdv)}
-                    </span>
-                  )}
-                </div>
-              </button>
-
-              <div className="flex items-center gap-1 shrink-0">
-                {p.telephone && (
-                  <a
-                    href={`tel:${p.telephone}`}
-                    onClick={(e) => e.stopPropagation()}
-                    title="Appeler"
-                    className="inline-flex items-center justify-center w-7 h-7 bg-dopa-green/10 text-dopa-green rounded-md hover:bg-dopa-green/20"
-                  >
-                    <Phone size={12} />
-                  </a>
-                )}
-                {p.gmb_url && (
-                  <a
-                    href={p.gmb_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    onClick={(e) => e.stopPropagation()}
-                    title="Ouvrir GMB"
-                    className="inline-flex items-center justify-center w-7 h-7 bg-dopa-cyan/10 text-dopa-cyan rounded-md hover:bg-dopa-cyan/20"
-                  >
-                    <MapPin size={12} />
-                  </a>
-                )}
-                <select
-                  value={p.statut}
-                  onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
+              <div className="flex items-stretch gap-2.5 pl-3.5 pr-3 py-2.5">
+                <input
+                  type="checkbox"
+                  checked={isSel}
+                  onChange={() => toggleSelectOne(p.id)}
                   onClick={(e) => e.stopPropagation()}
-                  title="Changer le statut"
-                  className="text-[11px] bg-surface-2 border border-surface-3 rounded-md px-1.5 py-1 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[110px]"
-                  style={{ color: c.text }}
+                  className="accent-dopa-cyan cursor-pointer shrink-0 mt-1"
+                />
+
+                <button
+                  onClick={() => onSelect(p.id)}
+                  className="flex-1 min-w-0 text-left"
                 >
-                  {STATUTS_ORDRE.map((s) => (
-                    <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
-                  ))}
-                </select>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[13px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
+                    <p className="text-[14.5px] font-bold text-t-primary truncate leading-tight">
+                      {p.entreprise}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-[10.5px] text-t-tertiary flex-wrap">
+                    {nbCalls > 0 && (
+                      <span
+                        className={`inline-flex items-center gap-0.5 font-bold ${
+                          nbCalls >= 3 ? "text-dopa-orange" : "text-t-secondary"
+                        }`}
+                        title={`${nbCalls} appel(s)`}
+                      >
+                        <RotateCcw size={9} />{nbCalls}
+                      </span>
+                    )}
+                    {nbTasks > 0 && (
+                      <span
+                        className="inline-flex items-center gap-0.5 font-bold text-dopa-violet"
+                        title={`${nbTasks} tâche(s) liée(s)`}
+                      >
+                        <ListChecks size={9} />{nbTasks}
+                      </span>
+                    )}
+                    {last && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <Clock size={9} />{relativeDate(last)}
+                      </span>
+                    )}
+                    {p.niche && (
+                      <span className="px-1.5 py-px rounded bg-surface-2 text-t-tertiary truncate max-w-[100px]">
+                        {p.niche}
+                      </span>
+                    )}
+                    {p.date_rdv && (
+                      <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
+                        <Calendar size={9} />{shortDate(p.date_rdv)}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Quick actions : GMB en gros bouton + select statut */}
+                <div className="flex items-stretch gap-1.5 shrink-0">
+                  {p.gmb_url ? (
+                    <motion.a
+                      href={p.gmb_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      onClick={(e) => e.stopPropagation()}
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                      title="Ouvrir la fiche GMB"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-dopa-cyan text-black rounded-lg text-[12px] font-bold hover:brightness-110 shadow-sm shadow-dopa-cyan/20 min-w-[68px] justify-center"
+                    >
+                      <MapPin size={14} strokeWidth={2.5} />
+                      GMB
+                    </motion.a>
+                  ) : (
+                    <span
+                      className="inline-flex items-center justify-center px-3 py-2 bg-surface-2 text-t-tertiary rounded-lg text-[10.5px] italic min-w-[68px]"
+                      title="Pas de fiche GMB"
+                    >
+                      —
+                    </span>
+                  )}
+                  <select
+                    value={p.statut}
+                    onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Changer le statut"
+                    className="text-[11px] bg-surface-2 border border-surface-3 rounded-lg px-2 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[110px] font-semibold"
+                    style={{ color: c.text }}
+                  >
+                    {STATUTS_ORDRE.map((s) => (
+                      <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-          </li>
-        );
-      })}
+            </motion.li>
+          );
+        })}
+      </AnimatePresence>
     </ul>
   );
 }
@@ -595,149 +640,163 @@ function ListView({
 // VUE CARTES — grille visuelle pour scan rapide
 // ============================================================
 function CardsView({
-  prospects, onSelect, onChangeStatut, callCountFor, lastCallFor,
+  prospects, onSelect, onChangeStatut, callCountFor, lastCallFor, taskCountFor,
 }: {
   prospects: Prospect[];
   onSelect: (id: string) => void;
   onChangeStatut: (id: string, s: StatutProspect) => void;
   callCountFor: (id: string) => number;
   lastCallFor: (id: string) => string | null;
+  taskCountFor: (id: string) => number;
 }) {
   return (
-    <div className="p-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-      {prospects.map((p) => {
-        const c = STATUT_COLORS[p.statut];
-        const nbCalls = callCountFor(p.id);
-        const last = lastCallFor(p.id);
-        return (
-          <div
-            key={p.id}
-            className={`group relative rounded-xl border bg-surface-1 hover:bg-surface-2/60 transition-all hover:-translate-y-0.5 hover:shadow-card-hover overflow-hidden ${
-              p.archived ? "opacity-50" : ""
-            }`}
-            style={{ borderColor: c.border }}
-          >
-            {/* Bandeau couleur */}
-            <div className="h-1.5" style={{ background: c.text }} />
-            <button
-              onClick={() => onSelect(p.id)}
-              className="block w-full text-left p-3.5"
+    <motion.div
+      className="p-4 grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+      initial="hidden"
+      animate="show"
+      variants={{
+        hidden: { opacity: 0 },
+        show: { opacity: 1, transition: { staggerChildren: 0.025, delayChildren: 0.04 } },
+      }}
+    >
+      <AnimatePresence initial={false}>
+        {prospects.map((p) => {
+          const c = STATUT_COLORS[p.statut];
+          const nbCalls = callCountFor(p.id);
+          const nbTasks = taskCountFor(p.id);
+          const last = lastCallFor(p.id);
+          return (
+            <motion.div
+              key={p.id}
+              layout
+              variants={{
+                hidden: { opacity: 0, y: 8, scale: 0.985 },
+                show: { opacity: 1, y: 0, scale: 1 },
+              }}
+              exit={{ opacity: 0, scale: 0.96 }}
+              whileHover={{ y: -2 }}
+              transition={{ type: "spring", stiffness: 320, damping: 26 }}
+              className={`group relative rounded-xl border bg-surface-1 hover:bg-surface-2/60 hover:shadow-card-hover overflow-hidden ${
+                p.archived ? "opacity-50" : ""
+              }`}
+              style={{ borderColor: c.border }}
             >
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-1.5 mb-1">
-                    <span className="text-[14px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
-                    <span
-                      className="text-[9.5px] font-bold uppercase tracking-wider"
-                      style={{ color: c.text }}
-                    >
-                      {STATUT_LABEL[p.statut].split(" ")[0]}
-                    </span>
-                  </div>
-                  <h3 className="text-[15px] font-bold text-t-primary leading-tight line-clamp-2">
-                    {p.entreprise}
-                  </h3>
-                </div>
-              </div>
-
-              {p.telephone && (
-                <p className="text-[12px] text-t-secondary tabular-nums font-medium mb-2">
-                  {p.telephone}
-                </p>
-              )}
-
-              <div className="flex items-center gap-2 flex-wrap text-[10.5px] text-t-tertiary mb-3">
-                {nbCalls > 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-2 font-bold">
-                    <RotateCcw size={9} />{nbCalls} appel{nbCalls > 1 ? "s" : ""}
-                  </span>
-                )}
-                {nbCalls === 0 && (
-                  <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-dopa-violet/15 text-dopa-violet font-bold">
-                    <Sparkles size={9} />Jamais touché
-                  </span>
-                )}
-                {last && (
-                  <span className="inline-flex items-center gap-0.5">
-                    <Clock size={9} />{relativeDate(last)}
-                  </span>
-                )}
-                {p.niche && (
-                  <span className="px-1.5 py-0.5 rounded bg-surface-2 truncate max-w-[100px]">
-                    {p.niche}
-                  </span>
-                )}
-              </div>
-
-              {p.date_rdv && (
-                <div className="px-2 py-1.5 rounded-md bg-dopa-cyan/10 border border-dopa-cyan/20 text-[11px] text-dopa-cyan font-semibold inline-flex items-center gap-1 mb-2">
-                  <Calendar size={11} />
-                  RDV {shortDate(p.date_rdv)}
-                </div>
-              )}
-
-              {p.notes && (
-                <p className="text-[11px] text-t-tertiary line-clamp-2 italic">
-                  {p.notes}
-                </p>
-              )}
-            </button>
-
-            {/* Quick actions */}
-            <div className="flex items-center gap-1 px-3 pb-3 border-t border-surface-3/50 pt-2.5">
-              {p.telephone ? (
-                <a
-                  href={`tel:${p.telephone}`}
-                  onClick={(e) => e.stopPropagation()}
-                  className="flex-1 inline-flex items-center justify-center gap-1 px-2 py-1.5 bg-dopa-green/10 text-dopa-green rounded-md text-[11px] font-bold hover:bg-dopa-green/20"
-                >
-                  <Phone size={11} /> Appeler
-                </a>
-              ) : (
-                <span className="flex-1 px-2 py-1.5 text-[10px] text-t-tertiary text-center italic">
-                  Pas de tél
-                </span>
-              )}
-              {p.gmb_url && (
-                <a
-                  href={p.gmb_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center w-8 h-8 bg-dopa-cyan/10 text-dopa-cyan rounded-md hover:bg-dopa-cyan/20"
-                  title="Google Maps"
-                >
-                  <MapPin size={12} />
-                </a>
-              )}
-              {p.site_url && (
-                <a
-                  href={p.site_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center justify-center w-8 h-8 bg-surface-2 text-t-secondary rounded-md hover:bg-surface-3"
-                  title="Site web"
-                >
-                  <ExternalLink size={11} />
-                </a>
-              )}
-              <select
-                value={p.statut}
-                onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
-                onClick={(e) => e.stopPropagation()}
-                className="text-[10.5px] bg-surface-2 border border-surface-3 rounded-md px-1.5 py-1.5 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[80px]"
-                title="Statut"
+              <div className="h-1.5" style={{ background: c.text }} />
+              <button
+                onClick={() => onSelect(p.id)}
+                className="block w-full text-left p-3.5"
               >
-                {STATUTS_ORDRE.map((s) => (
-                  <option key={s} value={s}>{STATUT_EMOJI[s]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        );
-      })}
-    </div>
+                <div className="flex items-start justify-between gap-2 mb-2">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className="text-[14px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
+                      <span
+                        className="text-[9.5px] font-bold uppercase tracking-wider"
+                        style={{ color: c.text }}
+                      >
+                        {STATUT_LABEL[p.statut].split(" ")[0]}
+                      </span>
+                    </div>
+                    <h3 className="text-[15px] font-bold text-t-primary leading-tight line-clamp-2">
+                      {p.entreprise}
+                    </h3>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-1.5 flex-wrap text-[10.5px] text-t-tertiary mb-3">
+                  {nbCalls > 0 ? (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-surface-2 font-bold">
+                      <RotateCcw size={9} />{nbCalls} appel{nbCalls > 1 ? "s" : ""}
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-dopa-violet/15 text-dopa-violet font-bold">
+                      <Sparkles size={9} />Jamais touché
+                    </span>
+                  )}
+                  {nbTasks > 0 && (
+                    <span
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-dopa-violet/15 text-dopa-violet font-bold"
+                      title={`${nbTasks} tâche(s) liée(s)`}
+                    >
+                      <ListChecks size={9} />{nbTasks}
+                    </span>
+                  )}
+                  {last && (
+                    <span className="inline-flex items-center gap-0.5">
+                      <Clock size={9} />{relativeDate(last)}
+                    </span>
+                  )}
+                  {p.niche && (
+                    <span className="px-1.5 py-0.5 rounded bg-surface-2 truncate max-w-[100px]">
+                      {p.niche}
+                    </span>
+                  )}
+                </div>
+
+                {p.date_rdv && (
+                  <div className="px-2 py-1.5 rounded-md bg-dopa-cyan/10 border border-dopa-cyan/20 text-[11px] text-dopa-cyan font-semibold inline-flex items-center gap-1 mb-2">
+                    <Calendar size={11} />
+                    RDV {shortDate(p.date_rdv)}
+                  </div>
+                )}
+
+                {p.notes && (
+                  <p className="text-[11px] text-t-tertiary line-clamp-2 italic">
+                    {p.notes}
+                  </p>
+                )}
+              </button>
+
+              {/* Quick actions : GMB en gros */}
+              <div className="flex items-center gap-1.5 px-3 pb-3 border-t border-surface-3/50 pt-2.5">
+                {p.gmb_url ? (
+                  <motion.a
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.97 }}
+                    transition={{ type: "spring", stiffness: 380, damping: 20 }}
+                    href={p.gmb_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-dopa-cyan text-black rounded-md text-[12px] font-bold hover:brightness-110 shadow-sm shadow-dopa-cyan/20"
+                  >
+                    <MapPin size={13} strokeWidth={2.5} />
+                    Ouvrir GMB
+                  </motion.a>
+                ) : (
+                  <span className="flex-1 px-2 py-2 text-[11px] text-t-tertiary text-center italic bg-surface-2 rounded-md">
+                    Pas de fiche GMB
+                  </span>
+                )}
+                {p.site_url && (
+                  <a
+                    href={p.site_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center justify-center w-9 h-9 bg-surface-2 text-t-secondary rounded-md hover:bg-surface-3"
+                    title="Site web"
+                  >
+                    <ExternalLink size={12} />
+                  </a>
+                )}
+                <select
+                  value={p.statut}
+                  onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-[11px] bg-surface-2 border border-surface-3 rounded-md px-1.5 py-1.5 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[60px]"
+                  title="Statut"
+                >
+                  {STATUTS_ORDRE.map((s) => (
+                    <option key={s} value={s}>{STATUT_EMOJI[s]}</option>
+                  ))}
+                </select>
+              </div>
+            </motion.div>
+          );
+        })}
+      </AnimatePresence>
+    </motion.div>
   );
 }
 
@@ -745,7 +804,7 @@ function CardsView({
 // VUE KANBAN — colonnes drag-droppable par statut
 // ============================================================
 function KanbanView({
-  byStatut, onSelect, onDragStart, onDrop, dragOverStatut, setDragOverStatut, callCountFor,
+  byStatut, onSelect, onDragStart, onDrop, dragOverStatut, setDragOverStatut, callCountFor, taskCountFor,
 }: {
   prospects: Prospect[];
   byStatut: Record<StatutProspect, Prospect[]>;
@@ -755,31 +814,34 @@ function KanbanView({
   dragOverStatut: StatutProspect | null;
   setDragOverStatut: (s: StatutProspect | null) => void;
   callCountFor: (id: string) => number;
+  taskCountFor: (id: string) => number;
 }) {
   return (
     <div className="h-full overflow-x-auto overflow-y-hidden p-3">
       <div className="flex gap-3 h-full min-w-max pb-2">
-        {PIPELINE_STATUTS.map((s) => {
+        {PIPELINE_STATUTS.map((s, colIdx) => {
           const c = STATUT_COLORS[s];
           const list = byStatut[s] || [];
           const isDragOver = dragOverStatut === s;
           return (
-            <div
+            <motion.div
               key={s}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: colIdx * 0.04, duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               onDragOver={(e) => { e.preventDefault(); setDragOverStatut(s); }}
               onDragLeave={() => setDragOverStatut(null)}
               onDrop={(e) => onDrop(e, s)}
               className={`w-[280px] shrink-0 rounded-xl border flex flex-col transition-all ${
-                isDragOver ? "ring-2 ring-dopa-cyan scale-[1.01]" : ""
+                isDragOver ? "ring-2 ring-dopa-cyan scale-[1.01] shadow-glow-cyan" : ""
               }`}
               style={{
                 borderColor: c.border,
                 background: `linear-gradient(180deg, ${c.bg}55 0%, transparent 100%)`,
               }}
             >
-              {/* Header colonne */}
               <div
-                className="px-3 py-2.5 border-b flex items-center justify-between sticky top-0 backdrop-blur"
+                className="px-3 py-2.5 border-b flex items-center justify-between sticky top-0 backdrop-blur z-10"
                 style={{ borderColor: c.border, background: `${c.bg}aa` }}
               >
                 <div className="flex items-center gap-1.5 min-w-0">
@@ -791,60 +853,87 @@ function KanbanView({
                     {STATUT_LABEL[s]}
                   </span>
                 </div>
-                <span
+                <motion.span
+                  layout
                   className="text-[11px] font-black tabular-nums px-1.5 py-0.5 rounded"
                   style={{ color: c.text, background: `${c.text}22` }}
                 >
                   {list.length}
-                </span>
+                </motion.span>
               </div>
 
-              {/* Cartes */}
               <div className="flex-1 overflow-y-auto p-2 space-y-2 min-h-[200px]">
                 {list.length === 0 ? (
                   <p className="text-[11px] text-t-tertiary italic text-center py-6">
                     {isDragOver ? "Lâche ici ↓" : "Vide"}
                   </p>
                 ) : (
-                  list.map((p) => {
-                    const nb = callCountFor(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        draggable
-                        onDragStart={(e) => onDragStart(e, p)}
-                        onClick={() => onSelect(p.id)}
-                        className="rounded-lg bg-surface-1 border border-surface-3 p-2.5 cursor-grab active:cursor-grabbing hover:border-dopa-cyan/40 hover:bg-surface-2/60 transition-all"
-                      >
-                        <p className="text-[12.5px] font-bold text-t-primary truncate leading-tight mb-1">
-                          {p.entreprise}
-                        </p>
-                        {p.telephone && (
-                          <p className="text-[10.5px] text-t-tertiary tabular-nums">
-                            {p.telephone}
+                  <AnimatePresence initial={false}>
+                    {list.map((p, i) => {
+                      const nb = callCountFor(p.id);
+                      const nbTasks = taskCountFor(p.id);
+                      return (
+                        <motion.div
+                          key={p.id}
+                          layout
+                          initial={{ opacity: 0, scale: 0.96 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.94 }}
+                          transition={{
+                            duration: 0.18,
+                            delay: Math.min(i * 0.015, 0.18),
+                            ease: [0.22, 1, 0.36, 1],
+                          }}
+                          whileHover={{ y: -1 }}
+                          whileTap={{ scale: 0.98 }}
+                          draggable
+                          onDragStart={(e) => onDragStart(e, p)}
+                          onClick={() => onSelect(p.id)}
+                          className="rounded-lg bg-surface-1 border border-surface-3 p-2.5 cursor-grab active:cursor-grabbing hover:border-dopa-cyan/40 hover:bg-surface-2/60 transition-colors"
+                        >
+                          <p className="text-[12.5px] font-bold text-t-primary truncate leading-tight mb-1">
+                            {p.entreprise}
                           </p>
-                        )}
-                        <div className="flex items-center gap-1.5 mt-1.5 text-[9.5px] text-t-tertiary">
-                          {nb > 0 && (
-                            <span className="inline-flex items-center gap-0.5 font-bold text-t-secondary">
-                              <RotateCcw size={8} />{nb}
-                            </span>
+                          <div className="flex items-center gap-1.5 mt-1.5 text-[9.5px] text-t-tertiary flex-wrap">
+                            {nb > 0 && (
+                              <span className="inline-flex items-center gap-0.5 font-bold text-t-secondary">
+                                <RotateCcw size={8} />{nb}
+                              </span>
+                            )}
+                            {nbTasks > 0 && (
+                              <span className="inline-flex items-center gap-0.5 font-bold text-dopa-violet">
+                                <ListChecks size={8} />{nbTasks}
+                              </span>
+                            )}
+                            {p.date_rdv && (
+                              <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
+                                <Calendar size={8} />{shortDate(p.date_rdv)}
+                              </span>
+                            )}
+                            {p.niche && (
+                              <span className="truncate">{p.niche}</span>
+                            )}
+                          </div>
+                          {p.gmb_url && (
+                            <motion.a
+                              whileHover={{ scale: 1.02 }}
+                              whileTap={{ scale: 0.97 }}
+                              href={p.gmb_url}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="mt-2 inline-flex items-center gap-1 px-2 py-1 bg-dopa-cyan/15 text-dopa-cyan rounded text-[10px] font-bold hover:bg-dopa-cyan/25"
+                            >
+                              <MapPin size={10} /> GMB
+                            </motion.a>
                           )}
-                          {p.date_rdv && (
-                            <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
-                              <Calendar size={8} />{shortDate(p.date_rdv)}
-                            </span>
-                          )}
-                          {p.niche && (
-                            <span className="truncate">{p.niche}</span>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })
+                        </motion.div>
+                      );
+                    })}
+                  </AnimatePresence>
                 )}
               </div>
-            </div>
+            </motion.div>
           );
         })}
       </div>

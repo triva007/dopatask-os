@@ -3,13 +3,15 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Phone, MapPin, Save, Check,
   Loader2, DollarSign, PhoneOff, Voicemail, Calendar, Frown,
   ChevronLeft, ChevronRight, Sparkles, RotateCcw, X,
+  ListChecks, Plus, CheckCircle2, Circle,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
+import { useAppStore } from "@/store/useAppStore";
 import type { Prospect, ResultatAppel } from "@/lib/crmTypes";
 import StatutBadge from "./StatutBadge";
 import { STATUT_LABEL, STATUT_EMOJI, STATUTS_ORDRE } from "@/lib/crmLabels";
@@ -38,11 +40,47 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const addRevenu = useCrmStore((s) => s.addRevenu);
   const config = useCrmStore((s) => s.config);
 
+  // Tâches liées (matching par nom d'entreprise dans text/description)
+  const allTasks = useAppStore((s) => s.tasks);
+  const addTask = useAppStore((s) => s.addTask);
+  const completeTask = useAppStore((s) => s.completeTask);
+  const updateTaskStatus = useAppStore((s) => s.updateTaskStatus);
+
   const prospect = prospects.find((p) => p.id === id);
   const prospectCalls = useMemo(
     () => calls.filter((c) => c.prospect_id === id).sort((a, b) => b.date.localeCompare(a.date)),
     [calls, id]
   );
+
+  // Tâches liées : recherche du nom d'entreprise dans text/description (case-insensitive)
+  const relatedTasks = useMemo(() => {
+    if (!prospect) return [];
+    const needle = prospect.entreprise.trim().toLowerCase();
+    if (needle.length < 2) return [];
+    return allTasks.filter((t) => {
+      const hay = `${t.text || ""} ${t.description || ""}`.toLowerCase();
+      return hay.includes(needle);
+    });
+  }, [allTasks, prospect?.entreprise]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const openTasks = useMemo(
+    () => relatedTasks.filter((t) => t.status !== "done" && t.status !== "completed"),
+    [relatedTasks]
+  );
+  const completedTasks = useMemo(
+    () => relatedTasks.filter((t) => t.status === "done" || t.status === "completed"),
+    [relatedTasks]
+  );
+
+  const onAddTaskForProspect = () => {
+    if (!prospect) return;
+    addTask(`Suivi ${prospect.entreprise}`, "today");
+  };
+
+  const onToggleTask = (taskId: string, isDone: boolean) => {
+    if (isDone) updateTaskStatus(taskId, "today");
+    else completeTask(taskId);
+  };
 
   const tentativeNum = prospectCalls.length + 1;
 
@@ -152,6 +190,18 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                   <RotateCcw size={9} />
                   {ordinal(tentativeNum)} appel
                 </span>
+              )}
+              {openTasks.length > 0 && (
+                <motion.span
+                  initial={{ scale: 0.85, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  transition={{ type: "spring", stiffness: 380, damping: 22 }}
+                  className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums bg-dopa-violet/15 text-dopa-violet border border-dopa-violet/30"
+                  title={`${openTasks.length} tâche(s) liée(s) en cours`}
+                >
+                  <ListChecks size={9} />
+                  {openTasks.length} tâche{openTasks.length > 1 ? "s" : ""}
+                </motion.span>
               )}
             </div>
           </div>
@@ -288,6 +338,92 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
             {saving ? <Loader2 size={12} className="animate-spin" /> : savedPulse ? <Check size={12} /> : <Save size={12} />}
             {savedPulse ? "Sauvé" : "Enregistrer notes"}
           </button>
+        </div>
+
+        {/* ─── TÂCHES LIÉES ─── */}
+        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-3.5">
+          <div className="flex items-center justify-between mb-2.5">
+            <div className="flex items-center gap-1.5">
+              <ListChecks size={13} className="text-dopa-violet" />
+              <h4 className="text-[12px] font-bold tracking-tight">Tâches liées</h4>
+              {relatedTasks.length > 0 && (
+                <span className="text-[10px] tabular-nums text-[var(--text-tertiary)]">
+                  · {openTasks.length} en cours
+                  {completedTasks.length > 0 && ` · ${completedTasks.length} fait`}
+                </span>
+              )}
+            </div>
+            <motion.button
+              whileTap={{ scale: 0.94 }}
+              whileHover={{ scale: 1.03 }}
+              onClick={onAddTaskForProspect}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-dopa-violet/15 text-dopa-violet rounded-md text-[10.5px] font-semibold hover:bg-dopa-violet/25"
+            >
+              <Plus size={11} /> Tâche
+            </motion.button>
+          </div>
+
+          {relatedTasks.length === 0 ? (
+            <p className="text-[11px] text-[var(--text-tertiary)] italic py-1">
+              Aucune tâche liée. Crée-en une pour suivre ce prospect.
+            </p>
+          ) : (
+            <ul className="space-y-1.5">
+              <AnimatePresence initial={false}>
+                {[...openTasks, ...completedTasks].map((t) => {
+                  const isDone = t.status === "done" || t.status === "completed";
+                  return (
+                    <motion.li
+                      key={t.id}
+                      layout
+                      initial={{ opacity: 0, y: -4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, x: -8 }}
+                      transition={{ duration: 0.18, ease: "easeOut" }}
+                      className={`group flex items-start gap-2 px-2 py-1.5 rounded-lg border transition-colors ${
+                        isDone
+                          ? "bg-[var(--surface-1)] border-[var(--border-primary)] opacity-60"
+                          : "bg-[var(--surface-2)] border-[var(--border-primary)] hover:border-dopa-violet/40"
+                      }`}
+                    >
+                      <button
+                        onClick={() => onToggleTask(t.id, isDone)}
+                        className="shrink-0 mt-0.5 text-[var(--text-tertiary)] hover:text-dopa-green"
+                        title={isDone ? "Marquer comme à faire" : "Terminer"}
+                      >
+                        {isDone ? (
+                          <CheckCircle2 size={14} className="text-dopa-green" />
+                        ) : (
+                          <Circle size={14} />
+                        )}
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[12px] leading-tight ${isDone ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)] font-medium"}`}>
+                          {t.text}
+                        </p>
+                        {t.description && (
+                          <p className="text-[10.5px] text-[var(--text-tertiary)] mt-0.5 line-clamp-1">
+                            {t.description}
+                          </p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1 text-[9.5px] text-[var(--text-tertiary)] flex-wrap">
+                          <span className="uppercase tracking-wider font-semibold px-1.5 py-px rounded bg-[var(--surface-1)]">
+                            {t.status}
+                          </span>
+                          {t.dueDate && (
+                            <span className="inline-flex items-center gap-0.5 tabular-nums">
+                              <Calendar size={9} />
+                              {new Date(t.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </motion.li>
+                  );
+                })}
+              </AnimatePresence>
+            </ul>
+          )}
         </div>
 
         {/* Historique appels (déroulé en bas) */}

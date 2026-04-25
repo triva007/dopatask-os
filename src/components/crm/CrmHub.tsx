@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Phone, Calendar, Upload, Wrench, Users, Clock,
   TrendingUp, Banknote, AlertTriangle, Loader2, ChevronRight,
@@ -184,10 +185,13 @@ export default function CrmHub() {
         )}
 
         {/* CTA XL SESSION COLD-CALL */}
-        <button
+        <motion.button
           onClick={() => setColdCallMode(true)}
           disabled={aAppeler.length === 0}
-          className="w-full group relative overflow-hidden rounded-2xl border-2 border-dopa-cyan bg-gradient-to-br from-dopa-cyan/15 via-dopa-cyan/5 to-transparent p-6 transition-all hover:scale-[1.005] hover:shadow-[0_0_40px_rgba(34,211,238,0.15)] disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:scale-100"
+          whileHover={aAppeler.length > 0 ? { scale: 1.005, y: -1 } : undefined}
+          whileTap={aAppeler.length > 0 ? { scale: 0.995 } : undefined}
+          transition={{ type: "spring", stiffness: 400, damping: 22 }}
+          className="w-full group relative overflow-hidden rounded-2xl border-2 border-dopa-cyan bg-gradient-to-br from-dopa-cyan/15 via-dopa-cyan/5 to-transparent p-6 hover:shadow-[0_0_40px_rgba(34,211,238,0.18)] disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-4 text-left">
@@ -219,16 +223,24 @@ export default function CrmHub() {
               </div>
             )}
           </div>
-        </button>
+        </motion.button>
 
-        {/* STATS CRM : 5 mini-cards */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        {/* STATS CRM : 5 mini-cards (stagger) */}
+        <motion.div
+          className="grid grid-cols-2 md:grid-cols-5 gap-3"
+          initial="hidden"
+          animate="show"
+          variants={{
+            hidden: { opacity: 0 },
+            show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
+          }}
+        >
           <MiniStat icon={<Users size={14} />} label="Total" value={prospects.length} color="#64748b" />
           <MiniStat icon={<Phone size={14} />} label="A appeler" value={aAppeler.length} color="#F97316" highlight />
           <MiniStat icon={<Calendar size={14} />} label="RDV en stock" value={rdvEnStock.length} color="#3B82F6" />
           <MiniStat icon={<Trophy size={14} />} label="Vendus" value={vendus.length} color="#10B981" />
           <MiniStat icon={<Banknote size={14} />} label={`Revenu mois`} value={`${stats.revenuTotal.toLocaleString("fr-FR")}`} suffix="EUR" color="#22d3ee" />
-        </div>
+        </motion.div>
 
         {/* PIPELINE KANBAN */}
         <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
@@ -241,15 +253,31 @@ export default function CrmHub() {
               Clique sur une colonne pour filtrer la liste complete.
             </p>
           </div>
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+          <motion.div
+            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
+            initial="hidden"
+            animate="show"
+            variants={{
+              hidden: { opacity: 0 },
+              show: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.1 } },
+            }}
+          >
             {PIPELINE_STATUTS.map((s) => {
               const col = STATUT_COLORS[s];
               const list = byStatut[s];
               return (
-                <Link
+                <motion.div
                   key={s}
+                  variants={{
+                    hidden: { opacity: 0, y: 10, scale: 0.97 },
+                    show: { opacity: 1, y: 0, scale: 1 },
+                  }}
+                  whileHover={{ y: -3 }}
+                  transition={{ type: "spring", stiffness: 360, damping: 24 }}
+                >
+                <Link
                   href={`/prospects?statut=${s}`}
-                  className="group rounded-xl border p-3 transition-all hover:-translate-y-0.5 hover:shadow-card-hover"
+                  className="group block rounded-xl border p-3 transition-shadow hover:shadow-card-hover"
                   style={{ background: col.bg + "33", borderColor: col.border }}
                 >
                   <div className="flex items-center justify-between mb-2">
@@ -275,9 +303,10 @@ export default function CrmHub() {
                     )}
                   </div>
                 </Link>
+                </motion.div>
               );
             })}
-          </div>
+          </motion.div>
         </div>
 
         {/* 2 PANELS : PROCHAINS A APPELER + PROCHAINS RDV */}
@@ -435,7 +464,13 @@ function MiniStat({
   highlight?: boolean;
 }) {
   return (
-    <div
+    <motion.div
+      variants={{
+        hidden: { opacity: 0, y: 8, scale: 0.97 },
+        show: { opacity: 1, y: 0, scale: 1, transition: { type: "spring", stiffness: 360, damping: 26 } },
+      }}
+      whileHover={{ y: -2 }}
+      transition={{ type: "spring", stiffness: 400, damping: 24 }}
       className={`rounded-xl border p-4 ${highlight ? "ring-1 ring-dopa-orange/30" : ""}`}
       style={{
         background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
@@ -450,6 +485,6 @@ function MiniStat({
         {value}
         {suffix && <span className="text-[11px] font-semibold text-t-tertiary">{suffix}</span>}
       </p>
-    </div>
+    </motion.div>
   );
 }
