@@ -4,21 +4,47 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  Search, Upload, MapPin, Plus, Loader2,
+  Search, Upload, MapPin, Plus, Loader2, Phone, Calendar,
   AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, RotateCcw,
+  List as ListIcon, LayoutGrid, Columns3, Filter, ArrowUpDown,
+  ExternalLink, Sparkles, Flame, Clock,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
-import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI } from "@/lib/crmLabels";
-import type { StatutProspect } from "@/lib/crmTypes";
-import StatutBadge from "./StatutBadge";
+import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI, STATUT_COLORS } from "@/lib/crmLabels";
+import type { StatutProspect, Prospect } from "@/lib/crmTypes";
 import ImportCsvModal from "./ImportCsvModal";
+
+export type ViewMode = "list" | "cards" | "kanban";
+type SortMode = "recent" | "alpha" | "priority" | "calls";
 
 type Props = {
   selectedId: string | null;
   onSelect: (id: string) => void;
+  view: ViewMode;
+  onViewChange: (v: ViewMode) => void;
+  isSplit: boolean;
 };
 
-export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
+const PIPELINE_STATUTS: StatutProspect[] = [
+  "A_APPELER", "REPONDEUR", "RDV_BOOKE", "MAQUETTE_PRETE", "R1_EFFECTUE", "VENDU",
+];
+
+// Ordre de priorité d'action pour le tri "priorité"
+const PRIORITY_ORDER: Record<StatutProspect, number> = {
+  RDV_BOOKE: 0,
+  MAQUETTE_PRETE: 1,
+  R1_EFFECTUE: 2,
+  REPONDEUR: 3,
+  A_APPELER: 4,
+  VENDU: 5,
+  REFUS: 6,
+  EXISTE_PAS: 7,
+  PERDU: 8,
+};
+
+export default function ProspectsListCompact({
+  selectedId, onSelect, view, onViewChange, isSplit,
+}: Props) {
   const loaded = useCrmStore((s) => s.loaded);
   const loading = useCrmStore((s) => s.loading);
   const error = useCrmStore((s) => s.error);
@@ -39,12 +65,14 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
     (initialStatut as StatutProspect) || "ACTIFS"
   );
   const [filterNiche, setFilterNiche] = useState<string>(initialNiche || "ALL");
+  const [sort, setSort] = useState<SortMode>("priority");
   const [showImport, setShowImport] = useState(false);
   const [creating, setCreating] = useState(false);
   const [newName, setNewName] = useState("");
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkBusy, setBulkBusy] = useState(false);
   const [flash, setFlash] = useState<string | null>(null);
+  const [dragOverStatut, setDragOverStatut] = useState<StatutProspect | null>(null);
 
   useEffect(() => {
     if (!loaded) loadAll();
@@ -61,6 +89,10 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
   }, [calls]);
 
   const callCountFor = (id: string) => callsByProspect.get(id)?.length || 0;
+  const lastCallFor = (id: string) => {
+    const arr = callsByProspect.get(id);
+    return arr && arr.length > 0 ? arr[0].date : null;
+  };
 
   const niches = useMemo(() => {
     const set = new Set<string>();
@@ -89,9 +121,27 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
           .some((v) => (v as string).toLowerCase().includes(q))
       );
     }
-    return arr;
+
+    // Tri
+    const sorted = [...arr];
+    if (sort === "alpha") {
+      sorted.sort((a, b) => a.entreprise.localeCompare(b.entreprise, "fr"));
+    } else if (sort === "recent") {
+      sorted.sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+    } else if (sort === "calls") {
+      sorted.sort((a, b) => callCountFor(b.id) - callCountFor(a.id));
+    } else {
+      // priority : statut puis date
+      sorted.sort((a, b) => {
+        const pa = PRIORITY_ORDER[a.statut];
+        const pb = PRIORITY_ORDER[b.statut];
+        if (pa !== pb) return pa - pb;
+        return a.created_at < b.created_at ? 1 : -1;
+      });
+    }
+    return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prospects, query, filterStatut, filterNiche, callsByProspect]);
+  }, [prospects, query, filterStatut, filterNiche, callsByProspect, sort]);
 
   const onQuickCreate = async () => {
     if (!newName.trim()) return;
@@ -106,7 +156,7 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
     await updateProspect(id, { statut });
   };
 
-  // Selection helpers
+  // Selection
   const allSelectedInView = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
   const someSelectedInView = filtered.some((p) => selected.has(p.id));
   const toggleSelectAll = () => {
@@ -159,68 +209,124 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
     jamais: prospects.filter((p) => !p.archived && callCountFor(p.id) === 0).length,
   }), [prospects, callsByProspect]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  return (
-    <div className="h-full flex flex-col overflow-hidden">
+  // Drag-drop kanban
+  const onDragStartProspect = (e: React.DragEvent, p: Prospect) => {
+    e.dataTransfer.setData("text/prospect-id", p.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+  const onDropOnColumn = async (e: React.DragEvent, statut: StatutProspect) => {
+    e.preventDefault();
+    setDragOverStatut(null);
+    const id = e.dataTransfer.getData("text/prospect-id");
+    if (!id) return;
+    const p = prospects.find((x) => x.id === id);
+    if (!p || p.statut === statut) return;
+    await updateProspect(id, { statut });
+    setFlash(`${p.entreprise} → ${STATUT_LABEL[statut]}`);
+    setTimeout(() => setFlash(null), 2200);
+  };
 
-      {/* HEADER COMPACT */}
-      <div className="px-4 pt-4 pb-3 border-b border-surface-3">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
+  return (
+    <div className="h-full flex flex-col overflow-hidden bg-background">
+
+      {/* HEADER */}
+      <div className="px-4 pt-4 pb-3 border-b border-surface-3 bg-gradient-to-b from-surface-1/40 to-transparent">
+        <div className="flex items-center justify-between gap-3 mb-3">
+          <div className="flex items-center gap-3 min-w-0">
             <Link
               href="/crm"
-              className="text-t-tertiary hover:text-t-primary inline-flex items-center gap-1 text-[11px]"
+              className="text-t-tertiary hover:text-t-primary inline-flex items-center gap-1 text-[11px] shrink-0"
             >
               <ArrowLeft size={12} /> CRM
             </Link>
-            <div>
-              <h1 className="text-[18px] font-bold tracking-tight leading-none">Prospects</h1>
-              <p className="text-[10.5px] text-t-tertiary mt-1">
-                {filtered.length} affichés · {counts.actifs} actifs
+            <div className="min-w-0">
+              <h1 className="text-[19px] font-bold tracking-tight leading-none">Prospects</h1>
+              <p className="text-[10.5px] text-t-tertiary mt-1 truncate">
+                <span className="text-t-secondary font-semibold tabular-nums">{filtered.length}</span> affichés ·{" "}
+                <span className="tabular-nums">{counts.actifs}</span> actifs ·{" "}
+                <span className="tabular-nums">{counts.vendus}</span> vendus
               </p>
             </div>
           </div>
-          <button
-            onClick={() => setShowImport(true)}
-            className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[11.5px] font-semibold hover:bg-dopa-cyan/20"
-          >
-            <Upload size={12} />
-            Importer
-          </button>
+
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* View switcher */}
+            <div className="inline-flex items-center bg-surface-2 border border-surface-3 rounded-lg p-0.5">
+              <ViewBtn active={view === "list"} onClick={() => onViewChange("list")} icon={<ListIcon size={12} />} label="Liste" />
+              <ViewBtn active={view === "cards"} onClick={() => onViewChange("cards")} icon={<LayoutGrid size={12} />} label="Cartes" />
+              <ViewBtn active={view === "kanban"} onClick={() => onViewChange("kanban")} icon={<Columns3 size={12} />} label="Pipeline" />
+            </div>
+            <button
+              onClick={() => setShowImport(true)}
+              className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[11.5px] font-semibold hover:bg-dopa-cyan/20"
+            >
+              <Upload size={12} />
+              {!isSplit && <span>Importer</span>}
+            </button>
+          </div>
         </div>
 
-        {/* Onglets rapides */}
+        {/* Stats motivantes ribbon (caché si vue list+split pour gagner de la place) */}
+        {!isSplit && (
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
+            <StatPill icon={<Phone size={11} />} label="À appeler" value={counts.aAppeler} color="#F97316" pulse={counts.aAppeler > 0} />
+            <StatPill icon={<RotateCcw size={11} />} label="À rappeler" value={counts.aRappeler} color="#fbbf24" />
+            <StatPill icon={<Calendar size={11} />} label="RDV" value={counts.rdv} color="#3B82F6" />
+            <StatPill icon={<Sparkles size={11} />} label="Vendus" value={counts.vendus} color="#10B981" />
+            <StatPill icon={<Flame size={11} />} label="Jamais touchés" value={counts.jamais} color="#a78bfa" />
+          </div>
+        )}
+
+        {/* Onglets rapides — couleur du statut */}
         <div className="flex items-center gap-1 flex-wrap mb-2">
-          <QuickTab active={filterStatut === "ACTIFS"} onClick={() => setFilterStatut("ACTIFS")}>Actifs ({counts.actifs})</QuickTab>
-          <QuickTab active={filterStatut === "JAMAIS_APPELES"} onClick={() => setFilterStatut("JAMAIS_APPELES")}>Jamais ({counts.jamais})</QuickTab>
-          <QuickTab active={filterStatut === "A_APPELER"} onClick={() => setFilterStatut("A_APPELER")}>À appeler ({counts.aAppeler})</QuickTab>
-          <QuickTab active={filterStatut === "A_RAPPELER"} onClick={() => setFilterStatut("A_RAPPELER")}>À rappeler ({counts.aRappeler})</QuickTab>
-          <QuickTab active={filterStatut === "RDV_BOOKE"} onClick={() => setFilterStatut("RDV_BOOKE")}>RDV ({counts.rdv})</QuickTab>
-          <QuickTab active={filterStatut === "VENDU"} onClick={() => setFilterStatut("VENDU")}>Vendus ({counts.vendus})</QuickTab>
-          <QuickTab active={filterStatut === "ARCHIVES"} onClick={() => setFilterStatut("ARCHIVES")}>Archivés ({counts.archived})</QuickTab>
+          <QuickTab active={filterStatut === "ACTIFS"} onClick={() => setFilterStatut("ACTIFS")} count={counts.actifs}>Actifs</QuickTab>
+          <QuickTab active={filterStatut === "JAMAIS_APPELES"} onClick={() => setFilterStatut("JAMAIS_APPELES")} count={counts.jamais} color="#a78bfa">Jamais</QuickTab>
+          <QuickTab active={filterStatut === "A_APPELER"} onClick={() => setFilterStatut("A_APPELER")} count={counts.aAppeler} color="#F97316">À appeler</QuickTab>
+          <QuickTab active={filterStatut === "A_RAPPELER"} onClick={() => setFilterStatut("A_RAPPELER")} count={counts.aRappeler} color="#fbbf24">À rappeler</QuickTab>
+          <QuickTab active={filterStatut === "RDV_BOOKE"} onClick={() => setFilterStatut("RDV_BOOKE")} count={counts.rdv} color="#3B82F6">RDV</QuickTab>
+          <QuickTab active={filterStatut === "VENDU"} onClick={() => setFilterStatut("VENDU")} count={counts.vendus} color="#10B981">Vendus</QuickTab>
+          <QuickTab active={filterStatut === "ARCHIVES"} onClick={() => setFilterStatut("ARCHIVES")} count={counts.archived}>Archivés</QuickTab>
         </div>
 
-        {/* Search + Niche */}
-        <div className="flex items-center gap-2">
-          <div className="relative flex-1">
+        {/* Search + Niche + Sort */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative flex-1 min-w-[180px]">
             <Search size={12} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-t-tertiary" />
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Chercher…"
+              placeholder="Chercher entreprise, tél, notes…"
               className="w-full pl-7 pr-2 py-1.5 bg-surface-2 border border-surface-3 rounded-md text-[12px] placeholder-t-tertiary focus:outline-none focus:border-dopa-cyan/50"
             />
           </div>
           {niches.length > 0 && (
-            <select
-              value={filterNiche}
-              onChange={(e) => setFilterNiche(e.target.value)}
-              className="px-2 py-1.5 bg-surface-2 border border-surface-3 rounded-md text-[11.5px] focus:outline-none focus:border-dopa-cyan/50 cursor-pointer"
-            >
-              <option value="ALL">Toutes niches</option>
-              <option value="__NONE__">Sans niche</option>
-              {niches.map((n) => <option key={n} value={n}>{n}</option>)}
-            </select>
+            <div className="relative">
+              <Filter size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-t-tertiary pointer-events-none" />
+              <select
+                value={filterNiche}
+                onChange={(e) => setFilterNiche(e.target.value)}
+                className="pl-7 pr-2 py-1.5 bg-surface-2 border border-surface-3 rounded-md text-[11.5px] focus:outline-none focus:border-dopa-cyan/50 cursor-pointer"
+              >
+                <option value="ALL">Toutes niches</option>
+                <option value="__NONE__">Sans niche</option>
+                {niches.map((n) => <option key={n} value={n}>{n}</option>)}
+              </select>
+            </div>
           )}
+          <div className="relative">
+            <ArrowUpDown size={11} className="absolute left-2 top-1/2 -translate-y-1/2 text-t-tertiary pointer-events-none" />
+            <select
+              value={sort}
+              onChange={(e) => setSort(e.target.value as SortMode)}
+              className="pl-7 pr-2 py-1.5 bg-surface-2 border border-surface-3 rounded-md text-[11.5px] focus:outline-none focus:border-dopa-cyan/50 cursor-pointer"
+              title="Tri"
+            >
+              <option value="priority">Priorité</option>
+              <option value="recent">Plus récents</option>
+              <option value="alpha">A → Z</option>
+              <option value="calls">Nb appels</option>
+            </select>
+          </div>
         </div>
 
         {/* Quick add */}
@@ -229,13 +335,13 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && onQuickCreate()}
-            placeholder="+ Nouveau prospect…"
+            placeholder="+ Ajouter un prospect rapide…"
             className="flex-1 px-2.5 py-1.5 bg-surface-2 border border-surface-3 rounded-md text-[12px] placeholder-t-tertiary focus:outline-none focus:border-dopa-green/50"
           />
           <button
             onClick={onQuickCreate}
             disabled={creating || !newName.trim()}
-            className="inline-flex items-center justify-center w-7 h-7 bg-dopa-green/10 text-dopa-green rounded-md hover:bg-dopa-green/20 disabled:opacity-40"
+            className="inline-flex items-center justify-center w-7 h-7 bg-dopa-green/15 text-dopa-green rounded-md hover:bg-dopa-green/25 disabled:opacity-40"
           >
             {creating ? <Loader2 size={11} className="animate-spin" /> : <Plus size={13} />}
           </button>
@@ -272,7 +378,7 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
       )}
 
       {flash && (
-        <div className="px-3 py-1.5 bg-dopa-green/10 border-b border-dopa-green/30 text-[11.5px] text-dopa-green font-semibold">
+        <div className="px-3 py-1.5 bg-dopa-green/10 border-b border-dopa-green/30 text-[11.5px] text-dopa-green font-semibold animate-fade-in">
           ✓ {flash}
         </div>
       )}
@@ -283,7 +389,7 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
         </div>
       )}
 
-      {/* LISTE */}
+      {/* CONTENU SELON VUE */}
       <div className="flex-1 overflow-auto">
         {loading && !loaded ? (
           <div className="flex items-center justify-center h-32 text-t-tertiary gap-2">
@@ -291,135 +397,15 @@ export default function ProspectsListCompact({ selectedId, onSelect }: Props) {
             <span className="text-[12px]">Chargement…</span>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-48 text-t-tertiary gap-2 px-4 text-center">
-            <p className="text-[13px]">
-              {prospects.length === 0
-                ? "Aucun prospect."
-                : "Aucun prospect ne correspond aux filtres."}
-            </p>
-            {prospects.length === 0 && (
-              <button
-                onClick={() => setShowImport(true)}
-                className="mt-2 px-3 py-1.5 bg-dopa-cyan/10 text-dopa-cyan rounded-md text-[12px] font-semibold hover:bg-dopa-cyan/20"
-              >
-                Importer un CSV
-              </button>
-            )}
-          </div>
-        ) : (
-          <ul className="py-1">
-            {filtered.length > 5 && (
-              <li className="px-3 py-1 flex items-center gap-2 border-b border-surface-3/50">
-                <input
-                  type="checkbox"
-                  checked={allSelectedInView}
-                  ref={(el) => { if (el) el.indeterminate = !allSelectedInView && someSelectedInView; }}
-                  onChange={toggleSelectAll}
-                  className="accent-dopa-cyan cursor-pointer"
-                />
-                <span className="text-[10px] text-t-tertiary uppercase tracking-wider">Tout sélectionner ({filtered.length})</span>
-              </li>
-            )}
-            {filtered.map((p) => {
-              const isSel = selected.has(p.id);
-              const isActive = selectedId === p.id;
-              const nbCalls = callCountFor(p.id);
-              return (
-                <li
-                  key={p.id}
-                  className={`group relative border-b border-surface-3/40 transition-colors ${
-                    isActive ? "bg-dopa-cyan/10" : isSel ? "bg-dopa-cyan/5" : "hover:bg-surface-2/60"
-                  } ${p.archived ? "opacity-50" : ""}`}
-                >
-                  <div className="flex items-center gap-2 px-3 py-2.5">
-                    <input
-                      type="checkbox"
-                      checked={isSel}
-                      onChange={() => toggleSelectOne(p.id)}
-                      onClick={(e) => e.stopPropagation()}
-                      className="accent-dopa-cyan cursor-pointer shrink-0"
-                    />
-                    <button
-                      onClick={() => onSelect(p.id)}
-                      className="flex-1 min-w-0 text-left"
-                    >
-                      <p className="text-[14px] font-bold text-t-primary truncate leading-tight">
-                        {p.entreprise}
-                      </p>
-                      <div className="flex items-center gap-1.5 mt-0.5">
-                        <StatutBadge statut={p.statut} compact />
-                        {nbCalls > 0 && (
-                          <span
-                            className={`inline-flex items-center gap-0.5 text-[9.5px] font-bold px-1 py-0.5 rounded tabular-nums ${
-                              nbCalls >= 3
-                                ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]"
-                                : "bg-surface-2 text-t-secondary"
-                            }`}
-                            title={`${nbCalls} appel(s)`}
-                          >
-                            <RotateCcw size={8} />{nbCalls}
-                          </span>
-                        )}
-                        {p.niche && (
-                          <span className="text-[9.5px] text-t-tertiary truncate">{p.niche}</span>
-                        )}
-                      </div>
-                    </button>
-                    <div className="flex items-center gap-1 shrink-0">
-                      {p.gmb_url && (
-                        <a
-                          href={p.gmb_url}
-                          target="_blank"
-                          rel="noreferrer"
-                          onClick={(e) => e.stopPropagation()}
-                          title="Ouvrir GMB"
-                          className="inline-flex items-center justify-center w-7 h-7 bg-dopa-cyan/10 text-dopa-cyan rounded-md hover:bg-dopa-cyan/20"
-                        >
-                          <MapPin size={12} />
-                        </a>
-                      )}
-                      <select
-                        value={p.statut}
-                        onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
-                        onClick={(e) => e.stopPropagation()}
-                        title="Changer le statut"
-                        className="text-[11px] bg-surface-2 border border-surface-3 rounded-md px-1.5 py-1 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[100px]"
-                      >
-                        {STATUTS_ORDRE.map((s) => (
-                          <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </div>
-
-      {showImport && <ImportCsvModal onClose={() => setShowImport(false)} />}
-    </div>
-  );
-}
-
-function QuickTab({
-  active, onClick, children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={`px-2 py-0.5 rounded text-[10.5px] font-semibold whitespace-nowrap transition-colors ${
-        active
-          ? "bg-dopa-cyan text-black"
-          : "bg-surface-2 text-t-secondary hover:bg-surface-3 hover:text-t-primary"
-      }`}
-    >
-      {children}
-    </button>
-  );
-}
+          <EmptyState
+            hasProspects={prospects.length > 0}
+            onImport={() => setShowImport(true)}
+          />
+        ) : view === "kanban" ? (
+          <KanbanView
+            prospects={filtered}
+            byStatut={groupByStatut(filtered)}
+            onSelect={onSelect}
+            onDragStart={onDragStartProspect}
+            onDrop={onDropOnColumn}
+     

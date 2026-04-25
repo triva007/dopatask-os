@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
-import ProspectsListCompact from "./ProspectsListCompact";
+import ProspectsListCompact, { type ViewMode } from "./ProspectsListCompact";
 import ProspectDetail from "./ProspectDetail";
 
 export default function ProspectsSplitView() {
@@ -10,6 +10,9 @@ export default function ProspectsSplitView() {
   const router = useRouter();
   const pathname = usePathname();
   const selectedId = searchParams.get("p");
+
+  // Vue active : list (split classique), cards (grille pleine), kanban (pipeline pleine)
+  const [view, setView] = useState<ViewMode>("list");
 
   const setSelected = useCallback((id: string | null) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -19,26 +22,20 @@ export default function ProspectsSplitView() {
     router.replace(`${pathname}${qs ? "?" + qs : ""}`, { scroll: false });
   }, [pathname, router, searchParams]);
 
+  // Si on sélectionne un prospect en cards/kanban → on bascule en list pour avoir le detail à droite
+  const handleSelect = useCallback((id: string) => {
+    if (view !== "list") setView("list");
+    setSelected(id);
+  }, [view, setSelected]);
+
+  const handleViewChange = useCallback((v: ViewMode) => {
+    if (v !== "list") setSelected(null);
+    setView(v);
+  }, [setSelected]);
+
+  const showDetail = view === "list" && !!selectedId;
+
   return (
     <div className="h-full flex overflow-hidden">
-      {/* Liste à gauche : pleine largeur si rien de sélectionné, sinon ~40% */}
-      <div className={`${selectedId ? "w-[420px] min-w-[380px]" : "w-full"} border-r border-[var(--border-primary)] overflow-hidden transition-all`}>
-        <ProspectsListCompact
-          selectedId={selectedId}
-          onSelect={(id) => setSelected(id)}
-        />
-      </div>
-
-      {/* Drawer fiche à droite */}
-      {selectedId && (
-        <div className="flex-1 overflow-hidden">
-          <ProspectDetail
-            id={selectedId}
-            onClose={() => setSelected(null)}
-            onNavigate={(id) => setSelected(id)}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
+      <div
+        className={`${showDetail ? "w-[440px] min-w-[4
