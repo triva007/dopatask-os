@@ -74,11 +74,11 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
 
   const onAddTaskForProspect = () => {
     if (!prospect) return;
-    addTask(`Suivi ${prospect.entreprise}`, "today");
+    addTask(`Suivi ${prospect.entreprise}`, "todo");
   };
 
   const onToggleTask = (taskId: string, isDone: boolean) => {
-    if (isDone) updateTaskStatus(taskId, "today");
+    if (isDone) updateTaskStatus(taskId, "todo");
     else completeTask(taskId);
   };
 

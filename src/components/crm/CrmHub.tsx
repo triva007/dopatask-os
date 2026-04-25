@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Phone, Calendar, Upload, Wrench, Users, Clock,
+  Phone, Calendar, Upload, Wrench, Users,
   TrendingUp, Banknote, AlertTriangle, Loader2, ChevronRight,
   Trophy, BarChart3,
 } from "lucide-react";
@@ -13,7 +13,7 @@ import {
   STATUT_LABEL, STATUT_EMOJI, STATUT_COLORS,
 } from "@/lib/crmLabels";
 import type { StatutProspect } from "@/lib/crmTypes";
-import { computeStatsMois, isToday } from "@/lib/crmLogic";
+import { computeStatsMois } from "@/lib/crmLogic";
 import StatutBadge from "./StatutBadge";
 import ImportCsvModal from "./ImportCsvModal";
 import ColdCallSession from "./ColdCallSession";
@@ -93,8 +93,6 @@ export default function CrmHub() {
     [aAppeler]
   );
 
-  // Activite recente : derniers 6 calls
-  const recentCalls = useMemo(() => calls.slice(0, 6), [calls]);
 
   // Stats mois (reutilisable sur home)
   const stats = useMemo(() => computeStatsMois(calls, revenus), [calls, revenus]);
@@ -129,7 +127,7 @@ export default function CrmHub() {
 
   return (
     <div className="h-full overflow-auto">
-      <div className="max-w-[1400px] mx-auto px-8 py-8 space-y-6">
+      <div className="max-w-[1700px] mx-auto px-10 py-8 space-y-6">
         {/* HEADER */}
         <div className="flex items-start justify-between flex-wrap gap-4">
           <div>
@@ -381,54 +379,6 @@ export default function CrmHub() {
               </ul>
             )}
           </div>
-        </div>
-
-        {/* ACTIVITE RECENTE */}
-        <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <Clock size={15} className="text-dopa-violet" />
-              <h3 className="text-[13.5px] font-semibold">Activite recente</h3>
-            </div>
-            <p className="text-[11px] text-t-tertiary">
-              {calls.filter((c) => isToday(c.date) && c.compte_mission).length} appel(s) aujourd&apos;hui
-            </p>
-          </div>
-          {recentCalls.length === 0 ? (
-            <p className="text-[12.5px] text-t-tertiary italic py-4">
-              Aucun appel log encore. Ouvre un prospect et passe ton premier appel.
-            </p>
-          ) : (
-            <ul className="divide-y divide-surface-3">
-              {recentCalls.map((c) => {
-                const p = prospects.find((x) => x.id === c.prospect_id);
-                return (
-                  <li key={c.id} className="py-2 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 min-w-0 flex-1">
-                      <span className="text-[11px] font-mono text-t-tertiary tabular-nums w-24 shrink-0">
-                        {new Date(c.date).toLocaleString("fr-FR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </span>
-                      <Link
-                        href={`/prospects/${c.prospect_id}`}
-                        className="text-[13px] font-medium text-t-primary truncate hover:text-dopa-cyan"
-                      >
-                        {p?.entreprise || "Prospect supprime"}
-                      </Link>
-                    </div>
-                    <span
-                      className="text-[10.5px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded"
-                      style={{
-                        background: c.resultat === "RDV" ? "#10b98122" : c.resultat === "REFUS" ? "#ef444422" : "#64748b22",
-                        color: c.resultat === "RDV" ? "#10b981" : c.resultat === "REFUS" ? "#ef4444" : "#94a3b8",
-                      }}
-                    >
-                      {c.resultat.replace("_", " ")}
-                    </span>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
         </div>
 
         {prospects.length === 0 && (

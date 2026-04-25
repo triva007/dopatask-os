@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams, usePathname } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
 import ProspectsListCompact, { type ViewMode } from "./ProspectsListCompact";
 import ProspectDetail from "./ProspectDetail";
 
@@ -11,7 +12,6 @@ export default function ProspectsSplitView() {
   const pathname = usePathname();
   const selectedId = searchParams.get("p");
 
-  // Vue active : list (split classique), cards (grille pleine), kanban (pipeline pleine)
   const [view, setView] = useState<ViewMode>("list");
 
   const setSelected = useCallback((id: string | null) => {
@@ -22,42 +22,67 @@ export default function ProspectsSplitView() {
     router.replace(`${pathname}${qs ? "?" + qs : ""}`, { scroll: false });
   }, [pathname, router, searchParams]);
 
-  // Si on sélectionne un prospect en cards/kanban → on bascule en list pour avoir le detail à droite
   const handleSelect = useCallback((id: string) => {
-    if (view !== "list") setView("list");
     setSelected(id);
-  }, [view, setSelected]);
-
-  const handleViewChange = useCallback((v: ViewMode) => {
-    if (v !== "list") setSelected(null);
-    setView(v);
   }, [setSelected]);
 
-  const showDetail = view === "list" && !!selectedId;
+  const handleViewChange = useCallback((v: ViewMode) => {
+    setView(v);
+  }, []);
+
+  // Echap pour fermer la fiche
+  useEffect(() => {
+    if (!selectedId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelected(null);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectedId, setSelected]);
 
   return (
-    <div className="h-full flex overflow-hidden">
-      <div
-        className={`${showDetail ? "w-[440px] min-w-[400px]" : "w-full"} border-r border-[var(--border-primary)] overflow-hidden transition-all`}
-      >
+    <div className="h-full relative overflow-hidden">
+      {/* Liste toujours en pleine largeur */}
+      <div className="h-full overflow-hidden">
         <ProspectsListCompact
           selectedId={selectedId}
           onSelect={handleSelect}
           view={view}
           onViewChange={handleViewChange}
-          isSplit={showDetail}
+          isSplit={false}
         />
       </div>
 
-      {showDetail && (
-        <div className="flex-1 overflow-hidden">
-          <ProspectDetail
-            id={selectedId!}
-            onClose={() => setSelected(null)}
-            onNavigate={(id) => setSelected(id)}
-          />
-        </div>
-      )}
+      {/* Drawer overlay : peu importe la vue active */}
+      <AnimatePresence>
+        {selectedId && (
+          <>
+            <motion.div
+              key="backdrop"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.18 }}
+              onClick={() => setSelected(null)}
+              className="absolute inset-0 bg-black/55 backdrop-blur-[2px] z-30"
+            />
+            <motion.div
+              key="drawer"
+              initial={{ x: "100%" }}
+              animate={{ x: 0 }}
+              exit={{ x: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 38 }}
+              className="absolute top-0 right-0 bottom-0 w-full max-w-[640px] z-40 bg-[var(--background)] border-l border-[var(--border-primary)] shadow-2xl"
+            >
+              <ProspectDetail
+                id={selectedId}
+                onClose={() => setSelected(null)}
+                onNavigate={(id) => setSelected(id)}
+              />
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

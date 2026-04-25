@@ -5,10 +5,10 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Upload, MapPin, Plus, Loader2, Phone, Calendar,
+  Search, Upload, MapPin, Plus, Loader2, Calendar,
   AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, RotateCcw,
   List as ListIcon, LayoutGrid, Columns3, Filter, ArrowUpDown,
-  ExternalLink, Sparkles, Flame, Clock, ListChecks,
+  ExternalLink, Sparkles, Clock, ListChecks,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -287,17 +287,6 @@ export default function ProspectsListCompact({
             </button>
           </div>
         </div>
-
-        {/* Stats motivantes ribbon (caché si vue list+split pour gagner de la place) */}
-        {!isSplit && (
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-2 mb-3">
-            <StatPill icon={<Phone size={11} />} label="À appeler" value={counts.aAppeler} color="#F97316" pulse={counts.aAppeler > 0} />
-            <StatPill icon={<RotateCcw size={11} />} label="À rappeler" value={counts.aRappeler} color="#fbbf24" />
-            <StatPill icon={<Calendar size={11} />} label="RDV" value={counts.rdv} color="#3B82F6" />
-            <StatPill icon={<Sparkles size={11} />} label="Vendus" value={counts.vendus} color="#10B981" />
-            <StatPill icon={<Flame size={11} />} label="Jamais touchés" value={counts.jamais} color="#a78bfa" />
-          </div>
-        )}
 
         {/* Onglets rapides — couleur du statut */}
         <div className="flex items-center gap-1 flex-wrap mb-2">
@@ -868,20 +857,18 @@ function KanbanView({
                     {isDragOver ? "Lâche ici ↓" : "Vide"}
                   </p>
                 ) : (
-                  <AnimatePresence initial={false}>
-                    {list.map((p, i) => {
+                  list.map((p) => {
                       const nb = callCountFor(p.id);
                       const nbTasks = taskCountFor(p.id);
                       return (
                         <motion.div
                           key={p.id}
-                          layout
+                          layout="position"
+                          layoutId={`kanban-${p.id}`}
                           initial={{ opacity: 0, scale: 0.96 }}
                           animate={{ opacity: 1, scale: 1 }}
-                          exit={{ opacity: 0, scale: 0.94 }}
                           transition={{
-                            duration: 0.18,
-                            delay: Math.min(i * 0.015, 0.18),
+                            duration: 0.2,
                             ease: [0.22, 1, 0.36, 1],
                           }}
                           whileHover={{ y: -1 }}
@@ -929,8 +916,7 @@ function KanbanView({
                           )}
                         </motion.div>
                       );
-                    })}
-                  </AnimatePresence>
+                    })
                 )}
               </div>
             </motion.div>
@@ -959,23 +945,6 @@ function ViewBtn({ active, onClick, icon, label }: {
     >
       {icon}
     </button>
-  );
-}
-
-function StatPill({ icon, label, value, color, pulse }: {
-  icon: React.ReactNode; label: string; value: number; color: string; pulse?: boolean;
-}) {
-  return (
-    <div
-      className="rounded-lg border px-2.5 py-1.5 flex items-center justify-between gap-2"
-      style={{ background: `${color}12`, borderColor: `${color}33` }}
-    >
-      <div className="flex items-center gap-1.5 min-w-0" style={{ color }}>
-        <span className={pulse && value > 0 ? "animate-pulse" : ""}>{icon}</span>
-        <span className="text-[10px] uppercase tracking-wider font-semibold truncate">{label}</span>
-      </div>
-      <span className="text-[15px] font-black tabular-nums" style={{ color }}>{value}</span>
-    </div>
   );
 }
 

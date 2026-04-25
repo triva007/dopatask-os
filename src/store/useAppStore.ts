@@ -290,39 +290,7 @@ export const useAppStore = create<AppState>()(
       setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
 
       // ── Tâches ──────────────────────────────────────────────────────────
-      tasks: [
-        {
-          id: uid(), text: "Finir le rapport Q1", status: "today",
-          createdAt: Date.now() - 3600000, tags: ["Urgence"], microSteps: [], expanded: false, priority: "high",
-        },
-        {
-          id: uid(), text: "Répondre aux emails urgents", status: "today",
-          createdAt: Date.now() - 7200000, tags: ["Urgence", "Challenge"], microSteps: [
-            { id: uid(), text: "Trier les emails non-lus", done: false },
-            { id: uid(), text: "Répondre aux clients prioritaires", done: false },
-          ], expanded: false, priority: "high",
-        },
-        {
-          id: uid(), text: "Préparer la réunion de 14h", status: "today",
-          createdAt: Date.now() - 900000, tags: ["Passion"], microSteps: [], expanded: false, priority: "medium",
-        },
-        {
-          id: uid(), text: "Faire SEO site web", status: "todo",
-          createdAt: Date.now() - 86400000, tags: ["Challenge", "Urgence"], microSteps: [], expanded: false, estimatedMinutes: 40,
-        },
-        {
-          id: uid(), text: "Montage vidéo client", status: "in_progress",
-          createdAt: Date.now() - 43200000, tags: ["Passion"], microSteps: [], expanded: false, estimatedMinutes: 60,
-        },
-        {
-          id: uid(), text: "Copyrighting page d'accueil", status: "completed",
-          createdAt: Date.now() - 172800000, completedAt: Date.now() - 3600000, tags: ["Nouveauté"], microSteps: [], expanded: false,
-        },
-        {
-          id: uid(), text: "Script Reels (benchmark)", status: "saved",
-          createdAt: Date.now() - 259200000, tags: ["Intérêt"], microSteps: [], expanded: false,
-        },
-      ],
+      tasks: [],
 
       addTask: (text, status, projectId) => {
         const { tasks, settings } = get();
@@ -866,6 +834,26 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "dopatask-storage",
+      version: 2,
+      migrate: (persisted: unknown, version: number) => {
+        // v2 : purge les tâches mock historiques qui polluent les compteurs
+        const MOCK_TASK_TEXTS = new Set([
+          "Finir le rapport Q1",
+          "Répondre aux emails urgents",
+          "Préparer la réunion de 14h",
+          "Faire SEO site web",
+          "Montage vidéo client",
+          "Copyrighting page d'accueil",
+          "Script Reels (benchmark)",
+        ]);
+        if (version < 2 && persisted && typeof persisted === "object") {
+          const p = persisted as { tasks?: Array<{ text?: string }> };
+          if (Array.isArray(p.tasks)) {
+            p.tasks = p.tasks.filter((t) => !MOCK_TASK_TEXTS.has((t?.text || "").trim()));
+          }
+        }
+        return persisted;
+      },
       storage: createJSONStorage(() => {
         if (typeof window === "undefined") {
           return { getItem: () => null, setItem: () => {}, removeItem: () => {} };
