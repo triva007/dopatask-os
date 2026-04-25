@@ -148,7 +148,7 @@ export default function AnalyticsPanel() {
             />
             <KpiCard
               icon={<Calendar size={14} />}
-              label="RDV calés"
+              label="RDV Bookés"
               value={statsMois.rdv}
               prev={statsMoisPrec.rdv}
               color="blue"

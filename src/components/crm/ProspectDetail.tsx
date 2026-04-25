@@ -5,35 +5,29 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
-  ArrowLeft, Phone, MapPin, ExternalLink, Save, Check,
+  ArrowLeft, Phone, MapPin, Save, Check,
   Loader2, DollarSign, PhoneOff, Voicemail, Calendar, Frown,
-  ChevronLeft, ChevronRight, Sparkles, Clock, RotateCcw,
+  ChevronLeft, ChevronRight, Sparkles, RotateCcw, X,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import type { Prospect, ResultatAppel } from "@/lib/crmTypes";
 import StatutBadge from "./StatutBadge";
 import { STATUT_LABEL, STATUT_EMOJI, STATUTS_ORDRE } from "@/lib/crmLabels";
 
-function addDaysISO(baseISO: string | null, days: number): string {
-  const d = baseISO ? new Date(baseISO) : new Date();
-  d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
-}
-
-function nextMondayISO(): string {
-  const d = new Date();
-  const day = d.getDay(); // 0 = dim, 1 = lun
-  const delta = day === 0 ? 1 : day === 1 ? 7 : 8 - day;
-  d.setDate(d.getDate() + delta);
-  return d.toISOString().slice(0, 10);
-}
-
 function ordinal(n: number): string {
   if (n === 1) return "1re";
   return `${n}e`;
 }
 
-export default function ProspectDetail({ id }: { id: string }) {
+type Props = {
+  id: string;
+  /** Mode drawer : appelé quand on ferme (au lieu de revenir à /prospects) */
+  onClose?: () => void;
+  /** ID du prospect suivant (pour fleche custom dans le drawer) */
+  onNavigate?: (id: string) => void;
+};
+
+export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const router = useRouter();
   const loaded = useCrmStore((s) => s.loaded);
   const prospects = useCrmStore((s) => s.prospects);
@@ -50,10 +44,9 @@ export default function ProspectDetail({ id }: { id: string }) {
     [calls, id]
   );
 
-  // Compteur de tentatives = nombre d'appels passés à ce prospect + 1 (le prochain)
   const tentativeNum = prospectCalls.length + 1;
 
-  // Navigation Prev/Next parmi les prospects non archivés (ordre d'arrivée)
+  // Navigation Prev/Next parmi les prospects non archivés
   const { prevId, nextId, position, total } = useMemo(() => {
     const list = prospects.filter((p) => !p.archived);
     const idx = list.findIndex((p) => p.id === id);
@@ -65,6 +58,11 @@ export default function ProspectDetail({ id }: { id: string }) {
       total: list.length,
     };
   }, [prospects, id]);
+
+  const goTo = (targetId: string) => {
+    if (onNavigate) onNavigate(targetId);
+    else router.push(`/prospects/${targetId}`);
+  };
 
   const [form, setForm] = useState<Partial<Prospect>>({});
   const [saving, setSaving] = useState(false);
@@ -114,353 +112,226 @@ export default function ProspectDetail({ id }: { id: string }) {
     setActing(false);
   };
 
-  const lastCall = prospectCalls[0];
-  const isRappel = prospect.statut === "REPONDEUR" || !!prospect.date_relance;
-
   return (
-    <div className="h-full flex flex-col overflow-hidden">
-      {/* Header */}
-      <div className="px-6 py-4 border-b border-[var(--border-primary)] flex items-center justify-between">
-        <div className="flex items-center gap-3 min-w-0 flex-1">
-          <Link
-            href="/prospects"
-            className="p-2 hover:bg-[var(--surface-2)] rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors shrink-0"
-          >
-            <ArrowLeft size={16} />
-          </Link>
+    <div className="h-full flex flex-col overflow-hidden bg-[var(--background)]">
+
+      {/* ─── HEADER : nom + statut + tentatives + nav prev/next ─── */}
+      <div className="px-5 py-3 border-b border-[var(--border-primary)] flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2 min-w-0 flex-1">
+          {onClose ? (
+            <button
+              onClick={onClose}
+              className="p-1.5 hover:bg-[var(--surface-2)] rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] shrink-0"
+              title="Fermer"
+            >
+              <X size={16} />
+            </button>
+          ) : (
+            <Link
+              href="/prospects"
+              className="p-1.5 hover:bg-[var(--surface-2)] rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] shrink-0"
+            >
+              <ArrowLeft size={16} />
+            </Link>
+          )}
           <div className="min-w-0">
-            <h1 className="text-[18px] font-bold tracking-tight flex items-center gap-2 truncate">
+            <h1 className="text-[17px] font-bold tracking-tight truncate">
               {prospect.entreprise}
-              {prospect.archived && <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">archivé</span>}
+              {prospect.archived && <span className="ml-2 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)]">archivé</span>}
             </h1>
-            <div className="mt-1 flex items-center gap-2 flex-wrap">
+            <div className="mt-0.5 flex items-center gap-1.5">
               <StatutBadge statut={prospect.statut} compact />
               {prospectCalls.length > 0 && (
                 <span
-                  className={`inline-flex items-center gap-1 text-[10.5px] font-bold px-2 py-0.5 rounded-md tabular-nums ${
+                  className={`inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded tabular-nums ${
                     prospectCalls.length >= 3
                       ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]"
-                      : prospectCalls.length >= 1
-                      ? "bg-[#422006]/80 text-[#fb923c]"
-                      : "bg-[var(--surface-2)] text-[var(--text-secondary)]"
+                      : "bg-[#422006]/80 text-[#fb923c]"
                   }`}
-                  title={`${prospectCalls.length} appel(s) déjà passé(s)`}
                 >
-                  <RotateCcw size={10} />
-                  {ordinal(tentativeNum)} tentative
-                </span>
-              )}
-              {isRappel && prospect.date_relance && (
-                <span className="inline-flex items-center gap-1 text-[10.5px] font-semibold px-2 py-0.5 rounded-md bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)]">
-                  <Clock size={10} />
-                  Relance {new Date(prospect.date_relance).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                  <RotateCcw size={9} />
+                  {ordinal(tentativeNum)} appel
                 </span>
               )}
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 shrink-0">
-          {/* Prev / Next */}
-          <div className="flex items-center gap-1 mr-2">
-            <button
-              onClick={() => prevId && router.push(`/prospects/${prevId}`)}
-              disabled={!prevId}
-              title="Prospect précédent"
-              className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronLeft size={16} />
-            </button>
-            <span className="text-[11px] tabular-nums text-[var(--text-tertiary)] px-1">
-              {position}/{total}
-            </span>
-            <button
-              onClick={() => nextId && router.push(`/prospects/${nextId}`)}
-              disabled={!nextId}
-              title="Prospect suivant"
-              className="p-2 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] disabled:opacity-30 disabled:cursor-not-allowed"
-            >
-              <ChevronRight size={16} />
-            </button>
-          </div>
+        <div className="flex items-center gap-1 shrink-0">
           <button
-            onClick={onSave}
-            disabled={saving}
-            className="inline-flex items-center gap-2 px-3 py-2 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[12px] font-semibold hover:bg-[var(--surface-2)]"
+            onClick={() => prevId && goTo(prevId)}
+            disabled={!prevId}
+            title="Précédent"
+            className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] disabled:opacity-30"
           >
-            {saving ? <Loader2 size={12} className="animate-spin" /> : savedPulse ? <Check size={12} /> : <Save size={12} />}
-            {savedPulse ? "Sauvé" : "Enregistrer"}
+            <ChevronLeft size={15} />
+          </button>
+          <span className="text-[10.5px] tabular-nums text-[var(--text-tertiary)] px-0.5">
+            {position}/{total}
+          </span>
+          <button
+            onClick={() => nextId && goTo(nextId)}
+            disabled={!nextId}
+            title="Suivant"
+            className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] disabled:opacity-30"
+          >
+            <ChevronRight size={15} />
           </button>
         </div>
       </div>
 
-      {/* BLOC APPEL — tout sous les yeux pendant le call */}
-      <div className="px-6 py-4 border-b border-[var(--border-primary)] bg-[var(--surface-1)]">
-        <div className="grid grid-cols-[1fr_auto] gap-4 items-start">
-          {/* Gauche : tel + liens rapides */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {prospect.telephone ? (
-              <a
-                href={`tel:${prospect.telephone}`}
-                className="inline-flex items-center gap-2.5 px-4 py-2.5 bg-[var(--accent-green-light)] text-[var(--accent-green)] rounded-xl font-bold text-[16px] tabular-nums hover:bg-[var(--surface-2)] border border-[var(--accent-green)]/30"
-              >
-                <Phone size={18} />
-                {prospect.telephone}
-              </a>
-            ) : (
-              <span className="px-4 py-2.5 bg-[var(--surface-2)] text-[var(--text-tertiary)] rounded-xl text-[13px] italic">
-                Pas de téléphone
-              </span>
-            )}
-            <div className="flex items-center gap-1.5">
-              {prospect.gmb_url && (
-                <a
-                  href={prospect.gmb_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Fiche Google My Business"
-                  className="inline-flex items-center gap-1 px-2.5 py-2 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[11px] font-semibold hover:bg-[var(--surface-2)]"
-                >
-                  <MapPin size={12} /> GMB
-                </a>
-              )}
-              {prospect.site_url && (
-                <a
-                  href={prospect.site_url}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Site actuel du prospect"
-                  className="inline-flex items-center gap-1 px-2.5 py-2 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[11px] font-semibold hover:bg-[var(--surface-2)]"
-                >
-                  <ExternalLink size={12} /> Site
-                </a>
-              )}
-              {prospect.lien_maquette && (
-                <a
-                  href={prospect.lien_maquette}
-                  target="_blank"
-                  rel="noreferrer"
-                  title="Maquette IA"
-                  className="inline-flex items-center gap-1 px-2.5 py-2 bg-[var(--accent-purple-light)] text-[var(--accent-purple)] rounded-lg text-[11px] font-semibold hover:bg-[var(--surface-2)]"
-                >
-                  <Sparkles size={12} /> Maquette
-                </a>
-              )}
-            </div>
-          </div>
-          {/* Droite : dernier feedback */}
-          {(prospect.feedback || lastCall) && (
-            <div className="max-w-[340px] bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2">
-              <p className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold mb-1">
-                Dernier appel
-              </p>
-              <p className="text-[11.5px] text-[var(--text-primary)] leading-relaxed">
-                {prospect.feedback || (lastCall && RESULTAT_TEXT[lastCall.resultat])}
-              </p>
-              {lastCall?.notes && (
-                <p className="text-[11px] text-[var(--text-secondary)] mt-1.5 italic line-clamp-2">
-                  &ldquo;{lastCall.notes}&rdquo;
-                </p>
-              )}
-            </div>
+      {/* ─── ZONE D'APPEL : GMB + ACTIONS XL ─── */}
+      <div className="px-5 py-4 border-b border-[var(--border-primary)] bg-[var(--surface-1)] space-y-3">
+
+        {/* GMB MEGA bouton + tel discret */}
+        <div className="flex items-stretch gap-2">
+          {prospect.gmb_url ? (
+            <a
+              href={prospect.gmb_url}
+              target="_blank"
+              rel="noreferrer"
+              className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-4 bg-[var(--accent-cyan)] text-black rounded-xl font-bold text-[15px] hover:brightness-110 transition-all shadow-lg shadow-[var(--accent-cyan)]/20"
+            >
+              <MapPin size={20} strokeWidth={2.5} />
+              Ouvrir la fiche GMB
+            </a>
+          ) : (
+            <span className="flex-1 inline-flex items-center justify-center px-4 py-4 bg-[var(--surface-2)] text-[var(--text-tertiary)] rounded-xl text-[13px] italic">
+              Pas de fiche GMB
+            </span>
+          )}
+          {prospect.telephone && (
+            <a
+              href={`tel:${prospect.telephone}`}
+              title={prospect.telephone}
+              className="inline-flex items-center justify-center px-3 py-2 bg-[var(--surface-2)] text-[var(--text-secondary)] rounded-xl hover:bg-[var(--surface-3)] tabular-nums text-[11px]"
+            >
+              <Phone size={13} className="mr-1" />
+              {prospect.telephone}
+            </a>
           )}
         </div>
 
-        {/* Action bar résultat appel */}
-        <div className="grid grid-cols-5 gap-2 mt-3">
-          <ResultBtn icon={<Calendar size={16} />} label="RDV calé" color="blue" onClick={() => onAction("RDV")} disabled={acting} />
-          <ResultBtn icon={<Voicemail size={16} />} label="Répondeur" color="orange" onClick={() => onAction("REPONDEUR")} disabled={acting} />
-          <ResultBtn icon={<Frown size={16} />} label="Refus" color="red" onClick={() => onAction("REFUS")} disabled={acting} />
-          <ResultBtn icon={<PhoneOff size={16} />} label="Pas joignable" color="gray" onClick={() => onAction("PAS_JOIGNABLE")} disabled={acting} />
-          <ResultBtn icon={<DollarSign size={16} />} label="VENDU 💸" color="green" onClick={() => setShowVendu(true)} disabled={acting} />
+        {/* Action bar résultat appel — XL */}
+        <div className="grid grid-cols-5 gap-1.5">
+          <ResultBtn icon={<Calendar size={18} />} label="RDV Booké" color="blue" onClick={() => onAction("RDV")} disabled={acting} />
+          <ResultBtn icon={<Voicemail size={18} />} label="Répondeur" color="orange" onClick={() => onAction("REPONDEUR")} disabled={acting} />
+          <ResultBtn icon={<Frown size={18} />} label="Refus" color="red" onClick={() => onAction("REFUS")} disabled={acting} />
+          <ResultBtn icon={<PhoneOff size={18} />} label="Pas joignable" color="gray" onClick={() => onAction("PAS_JOIGNABLE")} disabled={acting} />
+          <ResultBtn icon={<DollarSign size={18} />} label="VENDU" color="green" onClick={() => setShowVendu(true)} disabled={acting} />
         </div>
       </div>
 
-      {/* Body split 2 colonnes */}
-      <div className="flex-1 overflow-auto grid grid-cols-2 gap-0">
-        {/* Colonne gauche : fiche éditable */}
-        <div className="p-6 border-r border-[var(--border-primary)] space-y-5">
-          <Field label="Entreprise">
-            <input
-              value={form.entreprise || ""}
-              onChange={(e) => setForm({ ...form, entreprise: e.target.value })}
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-var(--accent-cyan)/50"
-            />
+      {/* ─── BODY scrollable ─── */}
+      <div className="flex-1 overflow-auto p-5 space-y-4">
+
+        {/* Statut + RDV date (édition rapide) */}
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Statut">
+            <select
+              value={form.statut || prospect.statut}
+              onChange={(e) => setForm({ ...form, statut: e.target.value as Prospect["statut"] })}
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-var(--accent-cyan)/50 cursor-pointer"
+            >
+              {STATUTS_ORDRE.map((s) => (
+                <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
+              ))}
+            </select>
           </Field>
-
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Téléphone">
-              <input
-                value={form.telephone || ""}
-                onChange={(e) => setForm({ ...form, telephone: e.target.value })}
-                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] tabular-nums focus:outline-none focus:border-var(--accent-cyan)/50"
-              />
-            </Field>
-
-            <Field label="Statut">
-              <select
-                value={form.statut || prospect.statut}
-                onChange={(e) => setForm({ ...form, statut: e.target.value as Prospect["statut"] })}
-                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-var(--accent-cyan)/50 cursor-pointer"
-              >
-                {STATUTS_ORDRE.map((s) => (
-                  <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
-                ))}
-              </select>
-            </Field>
-          </div>
-
-          <Field label="Fiche GMB">
+          <Field label="Date RDV">
             <input
-              value={form.gmb_url || ""}
-              onChange={(e) => setForm({ ...form, gmb_url: e.target.value })}
-              placeholder="https://maps.google.com/..."
+              type="date"
+              value={form.date_rdv || ""}
+              onChange={(e) => setForm({ ...form, date_rdv: e.target.value || null })}
               className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
             />
           </Field>
+        </div>
 
-          <Field label="Site actuel">
-            <input
-              value={form.site_url || ""}
-              onChange={(e) => setForm({ ...form, site_url: e.target.value })}
-              placeholder="https://..."
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
-            />
-          </Field>
-
-          <Field label="Lien maquette IA">
+        {/* Maquette (visible si RDV booké ou maquette prête) */}
+        {(prospect.statut === "RDV_BOOKE" || prospect.statut === "MAQUETTE_PRETE" || form.lien_maquette) && (
+          <Field label={
+            <span className="inline-flex items-center gap-1.5">
+              <Sparkles size={11} className="text-[var(--accent-purple)]" />
+              Lien maquette IA
+            </span>
+          }>
             <input
               value={form.lien_maquette || ""}
               onChange={(e) => setForm({ ...form, lien_maquette: e.target.value })}
               placeholder="Colle ici le lien Google AI Studio"
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-purple)/50"
             />
           </Field>
+        )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <Field label="Date RDV">
-              <input
-                type="date"
-                value={form.date_rdv || ""}
-                onChange={(e) => setForm({ ...form, date_rdv: e.target.value || null })}
-                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
-              />
-            </Field>
-            <Field label="Date relance">
-              <input
-                type="date"
-                value={form.date_relance || ""}
-                onChange={(e) => setForm({ ...form, date_relance: e.target.value || null })}
-                className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
-              />
-              <div className="flex gap-1 mt-1.5">
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, date_relance: addDaysISO(null, 3) })}
-                  className="flex-1 px-2 py-1 text-[10.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-md hover:border-[var(--accent-cyan)]/50 hover:text-[var(--accent-cyan)] text-[var(--text-secondary)]"
-                  title="Relance dans 3 jours"
-                >
-                  J+3
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, date_relance: addDaysISO(null, 7) })}
-                  className="flex-1 px-2 py-1 text-[10.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-md hover:border-[var(--accent-cyan)]/50 hover:text-[var(--accent-cyan)] text-[var(--text-secondary)]"
-                  title="Relance dans 7 jours"
-                >
-                  J+7
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setForm({ ...form, date_relance: nextMondayISO() })}
-                  className="flex-1 px-2 py-1 text-[10.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-md hover:border-[var(--accent-cyan)]/50 hover:text-[var(--accent-cyan)] text-[var(--text-secondary)]"
-                  title="Lundi prochain"
-                >
-                  Lundi
-                </button>
-              </div>
-            </Field>
-          </div>
+        {/* Notes (le champ principal) */}
+        <Field label="Notes (ce qui s'est dit)">
+          <textarea
+            value={form.notes || ""}
+            onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            rows={4}
+            placeholder="Le boss s'appelle Marc, dispo jeudi 14h, budget 3k€/an…"
+            className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12.5px] focus:outline-none focus:border-var(--accent-cyan)/50 resize-none leading-relaxed"
+          />
+        </Field>
 
-          <Field label="Feedback appel">
-            <textarea
-              value={form.feedback || ""}
-              onChange={(e) => setForm({ ...form, feedback: e.target.value })}
-              rows={2}
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50 resize-none"
-            />
-          </Field>
-
-          <Field label="Notes">
-            <textarea
-              value={form.notes || ""}
-              onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              rows={3}
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50 resize-none"
-            />
-          </Field>
-
-          <div className="flex items-center justify-between pt-3 border-t border-[var(--border-primary)]">
-            <label className="inline-flex items-center gap-2 text-[12px] text-[var(--text-secondary)] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={!!form.archived}
-                onChange={(e) => setForm({ ...form, archived: e.target.checked })}
-                className="accent-var(--accent-red)"
-              />
-              Archivé
-            </label>
-            <span className="text-[10px] text-[var(--text-tertiary)]">
-              Créé le {new Date(prospect.created_at).toLocaleDateString("fr-FR")}
-            </span>
-          </div>
+        {/* Save + auto-feedback indicator */}
+        <div className="flex items-center justify-between gap-3 pt-1">
+          <p className="text-[10.5px] text-[var(--text-tertiary)] italic">
+            {prospect.feedback ? `Auto: « ${prospect.feedback} »` : "Pas encore de feedback auto."}
+          </p>
+          <button
+            onClick={onSave}
+            disabled={saving}
+            className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[12px] font-semibold hover:bg-[var(--surface-2)] shrink-0"
+          >
+            {saving ? <Loader2 size={12} className="animate-spin" /> : savedPulse ? <Check size={12} /> : <Save size={12} />}
+            {savedPulse ? "Sauvé" : "Enregistrer notes"}
+          </button>
         </div>
 
-        {/* Colonne droite : historique appels */}
-        <div className="p-6 bg-[var(--surface-1)]/40">
-          <p className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3">
-            Historique des appels ({prospectCalls.length})
-          </p>
-          {prospectCalls.length === 0 ? (
-            <div className="text-center py-10 text-[var(--text-tertiary)] text-[13px]">
-              Aucun appel enregistré pour ce prospect.
-            </div>
-          ) : (
-            <ol className="space-y-2.5">
+        {/* Historique appels (déroulé en bas) */}
+        {prospectCalls.length > 0 && (
+          <details className="group">
+            <summary className="cursor-pointer flex items-center gap-1 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold py-2 hover:text-[var(--text-primary)]">
+              Historique ({prospectCalls.length} appel{prospectCalls.length > 1 ? "s" : ""})
+              <ChevronRight size={11} className="group-open:rotate-90 transition-transform" />
+            </summary>
+            <ol className="space-y-1.5 mt-2">
               {prospectCalls.map((c, idx) => {
                 const attemptNum = prospectCalls.length - idx;
                 return (
-                  <li
-                    key={c.id}
-                    className="bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2.5 flex items-start justify-between gap-3"
-                  >
+                  <li key={c.id} className="bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-3 py-2 flex items-start justify-between gap-3">
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[10px] font-bold text-[var(--text-tertiary)] tabular-nums">
-                          #{attemptNum}
-                        </span>
-                        <span className="text-[12px] font-semibold text-[var(--text-primary)]">
-                          {RESULTAT_ICON[c.resultat]} {RESULTAT_TEXT[c.resultat]}
-                        </span>
-                        {!c.compte_mission && (
-                          <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)]">
-                            ne compte pas
-                          </span>
-                        )}
-                      </div>
-                      {c.notes && (
-                        <p className="text-[11.5px] text-[var(--text-secondary)] mt-1 whitespace-pre-wrap">{c.notes}</p>
-                      )}
+                      <p className="text-[11.5px] font-semibold flex items-center gap-1.5">
+                        <span className="text-[10px] font-bold text-[var(--text-tertiary)] tabular-nums">#{attemptNum}</span>
+                        {RESULTAT_ICON[c.resultat]} {RESULTAT_TEXT[c.resultat]}
+                      </p>
+                      {c.notes && <p className="text-[11px] text-[var(--text-secondary)] mt-1 whitespace-pre-wrap">{c.notes}</p>}
                     </div>
-                    <time className="text-[10px] text-[var(--text-tertiary)] tabular-nums whitespace-nowrap">
+                    <time className="text-[10px] text-[var(--text-tertiary)] tabular-nums whitespace-nowrap shrink-0">
                       {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
-                      <br />
-                      {new Date(c.date).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}
                     </time>
                   </li>
                 );
               })}
             </ol>
-          )}
+          </details>
+        )}
+
+        {/* Footer infos discrètes */}
+        <div className="pt-2 border-t border-[var(--border-primary)] flex items-center justify-between text-[10.5px] text-[var(--text-tertiary)]">
+          <span>{prospect.niche || "Sans niche"}</span>
+          <label className="inline-flex items-center gap-1.5 cursor-pointer hover:text-[var(--text-primary)]">
+            <input
+              type="checkbox"
+              checked={!!form.archived}
+              onChange={(e) => setForm({ ...form, archived: e.target.checked })}
+              className="accent-var(--accent-red)"
+            />
+            Archivé
+          </label>
+          <span>Créé {new Date(prospect.created_at).toLocaleDateString("fr-FR")}</span>
         </div>
       </div>
 
@@ -469,30 +340,26 @@ export default function ProspectDetail({ id }: { id: string }) {
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-6" onClick={() => setShowVendu(false)}>
           <motion.div
             initial={{ scale: 0.95, y: 10 }} animate={{ scale: 1, y: 0 }}
-            className="bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl  w-full max-w-md p-6"
+            className="bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl w-full max-w-md p-6"
             onClick={(e) => e.stopPropagation()}
           >
             <h3 className="text-[16px] font-bold mb-4 flex items-center gap-2">
-              <DollarSign size={16} className="text-var(--accent-green)" />
+              <DollarSign size={16} className="text-[var(--accent-green)]" />
               Encaisser une vente
             </h3>
-            <label className="block text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2">
-              Montant (€)
-            </label>
+            <label className="block text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2">Montant (€)</label>
             <input
               type="number"
               value={montantVendu}
               onChange={(e) => setMontantVendu(Number(e.target.value))}
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[14px] font-semibold tabular-nums focus:outline-none focus:border-var(--accent-green)/50 mb-4"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[14px] font-semibold tabular-nums focus:outline-none focus:border-[var(--accent-green)]/50 mb-4"
             />
             <div className="flex justify-end gap-2">
-              <button onClick={() => setShowVendu(false)} className="px-4 py-2 text-[13px] text-[var(--text-secondary)] rounded-lg">
-                Annuler
-              </button>
+              <button onClick={() => setShowVendu(false)} className="px-4 py-2 text-[13px] text-[var(--text-secondary)] rounded-lg">Annuler</button>
               <button
                 onClick={onVendu}
                 disabled={acting || !montantVendu}
-                className="px-4 py-2 bg-var(--accent-green) text-black text-[13px] font-semibold rounded-lg disabled:opacity-40"
+                className="px-4 py-2 bg-[var(--accent-green)] text-black text-[13px] font-semibold rounded-lg disabled:opacity-40"
               >
                 Encaisser {montantVendu}€
               </button>
@@ -506,10 +373,10 @@ export default function ProspectDetail({ id }: { id: string }) {
 
 // ─── Sous-composants ─────────────────────────────────────────
 
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
+function Field({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
     <div>
-      <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1.5 font-semibold">
+      <label className="block text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] mb-1 font-semibold">
         {label}
       </label>
       {children}
@@ -557,7 +424,7 @@ function ResultBtn({
     <button
       onClick={onClick}
       disabled={disabled}
-      className={`inline-flex flex-col items-center justify-center gap-1 px-3 py-3 border rounded-xl text-[11.5px] font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${BTN_COLORS[color]}`}
+      className={`inline-flex flex-col items-center justify-center gap-1 px-2 py-3 border rounded-xl text-[10.5px] font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors ${BTN_COLORS[color]}`}
     >
       {icon}
       {label}

@@ -1,11 +1,14 @@
 import dynamic from "next/dynamic";
 
-const ProspectsTable = dynamic(() => import("@/components/crm/ProspectsTable"), { ssr: false });
+const ProspectsSplitView = dynamic(
+  () => import("@/components/crm/ProspectsSplitView"),
+  { ssr: false }
+);
 
 export default function ProspectsPage() {
   return (
     <div className="h-screen overflow-hidden bg-background">
-      <ProspectsTable />
+      <ProspectsSplitView />
     </div>
   );
 }

@@ -5,7 +5,7 @@ import Link from "next/link";
 import {
   Phone, Calendar, Upload, Wrench, Users, Clock,
   TrendingUp, Banknote, AlertTriangle, Loader2, ChevronRight,
-  Trophy, CalendarClock, BarChart3,
+  Trophy, BarChart3,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import {
@@ -103,12 +103,6 @@ export default function CrmHub() {
     return actifs.filter((p) => p.statut === "A_APPELER" && p.notes && p.notes.length > 3).length;
   }, [actifs]);
 
-  // Relances dues : date_relance <= aujourd'hui
-  const relancesDue = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return actifs.filter((p) => p.date_relance && p.date_relance <= today).length;
-  }, [actifs]);
-
   const runRepair = async () => {
     setRepairing(true);
     const r = await repair();
@@ -144,17 +138,6 @@ export default function CrmHub() {
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
-            <Link
-              href="/crm/relances"
-              className="inline-flex items-center gap-2 px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] font-semibold hover:bg-surface-3"
-            >
-              <CalendarClock size={14} /> Relances
-              {relancesDue > 0 && (
-                <span className="ml-1 px-1.5 py-0.5 text-[10px] font-bold rounded-full bg-dopa-red/20 text-dopa-red tabular-nums">
-                  {relancesDue}
-                </span>
-              )}
-            </Link>
             <Link
               href="/crm/analytics"
               className="inline-flex items-center gap-2 px-3 py-2 bg-surface-2 border border-surface-3 rounded-lg text-[13px] font-semibold hover:bg-surface-3"

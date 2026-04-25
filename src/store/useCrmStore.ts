@@ -10,6 +10,7 @@ import type { Prospect, Call, Revenu, Config, Script, ResultatAppel } from "@/li
 import { buildFeedbackLine, statutFromResultat, shouldArchive, resultatCompteMission } from "@/lib/crmLogic";
 import { extractStatutFromNotes } from "@/lib/csvParser";
 import { celebrate } from "@/lib/dopamineFeedback";
+import { useAppStore } from "@/store/useAppStore";
 
 type CrmState = {
   prospects: Prospect[];
@@ -177,17 +178,24 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       d.setDate(d.getDate() + 3);
       patch.date_rdv = d.toISOString().slice(0, 10);
     }
-    // Si Répondeur ou Pas joignable → auto "à rappeler" demain (J+1)
-    if (resultat === "REPONDEUR" || resultat === "PAS_JOIGNABLE") {
-      const d = new Date();
-      d.setDate(d.getDate() + 1);
-      patch.date_relance = d.toISOString().slice(0, 10);
-    }
 
     await get().updateProspect(prospectId, patch);
     set({ calls: [callRow as Call, ...get().calls] });
 
-    // 3. Feedback dopamine
+    // 3. Si RDV → créer auto une tâche maquette dans DopaTask
+    if (resultat === "RDV") {
+      try {
+        useAppStore.getState().addTask(
+          `Maquette pour ${prospect.entreprise}`,
+          "today"
+        );
+      } catch (e) {
+        // si le store tâches n'est pas dispo, on ignore — pas critique
+        console.warn("addTask failed", e);
+      }
+    }
+
+    // 4. Feedback dopamine
     if (resultat === "RDV") celebrate("critical");
     else if (resultat === "DECROCHE") celebrate("task-complete");
     else celebrate("task-complete");
