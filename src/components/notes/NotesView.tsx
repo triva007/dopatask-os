@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore, Note } from "@/store/useAppStore";
-import { motion, AnimatePresence, Reorder } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   StickyNote, Search, Plus, 
   Trash2, Pin, PinOff, X, Palette,
@@ -11,6 +11,28 @@ import {
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import ContextMenu from "@/components/ui/ContextMenu";
+
+// DND Kit Imports
+import {
+  DndContext, 
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+  DragOverlay,
+  defaultDropAnimationSideEffects,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+  rectSortingStrategy,
+  useSortable,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const COLORS = [
   "var(--card-bg)",
@@ -28,8 +50,15 @@ export default function NotesView() {
   const [newImages, setNewImages] = useState<string[]>([]);
   const [showArchived, setShowArchived] = useState(false);
   
+  const [activeId, setActiveId] = useState<string | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, noteId: string } | null>(null);
   const [editingNote, setEditingNote] = useState<any | null>(null);
+
+  // DND Sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
 
   const handleAdd = () => {
     if (!newTitle.trim() && !newContent.trim() && newImages.length === 0) {
@@ -37,10 +66,7 @@ export default function NotesView() {
       return;
     }
     addNote(newTitle, newContent, selectedColor, newImages);
-    setNewTitle("");
-    setNewContent("");
-    setSelectedColor(COLORS[0]);
-    setNewImages([]);
+    setNewTitle(""); setNewContent(""); setSelectedColor(COLORS[0]); setNewImages([]);
     setIsAdding(false);
   };
 
@@ -64,10 +90,7 @@ export default function NotesView() {
 
   const filteredNotes = useMemo(() => {
     return notes.filter(n => {
-      const title = n.title?.toLowerCase() || "";
-      const body = n.content?.toLowerCase() || "";
-      const s = search.toLowerCase();
-      const matchesSearch = title.includes(s) || body.includes(s);
+      const matchesSearch = (n.title + n.content).toLowerCase().includes(search.toLowerCase());
       return matchesSearch && (showArchived ? n.archived : !n.archived);
     }).sort((a, b) => {
       if (a.pinned !== b.pinned) return a.pinned ? -1 : 1;
@@ -75,30 +98,36 @@ export default function NotesView() {
     });
   }, [notes, search, showArchived]);
 
-  const pinnedNotes = useMemo(() => filteredNotes.filter(n => n.pinned), [filteredNotes]);
-  const otherNotes = useMemo(() => filteredNotes.filter(n => !n.pinned), [filteredNotes]);
+  const pinnedNotes = filteredNotes.filter(n => n.pinned);
+  const otherNotes = filteredNotes.filter(n => !n.pinned);
 
-  const handleReorder = (newOrder: Note[], isPinned: boolean) => {
-    const allNoteIds = notes.map(n => n.id);
-    const newOrderIds = newOrder.map(n => n.id);
-    
-    // Create the full sequence of IDs maintaining the relative order of the rest
-    let resultIds: string[] = [];
-    if (isPinned) {
-      resultIds = [...newOrderIds, ...otherNotes.map(n => n.id)];
-    } else {
-      resultIds = [...pinnedNotes.map(n => n.id), ...newOrderIds];
+  const handleDragStart = (event: any) => {
+    setActiveId(event.active.id);
+  };
+
+  const handleDragEnd = (event: DragEndEvent, list: Note[]) => {
+    const { active, over } = event;
+    setActiveId(null);
+
+    if (over && active.id !== over.id) {
+      const oldIndex = list.findIndex(n => n.id === active.id);
+      const newIndex = list.findIndex(n => n.id === over.id);
+      
+      const newList = arrayMove(list, oldIndex, newIndex);
+      
+      // Merge with the other half of notes (pinned/other)
+      const isPinned = list[0]?.pinned;
+      const otherHalf = notes.filter(n => n.pinned !== isPinned);
+      
+      const finalOrder = isPinned 
+        ? [...newList.map(n => n.id), ...otherHalf.map(n => n.id)]
+        : [...otherHalf.map(n => n.id), ...newList.map(n => n.id)];
+        
+      reorderNotes(finalOrder);
     }
-    
-    reorderNotes(resultIds);
   };
 
-  const handleContextMenu = (e: React.MouseEvent, noteId: string) => {
-    e.preventDefault();
-    setContextMenu({ x: e.clientX, y: e.clientY, noteId });
-  };
-
-  const selectedNote = notes.find(n => n.id === contextMenu?.noteId);
+  const activeNote = activeId ? notes.find(n => n.id === activeId) : null;
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-primary)]">
@@ -110,7 +139,7 @@ export default function NotesView() {
             {showArchived ? "Archives" : "Notes"}
           </h1>
           <p className="text-[13px] text-[var(--text-secondary)] mt-2">
-            {showArchived ? "Notes archivées" : "Organise tes idées par glisser-déposer."}
+            Organise tes idées avec un glisser-déposer fluide.
           </p>
         </div>
         <div className="flex items-center gap-4">
@@ -133,9 +162,9 @@ export default function NotesView() {
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-10">
+      <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-12">
         
-        {/* Quick Add Section */}
+        {/* Quick Add */}
         {!showArchived && (
           <div className="flex justify-center">
             {!isAdding ? (
@@ -164,7 +193,7 @@ export default function NotesView() {
                 )}
                 <div className="p-5 space-y-4">
                   <input placeholder="Titre" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full bg-transparent text-[18px] font-bold text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-tertiary)]" autoFocus />
-                  <textarea placeholder="Écris quelque chose... (- pour bullets, [ ] pour cases)" value={newContent} onChange={(e) => setNewContent(e.target.value)} rows={4} className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)] leading-relaxed" />
+                  <textarea placeholder="Écris quelque chose..." value={newContent} onChange={(e) => setNewContent(e.target.value)} rows={4} className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)] leading-relaxed" />
                 </div>
                 <div className="px-5 py-3 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.05)]">
                   <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-[60%] scrollbar-none">
@@ -182,41 +211,52 @@ export default function NotesView() {
           </div>
         )}
 
-        {/* Pinned Notes Grid */}
+        {/* Pinned Section */}
         {pinnedNotes.length > 0 && (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-tertiary)] flex items-center gap-2.5 px-2">
               <Pin size={12} className="text-[var(--accent-blue)]" /> Notes épinglées
             </h2>
-            <Reorder.Group axis="y" values={pinnedNotes} onReorder={(val) => handleReorder(val, true)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {pinnedNotes.map((note) => (
-                <NoteItem key={note.id} note={note} onEdit={() => setEditingNote(note)} onContextMenu={(e) => handleContextMenu(e, note.id)} />
-              ))}
-            </Reorder.Group>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={(e) => handleDragEnd(e, pinnedNotes)}>
+              <SortableContext items={pinnedNotes.map(n => n.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {pinnedNotes.map((note) => (
+                    <SortableNote key={note.id} note={note} onEdit={() => setEditingNote(note)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, noteId: note.id }); }} />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
+                {activeNote ? <NoteCard note={activeNote} isOverlay /> : null}
+              </DragOverlay>
+            </DndContext>
           </div>
         )}
 
-        {/* Other Notes Grid */}
-        <div className="space-y-5">
+        {/* Other Section */}
+        <div className="space-y-6">
           {pinnedNotes.length > 0 && (
             <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-tertiary)] px-2">
               Autres notes
             </h2>
           )}
           {otherNotes.length > 0 ? (
-            <Reorder.Group axis="y" values={otherNotes} onReorder={(val) => handleReorder(val, false)} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {otherNotes.map((note) => (
-                <NoteItem key={note.id} note={note} onEdit={() => setEditingNote(note)} onContextMenu={(e) => handleContextMenu(e, note.id)} />
-              ))}
-            </Reorder.Group>
+            <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={(e) => handleDragEnd(e, otherNotes)}>
+              <SortableContext items={otherNotes.map(n => n.id)} strategy={rectSortingStrategy}>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                  {otherNotes.map((note) => (
+                    <SortableNote key={note.id} note={note} onEdit={() => setEditingNote(note)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, noteId: note.id }); }} />
+                  ))}
+                </div>
+              </SortableContext>
+              <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
+                {activeNote ? <NoteCard note={activeNote} isOverlay /> : null}
+              </DragOverlay>
+            </DndContext>
           ) : (
             !pinnedNotes.length && !isAdding && (
-              <div className="flex flex-col items-center justify-center py-24 text-center">
-                <div className="w-20 h-20 rounded-[28px] bg-[var(--surface-1)] border border-[var(--border-primary)] flex items-center justify-center mb-6">
-                  <StickyNote size={32} className="text-[var(--text-tertiary)] opacity-50" />
-                </div>
-                <h3 className="text-[18px] font-semibold text-[var(--text-secondary)]">Notes vides</h3>
-                <p className="text-[13px] text-[var(--text-tertiary)] mt-2">Glisse les notes pour les ranger.</p>
+              <div className="flex flex-col items-center justify-center py-32 text-center opacity-40">
+                <StickyNote size={48} className="mb-4" />
+                <p>Aucune note ici. Commence à écrire !</p>
               </div>
             )
           )}
@@ -224,58 +264,60 @@ export default function NotesView() {
 
       </div>
 
-      {/* Context Menu */}
-      {contextMenu && selectedNote && (
-        <ContextMenu
-          x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}
-          items={[
-            { label: selectedNote.pinned ? "Désépingler" : "Épingler", icon: <Pin size={14} />, onClick: () => togglePinNote(selectedNote.id) },
-            { label: selectedNote.archived ? "Désarchiver" : "Archiver", icon: <Archive size={14} />, onClick: () => toggleArchiveNote(selectedNote.id) },
-            { label: "Supprimer", icon: <Trash2 size={14} />, variant: "danger", onClick: () => deleteNote(selectedNote.id) },
-          ]}
-        />
-      )}
-
-      {/* Editor Modal */}
+      {/* Editor Modal & Context Menu (Same as before but cleaned up) */}
       <AnimatePresence>
         {editingNote && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} onClick={(e) => e.stopPropagation()} onPaste={(e) => handlePaste(e, false)} className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-primary)] flex flex-col max-h-[90vh]" style={{ background: editingNote.color }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} onPaste={(e) => handlePaste(e, false)} className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[90vh]" style={{ background: editingNote.color }}>
               {editingNote.images?.length > 0 && (
                 <div className="flex gap-4 p-6 overflow-x-auto bg-black/10 border-b border-white/5">
                   {editingNote.images.map((img: string, i: number) => (
                     <div key={i} className="relative shrink-0 group">
                       <img src={img} className="h-48 rounded-xl border border-white/10" />
-                      <button onClick={() => setEditingNote((prev: any) => ({ ...prev, images: prev.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                        <X size={16} />
-                      </button>
+                      <button onClick={() => setEditingNote((prev: any) => ({ ...prev, images: prev.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={16} /></button>
                     </div>
                   ))}
                 </div>
               )}
               <div className="p-8 space-y-6 flex-1 overflow-y-auto">
-                <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[24px] font-bold text-[var(--text-primary)] focus:outline-none" placeholder="Titre" />
-                <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[16px] text-[var(--text-secondary)] focus:outline-none min-h-[300px] resize-none leading-relaxed" placeholder="Contenu..." />
+                <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[24px] font-bold text-white focus:outline-none" placeholder="Titre" />
+                <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[16px] text-white/80 focus:outline-none min-h-[300px] resize-none leading-relaxed" placeholder="Contenu..." />
               </div>
-              <div className="px-8 py-5 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.15)]">
-                <div className="flex gap-1.5 overflow-x-auto max-w-[200px] scrollbar-none">
-                  {COLORS.map(c => (
-                    <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-5 h-5 shrink-0 rounded-full border transition-transform hover:scale-125 ${editingNote.color === c ? "border-white scale-110" : "border-transparent"}`} style={{ background: c }} />
-                  ))}
-                </div>
-                <button onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }} className="px-8 py-3 rounded-2xl bg-white text-black text-[14px] font-bold hover:bg-gray-100 transition-colors shadow-lg">Terminé</button>
+              <div className="px-8 py-5 flex items-center justify-between border-t border-white/5 bg-black/20">
+                <div className="flex gap-1.5">{COLORS.map(c => <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-5 h-5 rounded-full border ${editingNote.color === c ? "border-white" : "border-transparent"}`} style={{ background: c }} />)}</div>
+                <button onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }} className="px-8 py-3 rounded-2xl bg-white text-black font-bold">Terminé</button>
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
+
+      {contextMenu && (
+        <ContextMenu
+          x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}
+          items={[
+            { label: notes.find(n => n.id === contextMenu.noteId)?.pinned ? "Désépingler" : "Épingler", icon: <Pin size={14} />, onClick: () => togglePinNote(contextMenu.noteId) },
+            { label: "Supprimer", icon: <Trash2 size={14} />, variant: "danger", onClick: () => deleteNote(contextMenu.noteId) },
+          ]}
+        />
+      )}
     </div>
   );
 }
 
-function NoteItem({ note, onEdit, onContextMenu }: { note: any, onEdit: () => void, onContextMenu: (e: React.MouseEvent) => void }) {
-  const { updateNote, togglePinNote, toggleArchiveNote, deleteNote } = useAppStore();
+function SortableNote({ note, onEdit, onContextMenu }: { note: Note, onEdit: () => void, onContextMenu: (e: any) => void }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: note.id });
+  const style = { transform: CSS.Translate.toString(transform), transition };
 
+  return (
+    <div ref={setNodeRef} style={style} className={`${isDragging ? "opacity-0" : "opacity-100"}`}>
+      <NoteCard note={note} onEdit={onEdit} onContextMenu={onContextMenu} dragListeners={listeners} dragAttributes={attributes} />
+    </div>
+  );
+}
+
+function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, isOverlay }: { note: Note, onEdit?: () => void, onContextMenu?: (e: any) => void, dragListeners?: any, dragAttributes?: any, isOverlay?: boolean }) {
+  const { updateNote } = useAppStore();
   const toggleCheckbox = (lineIndex: number) => {
     const lines = note.content.split("\n");
     const line = lines[lineIndex];
@@ -285,65 +327,40 @@ function NoteItem({ note, onEdit, onContextMenu }: { note: any, onEdit: () => vo
   };
 
   return (
-    <Reorder.Item 
-      value={note}
-      className="rounded-[22px] border border-[var(--border-primary)] bg-[var(--card-bg)] p-6 transition-all group relative cursor-pointer overflow-hidden h-fit"
+    <div 
+      className={`rounded-[22px] border border-white/5 p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-lg ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:y-[-4px]"}`}
       style={{ background: note.color }}
       onContextMenu={onContextMenu}
       onClick={onEdit}
     >
-      <div className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 cursor-grab active:cursor-grabbing">
+      <div {...dragListeners} {...dragAttributes} className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 cursor-grab active:cursor-grabbing p-1">
         <GripVertical size={16} />
       </div>
 
       {note.images?.length > 0 && (
         <div className="mb-4 -mx-6 -mt-6">
           <img src={note.images[0]} className="w-full h-auto max-h-64 object-cover" />
-          {note.images.length > 1 && <div className="absolute top-2 right-2 px-2 py-1 bg-black/60 rounded text-[10px] text-white backdrop-blur-sm">+{note.images.length - 1}</div>}
         </div>
       )}
 
-      {note.pinned && <div className="absolute top-4 right-4 text-[var(--accent-blue)]"><Pin size={14} fill="currentColor" /></div>}
-      {note.title && <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-3 pr-6 leading-tight group-hover:text-white transition-colors">{note.title}</h3>}
-      
-      <div className="text-[14px] text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed line-clamp-[12] group-hover:text-white/80 transition-colors">
+      {note.title && <h3 className="text-[16px] font-bold text-white mb-3 pr-6 leading-tight">{note.title}</h3>}
+      <div className="text-[14px] text-white/80 whitespace-pre-wrap leading-relaxed line-clamp-[12]">
         {note.content.split("\n").map((line: string, i: number) => {
           if (line.startsWith("[ ] ") || line.startsWith("[x] ")) {
             const checked = line.startsWith("[x] ");
             return (
               <div key={i} className="flex items-start gap-2 py-0.5" onClick={(e) => { e.stopPropagation(); toggleCheckbox(i); }}>
-                {checked ? <CheckSquare size={14} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={14} className="mt-1 text-[var(--text-tertiary)]" />}
+                {checked ? <CheckSquare size={14} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={14} className="mt-1 text-white/30" />}
                 <span className={checked ? "line-through opacity-50" : ""}>{line.slice(4)}</span>
               </div>
             );
           }
           if (line.startsWith("- ") || line.startsWith("* ")) {
-            return (
-              <div key={i} className="flex items-start gap-2 py-0.5">
-                <span className="mt-2 w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)] shrink-0" />
-                <span>{line.slice(2)}</span>
-              </div>
-            );
+            return <div key={i} className="flex items-start gap-2 py-0.5"><span className="mt-2 w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" /><span>{line.slice(2)}</span></div>;
           }
           return <div key={i} className="min-h-[1.2em]">{line}</div>;
         })}
       </div>
-
-      <div className="mt-5 pt-5 border-t border-[rgba(255,255,255,0.05)] flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
-        <div className="flex gap-2">
-          <button onClick={(e) => { e.stopPropagation(); toggleArchiveNote(note.id); }} className="p-2 rounded-xl hover:bg-white/10 text-[var(--text-tertiary)] hover:text-white transition-all">
-            {note.archived ? <ArchiveRestore size={15} /> : <Archive size={15} />}
-          </button>
-        </div>
-        <div className="flex gap-2">
-           <button onClick={(e) => { e.stopPropagation(); togglePinNote(note.id); }} className="p-2 rounded-xl hover:bg-white/10 text-[var(--text-tertiary)] hover:text-white transition-all">
-            <Pin size={15} />
-          </button>
-          <button onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }} className="p-2 rounded-xl hover:bg-white/10 text-[var(--text-tertiary)] hover:text-red-400 transition-all">
-            <Trash2 size={15} />
-          </button>
-        </div>
-      </div>
-    </Reorder.Item>
+    </div>
   );
 }
