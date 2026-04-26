@@ -82,6 +82,7 @@ export default function GoogleTasksKanban() {
   const [editValue, setEditValue] = useState("");
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [showListFilter, setShowListFilter] = useState(false);
+  const [view, setView] = useState<"kanban" | "list">("kanban");
 
   const addXp     = useAppStore((s) => s.addXp);
   const addToast  = useAppStore((s) => s.addToast);
@@ -275,6 +276,36 @@ export default function GoogleTasksKanban() {
         </div>
 
         <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => {
+              const text = window.prompt("Nouvelle tâche rapide :");
+              if (text && text.trim()) {
+                useAppStore.getState().addInboxItem(text.trim());
+              }
+            }}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold text-white transition-all shadow-sm hover:opacity-90 active:scale-95"
+            style={{ background: "var(--accent-blue)" }}
+          >
+            <Plus size={14} strokeWidth={2.5} />
+            Nouvelle Tâche
+          </button>
+
+          {/* View Toggle */}
+          <div className="flex items-center p-0.5 rounded-xl border bg-[var(--surface-2)]" style={{ borderColor: "var(--border-secondary)" }}>
+            <button
+              onClick={() => setView("kanban")}
+              className={`p-1.5 rounded-lg transition-all ${view === "kanban" ? "bg-[var(--card-bg)] shadow-sm text-[var(--accent-blue)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"}`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
+            </button>
+            <button
+              onClick={() => setView("list")}
+              className={`p-1.5 rounded-lg transition-all ${view === "list" ? "bg-[var(--card-bg)] shadow-sm text-[var(--accent-blue)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"}`}
+            >
+              <ListChecks size={14} />
+            </button>
+          </div>
+
           {/* List filter */}
           <div className="relative">
             <button
@@ -378,9 +409,9 @@ export default function GoogleTasksKanban() {
         </div>
       )}
 
-      {/* ─── Kanban ────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-        <div className="flex gap-5 px-8 py-6 h-full min-w-min">
+      {/* ─── Kanban / List ────────────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
+        <div className={view === "kanban" ? "flex gap-5 px-8 py-6 h-full min-w-min" : "flex flex-col gap-5 px-8 py-6 max-w-[800px] mx-auto"}>
           {visibleLists.length === 0 ? (
             <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
               <Filter size={28} className="text-[var(--text-tertiary)] opacity-50" />
@@ -396,35 +427,81 @@ export default function GoogleTasksKanban() {
               const done = listTasks.filter((t) => t.status === "completed");
               const isOpen = showCompleted[list.id] || false;
 
-              return (
-                <ListColumn
-                  key={list.id}
-                  list={list}
-                  open={open}
-                  done={done}
-                  isCompletedOpen={isOpen}
-                  starred={starred}
-                  pending={pending}
-                  editingId={editingId}
-                  editValue={editValue}
-                  onToggleCompleted={() => setShowCompleted((p) => ({ ...p, [list.id]: !p[list.id] }))}
-                  onCreate={(title) => createTask(list.id, title)}
-                  onCheck={toggleTask}
-                  onDelete={removeTask}
-                  onToggleStar={toggleStar}
-                  onStartEdit={(t) => { setEditingId(t.id); setEditValue(t.title || ""); }}
-                  onChangeEdit={setEditValue}
-                  onSaveEdit={(t) => {
-                    if (editValue.trim() && editValue !== t.title) {
-                      updateTask(t, { title: editValue.trim() });
-                    }
-                    setEditingId(null);
-                  }}
-                  onCancelEdit={() => setEditingId(null)}
-                  onUpdate={updateTask}
-                  onOpenCard={setOpenCardId}
-                />
-              );
+              if (view === "kanban") {
+                return (
+                  <ListColumn
+                    key={list.id}
+                    list={list}
+                    open={open}
+                    done={done}
+                    isCompletedOpen={isOpen}
+                    starred={starred}
+                    pending={pending}
+                    editingId={editingId}
+                    editValue={editValue}
+                    onToggleCompleted={() => setShowCompleted((p) => ({ ...p, [list.id]: !p[list.id] }))}
+                    onCreate={(title) => createTask(list.id, title)}
+                    onCheck={toggleTask}
+                    onDelete={removeTask}
+                    onToggleStar={toggleStar}
+                    onStartEdit={(t) => { setEditingId(t.id); setEditValue(t.title || ""); }}
+                    onChangeEdit={setEditValue}
+                    onSaveEdit={(t) => {
+                      if (editValue.trim() && editValue !== t.title) {
+                        updateTask(t, { title: editValue.trim() });
+                      }
+                      setEditingId(null);
+                    }}
+                    onCancelEdit={() => setEditingId(null)}
+                    onUpdate={updateTask}
+                    onOpenCard={setOpenCardId}
+                  />
+                );
+              } else {
+                return (
+                  <div key={list.id} className="mb-4">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: colorForList(list.id).hue }} />
+                      <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">{list.title || "(sans nom)"}</h2>
+                      <span className="text-[11px] px-2 py-0.5 rounded-lg bg-[var(--surface-2)] text-[var(--text-secondary)]">{open.length}</span>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      {open.map((t) => (
+                        <TaskCard
+                          key={t.id}
+                          t={t}
+                          accent={colorForList(list.id).hue}
+                          starred={starred.has(t.id)}
+                          isPending={pending.has(t.id)}
+                          isEditing={editingId === t.id}
+                          editValue={editValue}
+                          onCheck={() => toggleTask(t)}
+                          onDelete={() => removeTask(t)}
+                          onStar={() => toggleStar(t.id)}
+                          onStartEdit={() => { setEditingId(t.id); setEditValue(t.title || ""); }}
+                          onChangeEdit={setEditValue}
+                          onSaveEdit={() => {
+                            if (editValue.trim() && editValue !== t.title) {
+                              updateTask(t, { title: editValue.trim() });
+                            }
+                            setEditingId(null);
+                          }}
+                          onCancelEdit={() => setEditingId(null)}
+                          onSetDate={(iso) => updateTask(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
+                          onOpenCard={() => setOpenCardId(t.id)}
+                        />
+                      ))}
+                      {open.length === 0 && <p className="text-[12px] text-[var(--text-tertiary)] italic">Aucune tâche</p>}
+                      <button onClick={() => {
+                        const title = window.prompt("Nouvelle tâche dans " + (list.title || "cette liste") + " :");
+                        if (title && title.trim()) createTask(list.id, title);
+                      }} className="text-[12px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 py-2 transition-colors">
+                        <Plus size={12} /> Ajouter une tâche
+                      </button>
+                    </div>
+                  </div>
+                );
+              }
             })
           )}
         </div>

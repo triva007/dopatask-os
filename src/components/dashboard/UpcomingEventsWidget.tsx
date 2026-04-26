@@ -44,7 +44,13 @@ export default function UpcomingEventsWidget() {
             if (/\b(domicile|dormir|sommeil|nuit|sleep|emails|admin|déjeuner|dejeuner|recompense|récompense)\b/i.test(sum)) return false;
             const iso = e.start?.dateTime || e.start?.date;
             if (!iso) return false;
-            return new Date(e.start?.dateTime ? iso : iso + "T00:00:00") >= new Date(Date.now() - 60 * 60 * 1000);
+            const startDate = new Date(e.start?.dateTime ? iso : iso + "T00:00:00");
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const evDay = new Date(startDate);
+            evDay.setHours(0, 0, 0, 0);
+            // Doit être aujourd'hui et pas terminé depuis plus d'une heure
+            return startDate >= new Date(Date.now() - 60 * 60 * 1000) && evDay.getTime() === today.getTime();
           })
           .slice(0, 5);
         setEvents(upcoming);
