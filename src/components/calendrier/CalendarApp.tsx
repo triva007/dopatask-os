@@ -59,15 +59,51 @@ export default function CalendarApp() {
     [calendars, hiddenCalendarIds]
   );
 
+  const [googleTasks, setGoogleTasks] = useState<any[]>([]);
+  const [googleTaskLists, setGoogleTaskLists] = useState<any[]>([]);
+
+  const fetchGoogleTasks = useCallback(async () => {
+    try {
+      const r = await fetch("/api/google/tasks");
+      if (r.ok) {
+        const d = await r.json();
+        setGoogleTasks(d.tasks || []);
+        setGoogleTaskLists(d.lists || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
   // Visible events
-  const visibleEvents = useMemo(
-    () => events.filter((ev) => !hiddenCalendarIds.has(ev.calendarId)),
-    [events, hiddenCalendarIds]
-  );
+  const visibleEvents = useMemo(() => {
+    const evs = events
+      .filter((ev) => !hiddenCalendarIds.has(ev.calendarId))
+      .map((ev) => ({ ...ev, type: "event" as const }));
+    
+    // Map tasks to calendar events
+    const taskEvs = googleTasks
+      .filter((t) => t.due && t.status !== "completed")
+      .map((t) => {
+        return {
+          id: `task-${t.id}`,
+          calendarId: "tasks",
+          summary: t.title || "(sans titre)",
+          description: t.notes,
+          start: { date: t.due ? t.due.slice(0, 10) : undefined },
+          end: { date: t.due ? t.due.slice(0, 10) : undefined },
+          type: "task" as const,
+          taskInfo: t,
+        };
+      });
+
+    return [...evs, ...taskEvs];
+  }, [events, hiddenCalendarIds, googleTasks]);
 
   // Load data
   const loadData = useCallback(async () => {
     setLoading(true);
+    await fetchGoogleTasks();
     const cals = await fetchCalendars();
     if (cals.length > 0) {
       const ids = cals.filter((c) => !hiddenCalendarIds.has(c.id)).map((c) => c.id);
@@ -80,7 +116,7 @@ export default function CalendarApp() {
       }
     }
     setLoading(false);
-  }, [fetchCalendars, fetchEvents, currentDate, view, hiddenCalendarIds, setLoading]);
+  }, [fetchCalendars, fetchEvents, fetchGoogleTasks, currentDate, view, hiddenCalendarIds, setLoading]);
 
   useEffect(() => {
     if (!initialFetchDone.current) {
@@ -106,6 +142,7 @@ export default function CalendarApp() {
   useEffect(() => {
     if (connected !== true) return;
     const interval = setInterval(() => {
+      fetchGoogleTasks();
       if (visibleCalendarIds.length > 0) {
         const range = getViewRange(currentDate, view);
         const timeMin = addDays(range.start, -7).toISOString();
@@ -114,7 +151,7 @@ export default function CalendarApp() {
       }
     }, 90_000);
     return () => clearInterval(interval);
-  }, [connected, visibleCalendarIds, currentDate, view, fetchEvents]);
+  }, [connected, visibleCalendarIds, currentDate, view, fetchEvents, fetchGoogleTasks]);
 
   // Navigation
   const navigate = useCallback((dir: 1 | -1) => {
@@ -154,53 +191,106 @@ export default function CalendarApp() {
     setShowCreateModal(true);
   }, []);
 
-  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0]) => {
+  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
     try {
-      await createEvent(data);
+      if (data.type === "task" && data.taskListId) {
+        await fetch("/api/google/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskListId: data.taskListId,
+            title: data.summary,
+            notes: data.description,
+            due: data.start?.date || data.start?.dateTime,
+          }),
+        });
+        await fetchGoogleTasks();
+      } else {
+        await createEvent(data);
+      }
       setShowCreateModal(false);
       setCreateDefaultDate(null);
     } catch {
       setError("Creation echouee");
     }
-  }, [createEvent, setError]);
+  }, [createEvent, fetchGoogleTasks, setError]);
 
-  const handleUpdate = useCallback(async (data: Parameters<typeof createEvent>[0]) => {
+  const handleUpdate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
     if (!modalEvent) return;
     try {
-      await updateEvent(modalEvent.calendarId, modalEvent.id, {
-        summary: data.summary,
-        description: data.description,
-        location: data.location,
-        start: data.start,
-        end: data.end,
-        colorId: data.colorId,
-      });
+      if (modalEvent.type === "task") {
+        await fetch("/api/google/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskListId: data.taskListId || modalEvent.taskInfo?.taskListId,
+            taskId: modalEvent.id.replace("task-", ""),
+            updates: {
+              title: data.summary,
+              notes: data.description,
+              due: data.start?.date || data.start?.dateTime,
+            },
+          }),
+        });
+        await fetchGoogleTasks();
+      } else {
+        await updateEvent(modalEvent.calendarId, modalEvent.id, {
+          summary: data.summary,
+          description: data.description,
+          location: data.location,
+          start: data.start,
+          end: data.end,
+          colorId: data.colorId,
+        });
+      }
       setModalEvent(null);
     } catch {
       setError("Modification echouee");
     }
-  }, [modalEvent, updateEvent, setError]);
+  }, [modalEvent, updateEvent, fetchGoogleTasks, setError]);
 
   const handleDelete = useCallback(async (ev: CalendarEvent) => {
     try {
-      await deleteEvent(ev.calendarId, ev.id);
+      if (ev.type === "task" && ev.taskInfo?.taskListId) {
+        await fetch(`/api/google/tasks?taskListId=${encodeURIComponent(ev.taskInfo.taskListId)}&taskId=${encodeURIComponent(ev.id.replace("task-", ""))}`, {
+          method: "DELETE",
+        });
+        await fetchGoogleTasks();
+      } else {
+        await deleteEvent(ev.calendarId, ev.id);
+      }
       setPopoverEvent(null);
     } catch {
       setError("Suppression echouee");
     }
-  }, [deleteEvent, setError]);
+  }, [deleteEvent, fetchGoogleTasks, setError]);
 
   const handleEventDrop = useCallback(async (ev: CalendarEvent, newStart: Date, newEnd: Date) => {
     try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Paris";
-      await updateEvent(ev.calendarId, ev.id, {
-        start: { dateTime: newStart.toISOString(), timeZone: tz },
-        end: { dateTime: newEnd.toISOString(), timeZone: tz },
-      });
+      if (ev.type === "task" && ev.taskInfo?.taskListId) {
+        await fetch("/api/google/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            taskListId: ev.taskInfo.taskListId,
+            taskId: ev.id.replace("task-", ""),
+            updates: {
+              due: newStart.toISOString(),
+            },
+          }),
+        });
+        await fetchGoogleTasks();
+      } else {
+        const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Paris";
+        await updateEvent(ev.calendarId, ev.id, {
+          start: { dateTime: newStart.toISOString(), timeZone: tz },
+          end: { dateTime: newEnd.toISOString(), timeZone: tz },
+        });
+      }
     } catch {
       setError("Deplacement echoue");
     }
-  }, [updateEvent, setError]);
+  }, [updateEvent, fetchGoogleTasks, setError]);
 
   // Keyboard shortcuts
   useCalendarKeys({
@@ -353,7 +443,8 @@ export default function CalendarApp() {
           <EventModal
             event={modalEvent}
             calendars={calendars}
-            onSave={handleUpdate}
+            taskLists={googleTaskLists}
+            onSave={handleUpdate as any}
             onClose={() => setModalEvent(null)}
           />
         )}
@@ -366,7 +457,8 @@ export default function CalendarApp() {
             defaultDate={createDefaultDate || undefined}
             defaultEndDate={createDefaultDate ? new Date(createDefaultDate.getTime() + 60 * 60 * 1000) : undefined}
             calendars={calendars}
-            onSave={handleCreate}
+            taskLists={googleTaskLists}
+            onSave={handleCreate as any}
             onClose={() => { setShowCreateModal(false); setCreateDefaultDate(null); }}
           />
         )}

@@ -26,6 +26,8 @@ export interface CalendarEvent {
   status?: string;
   htmlLink?: string;
   updated?: string;
+  type?: "event" | "task";
+  taskInfo?: any;
   // computed
   backgroundColor?: string;
 }

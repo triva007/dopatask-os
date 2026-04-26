@@ -162,6 +162,10 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       setDragEvent(null);
       return;
     }
+    if (Math.abs(e.clientY - dragEvent.startY) < 5) {
+      setDragEvent(null);
+      return;
+    }
     const gridRect = gridRef.current.getBoundingClientRect();
     const y = e.clientY - gridRect.top - dragEvent.offsetY;
     const hour = Math.floor(y / HOUR_HEIGHT);
@@ -202,6 +206,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
             >
               {allDayRows[di].map((ev) => {
                 const color = getEventColor(ev, calendars);
+                const isTask = ev.type === "task";
                 return (
                   <button
                     key={ev.id}
@@ -209,10 +214,16 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                       const rect = e.currentTarget.getBoundingClientRect();
                       onEventClick(ev, { top: rect.top, left: rect.right });
                     }}
-                    className="cal-event text-left px-2 py-0.5 rounded-md text-[11px] font-medium text-white truncate max-w-full transition-all hover:opacity-90"
-                    style={{ background: color }}
+                    className="cal-event flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90"
+                    style={{
+                      background: isTask ? color : `${color}30`,
+                      color: isTask ? "#fff" : color,
+                    }}
                   >
-                    {ev.summary || "(sans titre)"}
+                    {isTask && (
+                      <span className="w-2.5 h-2.5 rounded-full shrink-0 border-2" style={{ borderColor: 'currentColor' }} />
+                    )}
+                    <span className="truncate">{ev.summary || "(sans titre)"}</span>
                   </button>
                 );
               })}
@@ -320,17 +331,20 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                 {/* Events */}
                 {laid.map((l) => {
                   const color = getEventColor(l.ev, calendars);
+                  const isTask = l.ev.type === "task";
                   const colWidth = 100 / l.totalCols;
                   return (
                     <button
                       key={l.ev.id}
-                      className="cal-event absolute rounded-lg text-left overflow-hidden transition-all hover:brightness-95 hover:shadow-sm group cursor-pointer"
+                      className="cal-event absolute rounded-[4px] text-left overflow-hidden transition-all hover:opacity-90 group cursor-pointer"
                       style={{
                         top: l.top,
                         height: Math.max(l.height, MIN_EVENT_HEIGHT),
-                        left: `calc(${l.col * colWidth}% + 2px)`,
-                        width: `calc(${colWidth}% - 4px)`,
-                        background: color,
+                        left: `calc(${l.col * colWidth}% + 1px)`,
+                        width: `calc(${colWidth}% - 2px)`,
+                        background: isTask ? `var(--card-bg)` : `${color}25`,
+                        border: isTask ? `1px solid var(--card-border)` : `1px solid ${color}40`,
+                        borderLeft: `3px solid ${color}`,
                         zIndex: 10,
                       }}
                       onClick={(e) => {
@@ -340,17 +354,19 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                       }}
                       onMouseDown={(e) => handleMouseDown(l.ev, e)}
                     >
-                      <div className="px-1.5 py-1 h-full flex flex-col">
-                        <span className="text-[11px] font-semibold text-white leading-tight truncate">
-                          {l.ev.summary || "(sans titre)"}
-                        </span>
-                        {l.height > 30 && (
-                          <span className="text-[10px] text-white/75 mt-0.5">
+                      <div className="px-1.5 py-0.5 h-full flex flex-col justify-start min-h-0">
+                        <div className="flex items-start gap-1">
+                          <span className="text-[11.5px] font-semibold leading-tight truncate" style={{ color: isTask ? "var(--text-primary)" : color }}>
+                            {l.ev.summary || "(sans titre)"}
+                          </span>
+                        </div>
+                        {l.height > 25 && (
+                          <span className="text-[10px] opacity-80 mt-0.5 leading-none" style={{ color: isTask ? "var(--text-secondary)" : color }}>
                             {formatTime(getEventStart(l.ev))} – {formatTime(getEventEnd(l.ev))}
                           </span>
                         )}
-                        {l.height > 50 && l.ev.location && (
-                          <span className="text-[9px] text-white/60 mt-auto truncate">
+                        {l.height > 40 && l.ev.location && !isTask && (
+                          <span className="text-[10px] opacity-70 mt-1 truncate" style={{ color: color }}>
                             📍 {l.ev.location}
                           </span>
                         )}

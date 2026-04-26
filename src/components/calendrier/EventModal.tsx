@@ -10,8 +10,11 @@ interface EventModalProps {
   defaultDate?: Date;
   defaultEndDate?: Date;
   calendars: CalendarInfo[];
+  taskLists?: { id: string; title: string }[];
   onSave: (data: {
-    calendarId: string;
+    type: "event" | "task";
+    calendarId?: string;
+    taskListId?: string;
     summary: string;
     description: string;
     location: string;
@@ -48,10 +51,12 @@ const COLOR_OPTIONS = [
   { id: "11", label: "Tomate", hex: "#D50000" },
 ];
 
-export default function EventModal({ event, defaultDate, defaultEndDate, calendars, onSave, onClose }: EventModalProps) {
+export default function EventModal({ event, defaultDate, defaultEndDate, calendars, taskLists = [], onSave, onClose }: EventModalProps) {
   const isEdit = !!event;
   const now = defaultDate || new Date();
   const defaultEnd = defaultEndDate || new Date(now.getTime() + 60 * 60 * 1000);
+
+  const [mode, setMode] = useState<"event" | "task">(event?.type === "task" ? "task" : "event");
 
   const existingAllDay = event?.start?.date && !event?.start?.dateTime;
 
@@ -74,6 +79,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         : toLocalISOString(defaultEnd)
   );
   const [calendarId, setCalendarId] = useState(event?.calendarId || calendars.find((c) => c.primary)?.id || calendars[0]?.id || "primary");
+  const [taskListId, setTaskListId] = useState(event?.taskInfo?.taskListId || taskLists[0]?.id || "");
   const [colorId, setColorId] = useState(event?.colorId || "");
   const [showColors, setShowColors] = useState(false);
 
@@ -90,6 +96,20 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
   const handleSave = () => {
     if (!summary.trim()) return;
 
+    if (mode === "task") {
+      const d = startStr.slice(0, 10) + "T00:00:00.000Z";
+      onSave({
+        type: "task",
+        taskListId,
+        summary: summary.trim(),
+        description,
+        location: "",
+        start: { date: d },
+        end: { date: d },
+      });
+      return;
+    }
+
     if (allDay) {
       const startDate = startStr.slice(0, 10);
       let endDate = endStr.slice(0, 10);
@@ -99,6 +119,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         endDate = toDateString(d);
       }
       onSave({
+        type: "event",
         calendarId,
         summary: summary.trim(),
         description,
@@ -109,6 +130,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
       });
     } else {
       onSave({
+        type: "event",
         calendarId,
         summary: summary.trim(),
         description,
@@ -147,13 +169,31 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--border-primary)" }}>
-          <h2 className="text-[16px] font-semibold text-[var(--text-primary)]">
-            {isEdit ? "Modifier l\u0027evenement" : "Nouvel evenement"}
-          </h2>
-          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-3)] text-[var(--text-secondary)] transition-all">
-            <X size={16} />
-          </button>
+        <div className="flex flex-col border-b" style={{ borderColor: "var(--border-primary)" }}>
+          <div className="flex items-center justify-between px-6 pt-4 pb-2">
+            <h2 className="text-[16px] font-semibold text-[var(--text-primary)]">
+              {isEdit ? "Modifier" : "Creer"}
+            </h2>
+            <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-3)] text-[var(--text-secondary)] transition-all">
+              <X size={16} />
+            </button>
+          </div>
+          {!isEdit && (
+            <div className="flex gap-6 px-6 mt-1">
+              <button
+                className={`pb-2 text-[13px] font-semibold transition-all border-b-2 ${mode === "event" ? "border-[var(--accent-blue)] text-[var(--accent-blue)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+                onClick={() => setMode("event")}
+              >
+                Evenement
+              </button>
+              <button
+                className={`pb-2 text-[13px] font-semibold transition-all border-b-2 ${mode === "task" ? "border-[var(--accent-blue)] text-[var(--accent-blue)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
+                onClick={() => setMode("task")}
+              >
+                Tache
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Body */}
@@ -164,56 +204,70 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
             type="text"
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            placeholder="Titre de l'evenement"
+            placeholder={mode === "event" ? "Titre de l'evenement" : "Titre de la tache"}
             className="w-full text-[18px] font-semibold bg-transparent focus:outline-none text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
           />
 
-          {/* All day toggle + dates */}
+          {/* All day toggle + dates (Event mode vs Task mode) */}
           <div className="space-y-3">
-            <label className="flex items-center gap-2 text-[12.5px] text-[var(--text-secondary)] cursor-pointer">
-              <input
-                type="checkbox"
-                checked={allDay}
-                onChange={(e) => setAllDay(e.target.checked)}
-                className="rounded"
-              />
-              Toute la journee
-            </label>
+            {mode === "event" && (
+              <label className="flex items-center gap-2 text-[12.5px] text-[var(--text-secondary)] cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={allDay}
+                  onChange={(e) => setAllDay(e.target.checked)}
+                  className="rounded"
+                />
+                Toute la journee
+              </label>
+            )}
 
             <div className="flex items-center gap-3">
               <Clock size={14} className="text-[var(--text-tertiary)] shrink-0" />
-              <div className="flex-1 flex items-center gap-2">
+              {mode === "event" ? (
+                <div className="flex-1 flex items-center gap-2">
+                  <input
+                    type={allDay ? "date" : "datetime-local"}
+                    value={allDay ? startStr.slice(0, 10) : startStr}
+                    onChange={(e) => setStartStr(e.target.value)}
+                    className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
+                    style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
+                  />
+                  <span className="text-[var(--text-tertiary)] text-[12px]">→</span>
+                  <input
+                    type={allDay ? "date" : "datetime-local"}
+                    value={allDay ? endStr.slice(0, 10) : endStr}
+                    onChange={(e) => setEndStr(e.target.value)}
+                    className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
+                    style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
+                  />
+                </div>
+              ) : (
                 <input
-                  type={allDay ? "date" : "datetime-local"}
-                  value={allDay ? startStr.slice(0, 10) : startStr}
+                  type="date"
+                  value={startStr.slice(0, 10)}
                   onChange={(e) => setStartStr(e.target.value)}
-                  className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
+                  className="bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
                   style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
                 />
-                <span className="text-[var(--text-tertiary)] text-[12px]">→</span>
-                <input
-                  type={allDay ? "date" : "datetime-local"}
-                  value={allDay ? endStr.slice(0, 10) : endStr}
-                  onChange={(e) => setEndStr(e.target.value)}
-                  className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
-                  style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
-                />
-              </div>
+              )}
             </div>
           </div>
 
-          {/* Location */}
-          <div className="flex items-center gap-3">
-            <MapPin size={14} className="text-[var(--text-tertiary)] shrink-0" />
-            <input
-              type="text"
-              value={location}
-              onChange={(e) => setLocation(e.target.value)}
-              placeholder="Lieu"
-              className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
-              style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
-            />
-          </div>
+          {/* Location (Event only) */}
+          {mode === "event" && (
+            <div className="flex items-center gap-3">
+              <MapPin size={14} className="text-[var(--text-tertiary)] shrink-0" />
+              <input
+                type="text"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Lieu"
+                className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
+                style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
+              />
+            </div>
+          )}
 
           {/* Description */}
           <div className="flex items-start gap-3">
@@ -221,43 +275,58 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
             <textarea
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Description"
+              placeholder="Description (notes)"
               rows={3}
               className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] resize-y leading-relaxed placeholder:text-[var(--text-ghost)]"
               style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
             />
           </div>
 
-          {/* Calendar selector */}
+          {/* Calendar selector or Task list selector */}
           <div className="flex items-center gap-3">
-            <span className="w-3.5 h-3.5 rounded shrink-0" style={{ background: calColor }} />
-            <select
-              value={calendarId}
-              onChange={(e) => setCalendarId(e.target.value)}
-              className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
-              style={{ borderColor: "var(--border-primary)" }}
-            >
-              {calendars.filter((c) => c.accessRole === "owner" || c.accessRole === "writer").map((c) => (
-                <option key={c.id} value={c.id}>{c.summary}</option>
-              ))}
-            </select>
+            <span className="w-3.5 h-3.5 rounded shrink-0" style={{ background: mode === "event" ? calColor : "transparent", border: mode === "event" ? "none" : "2px solid currentColor", color: "var(--text-tertiary)" }} />
+            {mode === "event" ? (
+              <select
+                value={calendarId}
+                onChange={(e) => setCalendarId(e.target.value)}
+                className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
+                style={{ borderColor: "var(--border-primary)" }}
+              >
+                {calendars.filter((c) => c.accessRole === "owner" || c.accessRole === "writer").map((c) => (
+                  <option key={c.id} value={c.id}>{c.summary}</option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={taskListId}
+                onChange={(e) => setTaskListId(e.target.value)}
+                className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
+                style={{ borderColor: "var(--border-primary)" }}
+              >
+                {taskLists.map((l) => (
+                  <option key={l.id} value={l.id}>{l.title}</option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* Color */}
-          <div className="flex items-center gap-3">
-            <Palette size={14} className="text-[var(--text-tertiary)] shrink-0" />
-            <button
-              onClick={() => setShowColors(!showColors)}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] hover:bg-[var(--surface-3)] transition-all"
-              style={{ color: "var(--text-secondary)" }}
-            >
-              <span
-                className="w-3 h-3 rounded-full"
-                style={{ background: selectedColor?.hex || calColor }}
-              />
-              {selectedColor?.label || "Couleur du calendrier"}
-            </button>
-          </div>
+          {/* Color (Event only) */}
+          {mode === "event" && (
+            <div className="flex items-center gap-3">
+              <Palette size={14} className="text-[var(--text-tertiary)] shrink-0" />
+              <button
+                onClick={() => setShowColors(!showColors)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-[12.5px] hover:bg-[var(--surface-3)] transition-all"
+                style={{ color: "var(--text-secondary)" }}
+              >
+                <span
+                  className="w-3 h-3 rounded-full"
+                  style={{ background: selectedColor?.hex || calColor }}
+                />
+                {selectedColor?.label || "Couleur du calendrier"}
+              </button>
+            </div>
+          )}
 
           {showColors && (
             <div className="flex flex-wrap gap-1.5 pl-8">
