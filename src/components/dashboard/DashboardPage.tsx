@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { Target, ListChecks, FolderKanban, Inbox } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
+import VisionWidget from "@/components/dashboard/VisionWidget";
 
 export default function DashboardPage() {
   const tasks = useAppStore((s) => s.tasks);
@@ -111,6 +112,9 @@ export default function DashboardPage() {
 
         {/* ═══ Prochains événements Google ═══ */}
         <UpcomingEventsWidget />
+
+        {/* ═══ VISION LONG TERME (Time Stripe style) ═══ */}
+        <VisionWidget />
 
         {/* ═══ KPI grid (productivité globale) ═══ */}
         <div className="grid grid-cols-4 gap-3">

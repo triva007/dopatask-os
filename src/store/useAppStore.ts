@@ -39,6 +39,8 @@ export interface Task {
   googleTaskId?: string;
   googleTaskListId?: string;
   googleUpdated?: string;
+  // Synergy
+  linkedJournalId?: string;
 }
 
 export interface Project {
@@ -106,6 +108,10 @@ export interface TimelineEvent {
   googleEventId?: string;
   googleCalendarId?: string;
   googleUpdated?: string;
+  // Synergy
+  linkedTaskId?: string;
+  linkedProjectId?: string;
+  linkedJournalId?: string;
 }
 
 export interface Toast {
@@ -123,8 +129,8 @@ interface AppState {
 
   // ── Tâches ──────────────────────────────────────────────────────────────
   tasks: Task[];
-  addTask: (text: string, status?: TaskStatus, projectId?: string) => void;
-  updateTask: (id: string, updates: Partial<Pick<Task, "text" | "description" | "status" | "projectId" | "sprintId" | "tags" | "estimatedMinutes" | "dueDate" | "priority" | "recurrence" | "order">>) => void;
+  addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string) => void;
+  updateTask: (id: string, updates: Partial<Pick<Task, "text" | "description" | "status" | "projectId" | "sprintId" | "tags" | "estimatedMinutes" | "dueDate" | "priority" | "recurrence" | "order" | "linkedJournalId">>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   completeTask: (id: string) => void;
   deleteTask: (id: string) => void;
@@ -167,12 +173,14 @@ interface AppState {
   addJournalEntry: (content: string, mood?: JournalEntry["mood"], tags?: string[]) => void;
   updateJournalEntry: (id: string, updates: Partial<Pick<JournalEntry, "content" | "mood" | "tags">>) => void;
   deleteJournalEntry: (id: string) => void;
+  convertJournalToTask: (id: string) => void;
+  sendJournalToInbox: (id: string) => void;
 
   // ── Inbox (Quick Capture) ─────────────────────────────────────────────
   inboxItems: InboxItem[];
   addInboxItem: (text: string, type?: InboxItemType) => void;
   processInboxItem: (id: string) => void;
-  convertInboxToTask: (id: string) => void;
+  convertInboxToTask: (id: string, projectId?: string) => void;
   deleteInboxItem: (id: string) => void;
   clearProcessedInbox: () => void;
 
@@ -227,12 +235,13 @@ export const useAppStore = create<AppState>()(
       // ── Tâches ──────────────────────────────────────────────────────────
       tasks: [],
 
-      addTask: (text, status, projectId) => {
-        const { tasks, settings } = get();
+      addTask: (text, status, projectId, linkedJournalId) => {
+        const { tasks } = get();
         const targetStatus = status ?? "today";
         const newTask: Task = {
           id: uid(), text: text.trim(), status: targetStatus, projectId,
           createdAt: Date.now(), tags: [], microSteps: [], expanded: false,
+          linkedJournalId,
         };
         set({ tasks: [...tasks, newTask] });
         get().setLastActive(newTask.id);
@@ -515,6 +524,23 @@ export const useAppStore = create<AppState>()(
           journalEntries: s.journalEntries.filter((e) => e.id !== id),
         })),
 
+      convertJournalToTask: (id) => {
+        const entry = get().journalEntries.find(e => e.id === id);
+        if (!entry) return;
+        // Extraction du premier titre ou début du contenu
+        const title = entry.content.split("\n")[0].slice(0, 50).trim() || "Tâche issue du journal";
+        get().addTask(title, "today", undefined, id);
+        get().addToast("Journal converti en tâche !", "success");
+      },
+
+      sendJournalToInbox: (id) => {
+        const entry = get().journalEntries.find(e => e.id === id);
+        if (!entry) return;
+        const text = entry.content.slice(0, 100).trim();
+        get().addInboxItem(text, "note");
+        get().addToast("Note envoyée à l'Inbox", "info");
+      },
+
       // ── Inbox (Quick Capture) ─────────────────────────────────────────
       inboxItems: [],
       addInboxItem: (text, type) =>
@@ -532,11 +558,11 @@ export const useAppStore = create<AppState>()(
           ),
         })),
 
-      convertInboxToTask: (id) => {
+      convertInboxToTask: (id, projectId) => {
         const { inboxItems } = get();
         const item = inboxItems.find((i) => i.id === id);
         if (!item) return;
-        get().addTask(item.text);
+        get().addTask(item.text, "today", projectId);
         set((s) => ({
           inboxItems: s.inboxItems.map((i) =>
             i.id === id ? { ...i, processed: true } : i

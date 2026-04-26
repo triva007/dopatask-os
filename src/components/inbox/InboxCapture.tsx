@@ -16,8 +16,9 @@ const TYPE_CONFIG: { id: InboxItemType; label: string; icon: typeof ListTodo; co
 ];
 
 export default function InboxCapture() {
-  const { inboxItems, addInboxItem, convertInboxToTask, processInboxItem, deleteInboxItem } = useAppStore();
+  const { inboxItems, addInboxItem, convertInboxToTask, processInboxItem, deleteInboxItem, projects } = useAppStore();
   const [input, setInput] = useState("");
+  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
   const [isRecording, setIsRecording] = useState(false);
   const [selectedType, setSelectedType] = useState<InboxItemType>("task");
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -214,14 +215,29 @@ export default function InboxCapture() {
                     </div>
                     <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                       {item.type === "task" && (
-                        <button
-                          onClick={() => convertInboxToTask(item.id)}
-                          className="h-7 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-colors"
-                          style={{ background: "var(--accent-green-light)", color: "var(--accent-green)" }}
-                          title="Convertir en tâche"
-                        >
-                          <ArrowRight size={10} /> Tâche
-                        </button>
+                        <div className="flex items-center gap-1">
+                          <select 
+                            className="h-7 bg-[var(--surface-1)] border border-[var(--border-primary)] text-[10px] rounded-md px-1 focus:outline-none"
+                            value={selectedProjectId}
+                            onChange={(e) => setSelectedProjectId(e.target.value)}
+                          >
+                            <option value="">Projet (aucun)</option>
+                            {projects.map(p => (
+                              <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => {
+                              convertInboxToTask(item.id, selectedProjectId || undefined);
+                              setSelectedProjectId("");
+                            }}
+                            className="h-7 px-2 rounded-md text-[10px] font-medium flex items-center gap-1 transition-colors"
+                            style={{ background: "var(--accent-green-light)", color: "var(--accent-green)" }}
+                            title="Convertir en tâche"
+                          >
+                            <ArrowRight size={10} /> Tâche
+                          </button>
+                        </div>
                       )}
                       <button
                         onClick={() => processInboxItem(item.id)}

@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BookOpen, Plus, Trash2, X, Search, Flame, RefreshCw, BarChart3 } from "lucide-react";
+import { BookOpen, Plus, Trash2, X, Search, Flame, RefreshCw, BarChart3, ListChecks, Inbox as InboxIcon } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { JournalEntry } from "@/store/useAppStore";
 
@@ -77,7 +77,7 @@ function getWritingStreak(entries: JournalEntry[]): number {
 }
 
 export default function JournalView() {
-  const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry } = useAppStore();
+  const { journalEntries, addJournalEntry, updateJournalEntry, deleteJournalEntry, convertJournalToTask, sendJournalToInbox } = useAppStore();
   const [composing, setComposing] = useState(false);
   const [content, setContent] = useState("");
   const [mood, setMood] = useState<JournalEntry["mood"]>(undefined);
@@ -368,6 +368,20 @@ export default function JournalView() {
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       {moodCfg && <span className="text-sm" title={moodCfg.label}>{moodCfg.emoji}</span>}
+                      <button
+                        onClick={() => convertJournalToTask(entry.id)}
+                        className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-accent-green transition-all"
+                        title="Convertir en tâche"
+                      >
+                        <ListChecks size={11} />
+                      </button>
+                      <button
+                        onClick={() => sendJournalToInbox(entry.id)}
+                        className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-accent-blue transition-all"
+                        title="Envoyer à l'Inbox"
+                      >
+                        <InboxIcon size={11} />
+                      </button>
                       <button
                         onClick={() => deleteJournalEntry(entry.id)}
                         className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-accent-red transition-all"
