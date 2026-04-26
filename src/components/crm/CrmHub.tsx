@@ -189,34 +189,32 @@ export default function CrmHub() {
           whileHover={aAppeler.length > 0 ? { scale: 1.005, y: -1 } : undefined}
           whileTap={aAppeler.length > 0 ? { scale: 0.995 } : undefined}
           transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          className="w-full group relative overflow-hidden rounded-2xl border-2 border-dopa-cyan bg-gradient-to-br from-dopa-cyan/15 via-dopa-cyan/5 to-transparent p-6 hover:shadow-[0_0_40px_rgba(34,211,238,0.18)] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full group relative overflow-hidden rounded-[20px] bg-[var(--surface-2)] p-6 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          style={{ boxShadow: "var(--shadow-elevated)" }}
         >
           <div className="flex items-center justify-between gap-6">
-            <div className="flex items-center gap-4 text-left">
-              <div className="w-14 h-14 rounded-2xl bg-dopa-cyan text-black flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform">
-                <Phone size={24} strokeWidth={2.5} />
+            <div className="flex items-center gap-5 text-left">
+              <div className="w-12 h-12 rounded-xl bg-[var(--text-primary)] text-[var(--surface-1)] flex items-center justify-center shrink-0 transition-transform">
+                <Phone size={20} strokeWidth={2.5} />
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-widest font-bold text-dopa-cyan mb-1">
-                  Mode focus · Zéro distraction
+                <p className="text-[10px] uppercase tracking-widest font-bold text-[var(--text-tertiary)] mb-1">
+                  Mode focus
                 </p>
-                <h2 className="text-[22px] font-bold leading-tight">
-                  {aAppeler.length > 0 ? "Démarrer session cold-call" : "Aucun prospect à appeler"}
+                <h2 className="text-[20px] font-bold leading-tight text-[var(--text-primary)]">
+                  {aAppeler.length > 0 ? "Démarrer la session d'appel" : "Aucun appel en attente"}
                 </h2>
-                <p className="text-[12.5px] text-t-tertiary mt-1">
+                <p className="text-[12px] text-[var(--text-secondary)] mt-1">
                   {aAppeler.length > 0
-                    ? `${aAppeler.length} prospects en file · boutons XL · raccourcis clavier · auto-advance`
+                    ? `${aAppeler.length} prospects en file`
                     : "Importe un CSV pour lancer une session"}
                 </p>
               </div>
             </div>
             {aAppeler.length > 0 && (
               <div className="text-right shrink-0">
-                <p className="text-[44px] font-black leading-none tabular-nums text-dopa-cyan">
+                <p className="text-[40px] font-bold leading-none tabular-nums text-[var(--text-primary)]">
                   {aAppeler.length}
-                </p>
-                <p className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold">
-                  à appeler
                 </p>
               </div>
             )}
@@ -275,29 +273,29 @@ export default function CrmHub() {
                 >
                 <Link
                   href={`/prospects?statut=${s}`}
-                  className="group block rounded-xl border p-3 transition-shadow hover:shadow-card-hover"
-                  style={{ background: col.bg + "33", borderColor: col.border }}
+                  className="group block rounded-[16px] p-4 transition-all hover:bg-[var(--surface-3)]"
+                  style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: col.text }}>
+                    <div className="flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-wider text-[var(--text-secondary)]">
                       <span>{STATUT_EMOJI[s]}</span>
                       <span className="truncate">{STATUT_LABEL[s]}</span>
                     </div>
                   </div>
-                  <p className="text-[26px] font-black tabular-nums" style={{ color: col.text }}>
+                  <p className="text-[32px] font-bold tabular-nums text-[var(--text-primary)]">
                     {list.length}
                   </p>
-                  <div className="mt-2 space-y-1 min-h-[34px]">
+                  <div className="mt-2 space-y-0.5 min-h-[34px]">
                     {list.slice(0, 2).map((p) => (
-                      <p key={p.id} className="text-[11px] text-t-secondary truncate">
+                      <p key={p.id} className="text-[11.5px] text-[var(--text-secondary)] truncate">
                         {p.entreprise}
                       </p>
                     ))}
                     {list.length > 2 && (
-                      <p className="text-[10px] text-t-tertiary">+ {list.length - 2}</p>
+                      <p className="text-[10.5px] text-[var(--text-tertiary)] italic">+ {list.length - 2} autres</p>
                     )}
                     {list.length === 0 && (
-                      <p className="text-[10.5px] text-t-tertiary italic">vide</p>
+                      <p className="text-[10.5px] text-[var(--text-tertiary)] italic">vide</p>
                     )}
                   </div>
                 </Link>
@@ -310,36 +308,37 @@ export default function CrmHub() {
         {/* 2 PANELS : PROCHAINS A APPELER + PROCHAINS RDV */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Left : prochains a appeler */}
-          <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Phone size={15} className="text-dopa-orange" />
-                <h3 className="text-[13.5px] font-semibold">A appeler en priorite</h3>
+          <div className="rounded-[20px] p-6" style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b" style={{ borderColor: "var(--border-primary)" }}>
+              <div className="flex items-center gap-2 text-[var(--text-primary)]">
+                <Phone size={15} />
+                <h3 className="text-[14px] font-bold">À appeler d'urgence</h3>
               </div>
               {aAppeler.length > 6 && (
-                <Link href="/prospects?statut=A_APPELER" className="text-[11px] text-t-tertiary hover:text-dopa-cyan inline-flex items-center gap-0.5">
-                  Voir les {aAppeler.length} <ChevronRight size={11} />
+                <Link href="/prospects?statut=A_APPELER" className="text-[12px] font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-all">
+                  Voir tout ({aAppeler.length})
                 </Link>
               )}
             </div>
             {aAppelerTop.length === 0 ? (
-              <p className="text-[12.5px] text-t-tertiary italic py-4">Aucun prospect a appeler. Importe un CSV ou ajoutes-en.</p>
+              <p className="text-[13px] text-[var(--text-tertiary)] italic py-6 text-center">Aucun prospect en attente d'appel.</p>
             ) : (
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {aAppelerTop.map((p) => (
                   <li key={p.id}>
                     <Link
                       href={`/prospects/${p.id}`}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors group"
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--surface-3)] transition-colors group"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-t-primary truncate">{p.entreprise}</p>
+                        <p className="text-[13px] font-bold text-[var(--text-primary)] truncate transition-colors">
+                          {p.entreprise}
+                        </p>
                         {p.telephone && (
-                          <p className="text-[11px] text-t-tertiary tabular-nums">{p.telephone}</p>
+                          <p className="text-[11px] text-[var(--text-tertiary)] font-medium tabular-nums">{p.telephone}</p>
                         )}
                       </div>
                       <StatutBadge statut={p.statut} compact />
-                      <ChevronRight size={13} className="text-t-tertiary group-hover:text-t-primary" />
                     </Link>
                   </li>
                 ))}
@@ -348,31 +347,30 @@ export default function CrmHub() {
           </div>
 
           {/* Right : prochains RDV */}
-          <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Calendar size={15} className="text-dopa-cyan" />
-                <h3 className="text-[13.5px] font-semibold">Prochains RDV</h3>
+          <div className="rounded-[20px] p-6" style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}>
+            <div className="flex items-center justify-between mb-4 pb-2 border-b" style={{ borderColor: "var(--border-primary)" }}>
+              <div className="flex items-center gap-2 text-[var(--text-primary)]">
+                <Calendar size={15} />
+                <h3 className="text-[14px] font-bold">Prochains RDV</h3>
               </div>
             </div>
             {prochainsRdv.length === 0 ? (
-              <p className="text-[12.5px] text-t-tertiary italic py-4">Aucun RDV en stock. Decroche, propose, book.</p>
+              <p className="text-[13px] text-[var(--text-tertiary)] italic py-6 text-center">Aucun RDV en stock.</p>
             ) : (
-              <ul className="space-y-1">
+              <ul className="space-y-0.5">
                 {prochainsRdv.map((p) => (
                   <li key={p.id}>
                     <Link
                       href={`/prospects/${p.id}`}
-                      className="flex items-center justify-between gap-3 px-3 py-2 rounded-lg hover:bg-surface-2 transition-colors group"
+                      className="flex items-center justify-between gap-3 px-3 py-2.5 rounded-xl hover:bg-[var(--surface-3)] transition-colors group"
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-t-primary truncate">{p.entreprise}</p>
-                        <p className="text-[11px] text-dopa-cyan tabular-nums font-semibold">
-                          {new Date(p.date_rdv!).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
+                        <p className="text-[13px] font-bold text-[var(--text-primary)] truncate">{p.entreprise}</p>
+                        <p className="text-[11.5px] text-[var(--text-secondary)] tabular-nums font-semibold">
+                          {new Date(p.date_rdv!).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "long" })}
                         </p>
                       </div>
                       <StatutBadge statut={p.statut} compact />
-                      <ChevronRight size={13} className="text-t-tertiary group-hover:text-t-primary" />
                     </Link>
                   </li>
                 ))}
@@ -421,19 +419,19 @@ function MiniStat({
       }}
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 400, damping: 24 }}
-      className={`rounded-xl border p-4 ${highlight ? "ring-1 ring-dopa-orange/30" : ""}`}
+      className="rounded-[16px] p-4 transition-all"
       style={{
-        background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
-        borderColor: `${color}33`,
+        background: "var(--card-bg)",
+        boxShadow: "var(--shadow-elevated)",
       }}
     >
-      <div className="flex items-center gap-1.5 mb-1" style={{ color }}>
+      <div className="flex items-center gap-1.5 mb-1 text-[var(--text-tertiary)]">
         {icon}
-        <p className="text-[10px] uppercase tracking-wider font-semibold">{label}</p>
+        <p className="text-[10px] uppercase tracking-wider font-bold">{label}</p>
       </div>
-      <p className="text-[22px] font-black tabular-nums tracking-tight flex items-baseline gap-1" style={{ color }}>
+      <p className="text-[26px] font-bold tabular-nums tracking-tight text-[var(--text-primary)] flex items-baseline gap-1">
         {value}
-        {suffix && <span className="text-[11px] font-semibold text-t-tertiary">{suffix}</span>}
+        {suffix && <span className="text-[12px] font-bold text-[var(--text-tertiary)]">{suffix}</span>}
       </p>
     </motion.div>
   );

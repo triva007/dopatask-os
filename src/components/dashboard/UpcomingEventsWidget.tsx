@@ -40,6 +40,8 @@ export default function UpcomingEventsWidget() {
         const d = (await r.json()) as { events: GEvent[] };
         const upcoming = (d.events || [])
           .filter((e) => {
+            const sum = e.summary?.toLowerCase() || "";
+            if (sum.includes("domicile") || sum.includes("dormir") || sum.includes("sommeil")) return false;
             const iso = e.start?.dateTime || e.start?.date;
             if (!iso) return false;
             return new Date(e.start?.dateTime ? iso : iso + "T00:00:00") >= new Date(Date.now() - 60 * 60 * 1000);

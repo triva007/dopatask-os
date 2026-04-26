@@ -167,7 +167,10 @@ export function useCalendarEvents() {
       if (r.status === 401) { setConnected(false); return; }
       if (!r.ok) throw new Error("Echec recuperation events");
       const d = (await r.json()) as { events: CalendarEvent[] };
-      setEvents(d.events || []);
+      const filtered = (d.events || []).filter(
+        (e) => !e.summary?.toLowerCase().includes("domicile")
+      );
+      setEvents(filtered);
       setConnected(true);
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;

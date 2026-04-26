@@ -190,11 +190,8 @@ export default function CrmDashboard() {
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="rounded-xl overflow-hidden"
-          style={{
-            background: "var(--accent-red-light)",
-            border: "1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)",
-          }}
+          className="rounded-[20px] overflow-hidden border border-[color-mix(in_srgb,var(--accent-red)_20%,transparent)]"
+          style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}
         >
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-0">
             <div className="p-6 flex flex-col gap-4">
@@ -289,11 +286,8 @@ export default function CrmDashboard() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.05 }}
-            className="lg:col-span-2 rounded-xl p-5"
-            style={{
-              background: "var(--surface-1)",
-              border: "1px solid var(--border-primary)",
-            }}
+            className="lg:col-span-2 rounded-[20px] p-6"
+            style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}
           >
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
@@ -391,11 +385,8 @@ export default function CrmDashboard() {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="rounded-xl p-5"
-            style={{
-              background: "var(--surface-1)",
-              border: "1px solid var(--border-primary)",
-            }}
+            className="rounded-[20px] p-6"
+            style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}
           >
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
@@ -420,17 +411,17 @@ export default function CrmDashboard() {
                     <li key={p.id}>
                       <Link
                         href={`/prospects?p=${p.id}`}
-                        className="flex items-center justify-between gap-2 px-3 py-2 rounded-lg hover:bg-[var(--surface-2)] transition-colors group"
+                        className="flex items-center justify-between gap-2 px-3 py-2.5 rounded-xl hover:bg-[var(--surface-3)] transition-colors group"
                       >
                         <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] font-semibold text-[var(--text-primary)] truncate leading-tight">
+                          <p className="text-[13px] font-bold text-[var(--text-primary)] truncate leading-tight transition-colors">
                             {p.entreprise}
                           </p>
-                          <p className="text-[10.5px] text-[var(--accent-blue)] tabular-nums font-medium mt-0.5">
+                          <p className="text-[11.5px] text-[var(--text-secondary)] tabular-nums font-medium mt-0.5">
                             {dayLabel} · {d.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" })}
                           </p>
                         </div>
-                        <ArrowRight size={12} className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] shrink-0" />
+                        <ArrowRight size={14} className="text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] shrink-0 transition-transform group-hover:translate-x-1" />
                       </Link>
                     </li>
                   );
@@ -445,11 +436,8 @@ export default function CrmDashboard() {
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.15 }}
-          className="rounded-xl p-5"
-          style={{
-            background: "var(--surface-1)",
-            border: "1px solid var(--border-primary)",
-          }}
+          className="rounded-[20px] p-6 mt-2"
+          style={{ background: "var(--card-bg)", boxShadow: "var(--shadow-elevated)" }}
         >
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
@@ -500,10 +488,10 @@ function MiniStat({
   const colorLight = `var(--accent-${accent}-light)`;
 
   const body = (
-    <div className="p-4 rounded-lg transition-colors h-full"
+    <div className="p-5 rounded-[20px] transition-all h-full"
       style={{
-        background: "var(--surface-1)",
-        border: "1px solid var(--border-primary)",
+        background: "var(--card-bg)",
+        boxShadow: "var(--shadow-elevated)",
       }}>
       <div className="flex items-center gap-1.5 mb-2.5" style={{ color }}>
         <div className="w-5 h-5 rounded-md flex items-center justify-center"
