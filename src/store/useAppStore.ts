@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { celebrate } from "@/lib/dopamineFeedback";
+import { supabaseStorage } from "@/lib/supabaseStorage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -798,9 +799,9 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "dopatask-storage",
-      version: 2,
+      version: 3,
       migrate: (persisted: unknown, version: number) => {
-        // v2 : purge les tâches mock historiques qui polluent les compteurs
+        // v2 : purge les tâches mock historiques
         const MOCK_TASK_TEXTS = new Set([
           "Finir le rapport Q1",
           "Répondre aux emails urgents",
@@ -816,14 +817,10 @@ export const useAppStore = create<AppState>()(
             p.tasks = p.tasks.filter((t) => !MOCK_TASK_TEXTS.has((t?.text || "").trim()));
           }
         }
+        // v3 : migration vers Supabase (noop, handled by supabaseStorage)
         return persisted;
       },
-      storage: createJSONStorage(() => {
-        if (typeof window === "undefined") {
-          return { getItem: () => null, setItem: () => {}, removeItem: () => {} };
-        }
-        return localStorage;
-      }),
+      storage: createJSONStorage(() => supabaseStorage),
     }
   )
 );
