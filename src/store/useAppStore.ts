@@ -89,6 +89,14 @@ export interface JournalEntry {
   tags: string[];
 }
 
+export interface GoogleKeepNote {
+  name: string;
+  title?: string;
+  body?: { text?: { text?: string } };
+  attachments?: any[];
+  permissions?: any[];
+}
+
 export interface InboxItem {
   id: string;
   text: string;
@@ -176,11 +184,16 @@ interface AppState {
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
 
+  // ── Google Keep ───────────────────────────────────────────────────────
+  googleNotes: GoogleKeepNote[];
+  setGoogleNotes: (notes: GoogleKeepNote[]) => void;
+  syncGoogleNotes: () => Promise<void>;
+
   // ── Inbox (Quick Capture) ─────────────────────────────────────────────
   inboxItems: InboxItem[];
   addInboxItem: (text: string, type?: InboxItemType) => void;
   processInboxItem: (id: string) => void;
-  convertInboxToTask: (id: string, projectId?: string) => void;
+  convertInboxToTask: (id: string) => void;
   deleteInboxItem: (id: string) => void;
   clearProcessedInbox: () => void;
 
@@ -527,7 +540,6 @@ export const useAppStore = create<AppState>()(
       convertJournalToTask: (id) => {
         const entry = get().journalEntries.find(e => e.id === id);
         if (!entry) return;
-        // Extraction du premier titre ou début du contenu
         const title = entry.content.split("\n")[0].slice(0, 50).trim() || "Tâche issue du journal";
         get().addTask(title, "today", undefined, id);
         get().addToast("Journal converti en tâche !", "success");
@@ -539,6 +551,20 @@ export const useAppStore = create<AppState>()(
         const text = entry.content.slice(0, 100).trim();
         get().addInboxItem(text, "note");
         get().addToast("Note envoyée à l'Inbox", "info");
+      },
+
+      // ── Google Keep ───────────────────────────────────────────────────────
+      googleNotes: [],
+      setGoogleNotes: (notes) => set({ googleNotes: notes }),
+      syncGoogleNotes: async () => {
+        try {
+          const res = await fetch("/api/google/keep");
+          if (!res.ok) throw new Error("Sync failed");
+          const data = await res.json();
+          set({ googleNotes: data.notes || [] });
+        } catch (err) {
+          console.error("Keep Sync Error:", err);
+        }
       },
 
       // ── Inbox (Quick Capture) ─────────────────────────────────────────
@@ -630,7 +656,6 @@ export const useAppStore = create<AppState>()(
       name: "dopatask-storage",
       version: 3,
       migrate: (persisted: unknown, version: number) => {
-        // v2 : purge les tâches mock historiques
         const MOCK_TASK_TEXTS = new Set([
           "Finir le rapport Q1",
           "Répondre aux emails urgents",
@@ -646,7 +671,6 @@ export const useAppStore = create<AppState>()(
             p.tasks = p.tasks.filter((t) => !MOCK_TASK_TEXTS.has((t?.text || "").trim()));
           }
         }
-        // v3 : migration vers Supabase (noop, handled by supabaseStorage)
         return persisted;
       },
       storage: createJSONStorage(() => supabaseStorage),
