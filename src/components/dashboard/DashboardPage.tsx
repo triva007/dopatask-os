@@ -14,6 +14,9 @@ export default function DashboardPage() {
   const projects = useAppStore((s) => s.projects);
 
   const [, setTick] = useState(0);
+  const [googleTasks, setGoogleTasks] = useState<any[]>([]);
+  const [googleLists, setGoogleLists] = useState<any[]>([]);
+  const [loadingTasks, setLoadingTasks] = useState(true);
 
   useEffect(() => {
     const refreshAll = () => {
@@ -32,10 +35,22 @@ export default function DashboardPage() {
         setTick((t) => t + 1);
       }
     };
+    const fetchGTasks = async () => {
+      try {
+        const r = await fetch("/api/google/tasks");
+        if (r.ok) {
+          const d = await r.json();
+          setGoogleTasks(d.tasks || []);
+          setGoogleLists(d.lists || []);
+        }
+      } catch (e) { console.error(e); } finally { setLoadingTasks(false); }
+    };
+
     document.addEventListener("visibilitychange", refreshAll);
     window.addEventListener("focus", refreshAll);
     window.addEventListener("storage", onStorage);
     refreshAll();
+    fetchGTasks();
     return () => {
       window.clearInterval(id);
       document.removeEventListener("visibilitychange", refreshAll);
@@ -45,7 +60,17 @@ export default function DashboardPage() {
   }, []);
 
   // Compteurs visu globale
-  const pendingTasks = tasks.filter((t) => t.status !== "done" && t.status !== "completed").length;
+  // Filtrage spécifique demandé par le USER: seulement la liste "Kill la task NOW"
+  const killList = googleLists.find(l => l.title === "Kill la task NOW");
+  const filteredGTasks = googleTasks.filter(t => t.listId === killList?.id && t.status !== "completed");
+  
+  // On inclut aussi les tâches locales qui pourraient appartenir à un projet du même nom
+  const killProject = projects.find(p => p.name === "Kill la task NOW");
+  const filteredLocalTasks = tasks.filter(t => t.projectId === killProject?.id && t.status !== "done" && t.status !== "completed");
+  
+  const pendingTasks = filteredGTasks.length + filteredLocalTasks.length;
+  
+  // Stats pour le sous-texte (cumulé)
   const doneToday = tasks.filter(
     (t) =>
       (t.status === "done" || t.status === "completed") &&

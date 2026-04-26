@@ -88,6 +88,7 @@ export default function GoogleTasksKanban() {
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskListId, setNewTaskListId] = useState<string>("");
   const [creating, setCreating] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{ x: number; y: number; t: GTask } | null>(null);
 
   const addToast  = useAppStore((s) => s.addToast);
 
@@ -471,6 +472,10 @@ export default function GoogleTasksKanban() {
                     onCancelEdit={() => setEditingId(null)}
                     onUpdate={updateTask}
                     onOpenCard={setOpenCardId}
+                    onContextMenu={(t, e) => {
+                      e.preventDefault();
+                      setContextMenu({ x: e.clientX, y: e.clientY, t });
+                    }}
                   />
                 );
               } else {
@@ -505,6 +510,10 @@ export default function GoogleTasksKanban() {
                           onCancelEdit={() => setEditingId(null)}
                           onSetDate={(iso) => updateTask(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
                           onOpenCard={() => setOpenCardId(t.id)}
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setContextMenu({ x: e.clientX, y: e.clientY, t });
+                          }}
                         />
                       ))}
                       {open.length === 0 && <p className="text-[12px] text-[var(--text-tertiary)] italic">Aucune tâche</p>}
@@ -622,6 +631,47 @@ export default function GoogleTasksKanban() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      <AnimatePresence>
+        {contextMenu && (
+          <>
+            <div className="fixed inset-0 z-[100]" onClick={() => setContextMenu(null)} onContextMenu={e => { e.preventDefault(); setContextMenu(null); }} />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y }}
+              className="z-[101] min-w-[160px] bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl shadow-xl p-1.5"
+            >
+              <button
+                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
+                onClick={() => { toggleTask(contextMenu.t); setContextMenu(null); }}
+              >
+                {contextMenu.t.status === "completed" ? "Marquer non terminée" : "Marquer terminée"}
+              </button>
+              <button
+                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
+                onClick={() => { toggleStar(contextMenu.t.id); setContextMenu(null); }}
+              >
+                {starred.has(contextMenu.t.id) ? "Retirer favori" : "Mettre en favori"}
+              </button>
+              <button
+                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
+                onClick={() => { setEditingId(contextMenu.t.id); setEditValue(contextMenu.t.title || ""); setContextMenu(null); }}
+              >
+                Renommer
+              </button>
+              <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
+              <button
+                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--accent-red)]"
+                onClick={() => { removeTask(contextMenu.t); setContextMenu(null); }}
+              >
+                Supprimer
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
@@ -650,6 +700,7 @@ interface ListColumnProps {
   onCancelEdit: () => void;
   onUpdate: (t: GTask, updates: Partial<GTask>) => void;
   onOpenCard: (id: string) => void;
+  onContextMenu: (t: GTask, e: React.MouseEvent) => void;
 }
 
 function ListColumn(p: ListColumnProps) {
@@ -758,6 +809,7 @@ function ListColumn(p: ListColumnProps) {
               onCancelEdit={p.onCancelEdit}
               onSetDate={(iso) => p.onUpdate(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
               onOpenCard={() => p.onOpenCard(t.id)}
+              onContextMenu={(e) => p.onContextMenu(t, e)}
             />
           ))}
         </AnimatePresence>
@@ -791,12 +843,14 @@ function ListColumn(p: ListColumnProps) {
                   onCancelEdit={() => {}}
                   onSetDate={() => {}}
                   onOpenCard={() => p.onOpenCard(t.id)}
+                  onContextMenu={(e) => p.onContextMenu(t, e)}
                 />
               ))}
             </AnimatePresence>
           </>
         )}
       </div>
+
     </div>
   );
 }
@@ -821,6 +875,7 @@ interface TaskCardProps {
   onCancelEdit: () => void;
   onSetDate: (iso: string | null) => void;
   onOpenCard: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
 }
 
 function TaskCard(p: TaskCardProps) {
@@ -855,6 +910,7 @@ function TaskCard(p: TaskCardProps) {
         if ((e.target as HTMLElement).closest(".no-open")) return;
         p.onOpenCard();
       }}
+      onContextMenu={p.onContextMenu}
       className={
         "group relative px-4 py-3.5 rounded-2xl border transition-all cursor-pointer " +
         (p.isPending ? "opacity-60 " : "") +

@@ -13,13 +13,15 @@ interface WeekViewProps {
   onSlotClick: (date: Date) => void;
   onSlotSelect?: (start: Date, end: Date) => void;
   onEventDrop?: (ev: CalendarEvent, newStart: Date, newEnd: Date) => void;
+  onEventDelete?: (ev: CalendarEvent) => void;
+  onEventColorChange?: (ev: CalendarEvent, colorId: string) => void;
 }
 
-export default function WeekView({ currentDate, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop }: WeekViewProps) {
+export default function WeekView({ currentDate, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop, onEventDelete, onEventColorChange }: WeekViewProps) {
   const days = useMemo(() => {
     const ws = startOfWeek(currentDate);
     return Array.from({ length: 7 }, (_, i) => addDays(ws, i));
   }, [currentDate]);
 
-  return <TimeGrid days={days} events={events} calendars={calendars} onEventClick={onEventClick} onSlotClick={onSlotClick} onSlotSelect={onSlotSelect} onEventDrop={onEventDrop} />;
+  return <TimeGrid days={days} events={events} calendars={calendars} onEventClick={onEventClick} onSlotClick={onSlotClick} onSlotSelect={onSlotSelect} onEventDrop={onEventDrop} onEventDelete={onEventDelete} onEventColorChange={onEventColorChange} />;
 }

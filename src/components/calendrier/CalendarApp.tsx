@@ -300,6 +300,15 @@ export default function CalendarApp() {
     }
   }, [updateEvent, fetchGoogleTasks, setError]);
 
+  const handleEventColorChange = useCallback(async (ev: CalendarEvent, colorId: string) => {
+    if (ev.type === "task") return; // Tasks don't have separate colors in this logic yet
+    try {
+      await updateEvent(ev.calendarId, ev.id, { colorId });
+    } catch {
+      setError("Changement de couleur echoue");
+    }
+  }, [updateEvent, setError]);
+
   // Keyboard shortcuts
   useCalendarKeys({
     onToday: goToday,
@@ -387,6 +396,8 @@ export default function CalendarApp() {
               onSlotClick={handleSlotClick}
               onSlotSelect={handleSlotSelect}
               onEventDrop={handleEventDrop}
+              onEventDelete={handleDelete}
+              onEventColorChange={handleEventColorChange}
             />
           )}
           {view === "4day" && (
@@ -398,6 +409,8 @@ export default function CalendarApp() {
               onSlotClick={handleSlotClick}
               onSlotSelect={handleSlotSelect}
               onEventDrop={handleEventDrop}
+              onEventDelete={handleDelete}
+              onEventColorChange={handleEventColorChange}
             />
           )}
           {view === "week" && (
@@ -409,6 +422,8 @@ export default function CalendarApp() {
               onSlotClick={handleSlotClick}
               onSlotSelect={handleSlotSelect}
               onEventDrop={handleEventDrop}
+              onEventDelete={handleDelete}
+              onEventColorChange={handleEventColorChange}
             />
           )}
           {view === "month" && (
