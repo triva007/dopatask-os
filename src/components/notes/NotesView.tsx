@@ -4,22 +4,32 @@ import { useAppStore } from "@/store/useAppStore";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
   StickyNote, Search, Plus, 
-  Trash2, ListChecks, Pin, PinOff, X, Palette
+  Trash2, ListChecks, Pin, PinOff, X, Palette,
+  Archive, ArchiveRestore, MoreVertical, Edit3,
+  Calendar, Check, CheckCircle2
 } from "lucide-react";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
+import ContextMenu from "@/components/ui/ContextMenu";
 
 const COLORS = [
   "var(--card-bg)",
-  "#442b2d", "#3e3328", "#273934", "#20393f", "#223348", "#38284a", "#452440"
+  "#442b2d", "#3e3328", "#273934", "#20393f", "#223348", "#38284a", "#452440",
+  "#1e3a5f", "#1b4332", "#432818", "#3c0919"
 ];
 
 export default function NotesView() {
-  const { notes, addNote, updateNote, deleteNote, togglePinNote } = useAppStore();
+  const { notes, addNote, updateNote, deleteNote, togglePinNote, toggleArchiveNote, convertJournalToTask } = useAppStore();
   const [search, setSearch] = useState("");
   const [isAdding, setIsAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [newContent, setNewContent] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
+  
+  // Context Menu State
+  const [contextMenu, setContextMenu] = useState<{ x: number, y: number, noteId: string } | null>(null);
+  
+  // Editor Modal State
+  const [editingNote, setEditingNote] = useState<any | null>(null);
 
   const handleAdd = () => {
     if (!newTitle.trim() && !newContent.trim()) {
@@ -38,12 +48,20 @@ export default function NotesView() {
       const title = n.title?.toLowerCase() || "";
       const body = n.content?.toLowerCase() || "";
       const s = search.toLowerCase();
-      return title.includes(s) || body.includes(s);
+      const matchesSearch = title.includes(s) || body.includes(s);
+      return matchesSearch && !n.archived;
     }).sort((a, b) => (a.pinned === b.pinned ? 0 : a.pinned ? -1 : 1));
   }, [notes, search]);
 
   const pinnedNotes = filteredNotes.filter(n => n.pinned);
   const otherNotes = filteredNotes.filter(n => !n.pinned);
+
+  const handleContextMenu = (e: React.MouseEvent, noteId: string) => {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, noteId });
+  };
+
+  const selectedNote = notes.find(n => n.id === contextMenu?.noteId);
 
   return (
     <div className="flex flex-col h-full bg-[var(--bg-primary)]">
@@ -55,74 +73,77 @@ export default function NotesView() {
             Notes
           </h1>
           <p className="text-[13px] text-[var(--text-secondary)] mt-2">
-            Capture tes idées. Organise ta vie.
+            Ton espace de réflexion et d'organisation.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)]" size={14} />
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent-blue)] transition-colors" size={14} />
             <input 
               type="text"
-              placeholder="Rechercher une note..."
+              placeholder="Rechercher..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg text-[13px] w-64 focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)]"
+              className="pl-9 pr-4 py-2 bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl text-[13px] w-64 focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] transition-all"
             />
           </div>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-8">
+      <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-10">
         
         {/* Quick Add Section */}
         <div className="flex justify-center">
           {!isAdding ? (
-            <div 
+            <motion.div 
+              layoutId="add-note-box"
               onClick={() => setIsAdding(true)}
-              className="w-full max-w-xl p-3 rounded-lg bg-[var(--card-bg)] border border-[var(--border-primary)] shadow-sm cursor-text text-[var(--text-tertiary)] text-[14px] font-medium"
+              className="w-full max-w-xl p-3.5 rounded-xl bg-[var(--card-bg)] border border-[var(--border-primary)] shadow-sm cursor-text text-[var(--text-tertiary)] text-[14px] font-medium flex items-center justify-between group hover:border-[var(--accent-blue)] transition-colors"
             >
-              Créer une note...
-            </div>
+              <span>Créer une note...</span>
+              <Plus size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+            </motion.div>
           ) : (
             <motion.div 
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="w-full max-w-xl rounded-xl border border-[var(--border-primary)] bg-[var(--card-bg)] shadow-xl overflow-hidden"
+              layoutId="add-note-box"
+              initial={{ opacity: 0, scale: 0.98 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="w-full max-w-xl rounded-2xl border border-[var(--border-primary)] bg-[var(--card-bg)] shadow-2xl overflow-hidden z-20"
               style={{ background: selectedColor }}
             >
-              <div className="p-4 space-y-3">
+              <div className="p-5 space-y-4">
                 <input 
                   placeholder="Titre"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full bg-transparent text-[16px] font-bold text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-tertiary)]"
+                  className="w-full bg-transparent text-[18px] font-bold text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-tertiary)]"
                   autoFocus
                 />
                 <textarea 
-                  placeholder="Créer une note..."
+                  placeholder="Écris quelque chose..."
                   value={newContent}
                   onChange={(e) => setNewContent(e.target.value)}
-                  rows={3}
-                  className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)]"
+                  rows={4}
+                  className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)] leading-relaxed"
                 />
               </div>
-              <div className="px-4 py-2 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)]">
-                <div className="flex gap-2">
-                  {COLORS.map(c => (
+              <div className="px-5 py-3 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.05)]">
+                <div className="flex gap-1.5">
+                  {COLORS.slice(0, 8).map(c => (
                     <button 
                       key={c}
                       onClick={() => setSelectedColor(c)}
-                      className="w-5 h-5 rounded-full border border-[rgba(255,255,255,0.1)]"
+                      className={`w-5 h-5 rounded-full border transition-transform hover:scale-125 ${selectedColor === c ? "border-white scale-110" : "border-transparent"}`}
                       style={{ background: c }}
                     />
                   ))}
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => setIsAdding(false)} className="px-3 py-1.5 text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                    Fermer
+                <div className="flex gap-3">
+                  <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+                    Annuler
                   </button>
-                  <button onClick={handleAdd} className="px-4 py-1.5 rounded-lg bg-[var(--accent-blue)] text-white text-[12px] font-bold hover:opacity-90 transition-opacity">
-                    Ajouter
+                  <button onClick={handleAdd} className="px-5 py-2 rounded-xl bg-white text-black text-[12px] font-bold hover:bg-gray-100 transition-colors shadow-lg">
+                    Terminer
                   </button>
                 </div>
               </div>
@@ -132,83 +153,194 @@ export default function NotesView() {
 
         {/* Pinned Section */}
         {pinnedNotes.length > 0 && (
-          <div className="space-y-4">
-            <h2 className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--text-tertiary)] flex items-center gap-2 px-2">
-              <Pin size={10} /> Épinglées
+          <div className="space-y-5">
+            <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-tertiary)] flex items-center gap-2.5 px-2">
+              <Pin size={12} className="text-[var(--accent-blue)]" /> Notes épinglées
             </h2>
-            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-5 space-y-5">
               {pinnedNotes.map((note) => (
-                <NoteCard key={note.id} note={note} onUpdate={updateNote} onDelete={deleteNote} onTogglePin={togglePinNote} />
+                <NoteCard 
+                  key={note.id} 
+                  note={note} 
+                  onEdit={() => setEditingNote(note)}
+                  onContextMenu={(e) => handleContextMenu(e, note.id)} 
+                />
               ))}
             </div>
           </div>
         )}
 
         {/* Other Section */}
-        <div className="space-y-4">
+        <div className="space-y-5">
           {pinnedNotes.length > 0 && (
-            <h2 className="text-[11px] font-bold tracking-[0.12em] uppercase text-[var(--text-tertiary)] px-2">
-              Autres
+            <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-tertiary)] px-2">
+              Autres notes
             </h2>
           )}
           {otherNotes.length > 0 ? (
-            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-4 space-y-4">
+            <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-5 space-y-5">
               {otherNotes.map((note) => (
-                <NoteCard key={note.id} note={note} onUpdate={updateNote} onDelete={deleteNote} onTogglePin={togglePinNote} />
+                <NoteCard 
+                  key={note.id} 
+                  note={note} 
+                  onEdit={() => setEditingNote(note)}
+                  onContextMenu={(e) => handleContextMenu(e, note.id)} 
+                />
               ))}
             </div>
           ) : (
             !pinnedNotes.length && !isAdding && (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <div className="w-16 h-16 rounded-2xl bg-[var(--surface-1)] flex items-center justify-center mb-4">
-                  <StickyNote size={32} className="text-[var(--text-tertiary)]" />
+              <div className="flex flex-col items-center justify-center py-24 text-center">
+                <div className="w-20 h-20 rounded-[28px] bg-[var(--surface-1)] border border-[var(--border-primary)] flex items-center justify-center mb-6">
+                  <StickyNote size={32} className="text-[var(--text-tertiary)] opacity-50" />
                 </div>
-                <h3 className="text-[16px] font-semibold text-[var(--text-secondary)]">Aucune note</h3>
-                <p className="text-[13px] text-[var(--text-tertiary)] mt-1">Capture tes idées maintenant.</p>
+                <h3 className="text-[18px] font-semibold text-[var(--text-secondary)]">Notes vides</h3>
+                <p className="text-[13px] text-[var(--text-tertiary)] mt-2 max-w-[240px]">Tes idées et tes projets commencent ici. Crée ta première note.</p>
               </div>
             )
           )}
         </div>
 
       </div>
+
+      {/* Context Menu */}
+      {contextMenu && selectedNote && (
+        <ContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          onClose={() => setContextMenu(null)}
+          items={[
+            { 
+              label: selectedNote.pinned ? "Désépingler" : "Épingler", 
+              icon: selectedNote.pinned ? <PinOff size={14} /> : <Pin size={14} />, 
+              onClick: () => togglePinNote(selectedNote.id) 
+            },
+            { 
+              label: "Modifier la couleur", 
+              icon: <Palette size={14} />, 
+              onClick: () => {} // Could show color sub-menu
+            },
+            { 
+              label: "Archiver", 
+              icon: <Archive size={14} />, 
+              onClick: () => toggleArchiveNote(selectedNote.id) 
+            },
+            { 
+              label: "Supprimer", 
+              icon: <Trash2 size={14} />, 
+              variant: "danger",
+              onClick: () => deleteNote(selectedNote.id) 
+            },
+          ]}
+        />
+      )}
+
+      {/* Editor Modal */}
+      <AnimatePresence>
+        {editingNote && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="w-full max-w-3xl rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-primary)]"
+              style={{ background: editingNote.color }}
+            >
+              <div className="p-8 space-y-6">
+                <input 
+                  value={editingNote.title}
+                  onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })}
+                  className="w-full bg-transparent text-[24px] font-bold text-[var(--text-primary)] focus:outline-none"
+                  placeholder="Titre"
+                />
+                <textarea 
+                  value={editingNote.content}
+                  onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })}
+                  className="w-full bg-transparent text-[16px] text-[var(--text-secondary)] focus:outline-none min-h-[300px] resize-none leading-relaxed"
+                  placeholder="Contenu..."
+                />
+              </div>
+              <div className="px-8 py-4 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.1)]">
+                <div className="flex items-center gap-4 text-[12px] text-[var(--text-tertiary)] font-medium">
+                  <span className="flex items-center gap-1.5">
+                    <Calendar size={12} /> Modifié {new Date(editingNote.updatedAt).toLocaleDateString()}
+                  </span>
+                </div>
+                <button 
+                  onClick={() => {
+                    updateNote(editingNote.id, editingNote);
+                    setEditingNote(null);
+                  }}
+                  className="px-6 py-2.5 rounded-2xl bg-white text-black text-[14px] font-bold hover:bg-gray-100 transition-colors shadow-lg"
+                >
+                  Terminé
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
     </div>
   );
 }
 
-function NoteCard({ note, onUpdate, onDelete, onTogglePin }: { note: any, onUpdate: any, onDelete: any, onTogglePin: any }) {
+function NoteCard({ note, onEdit, onContextMenu }: { note: any, onEdit: () => void, onContextMenu: (e: React.MouseEvent) => void }) {
+  const { togglePinNote, deleteNote } = useAppStore();
+
   return (
     <motion.div
       layout
-      initial={{ opacity: 0, scale: 0.95 }}
+      initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="break-inside-avoid rounded-xl border border-[var(--border-primary)] bg-[var(--card-bg)] p-5 hover:shadow-lg transition-all group relative"
+      whileHover={{ y: -4, boxShadow: "0 12px 30px -10px rgba(0,0,0,0.3)" }}
+      onContextMenu={onContextMenu}
+      onClick={onEdit}
+      className="break-inside-avoid rounded-[22px] border border-[var(--border-primary)] bg-[var(--card-bg)] p-6 transition-all group relative cursor-pointer overflow-hidden"
       style={{ background: note.color }}
     >
-      <button 
-        onClick={() => onTogglePin(note.id)}
-        className={`absolute top-3 right-3 p-1.5 rounded-lg transition-all ${note.pinned ? "text-[var(--accent-blue)] opacity-100" : "text-[var(--text-tertiary)] opacity-0 group-hover:opacity-100"}`}
-      >
-        {note.pinned ? <Pin size={14} /> : <Pin size={14} />}
-      </button>
+      <div className="absolute inset-0 bg-gradient-to-b from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />
+
+      {note.pinned && (
+        <div className="absolute top-4 right-4 text-[var(--accent-blue)]">
+          <Pin size={14} fill="currentColor" />
+        </div>
+      )}
 
       {note.title && (
-        <h3 className="text-[15px] font-bold text-[var(--text-primary)] mb-2 pr-6">
+        <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-3 pr-6 leading-tight group-hover:text-white transition-colors">
           {note.title}
         </h3>
       )}
-      <div className="text-[13px] text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed">
+      
+      <div className="text-[14px] text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed line-clamp-[12] group-hover:text-[rgba(255,255,255,0.85)] transition-colors">
         {note.content}
       </div>
 
-      <div className="mt-4 pt-4 border-t border-[rgba(255,255,255,0.05)] flex items-center justify-between opacity-0 group-hover:opacity-100 transition-opacity">
-        <div className="flex gap-2">
-          <button className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[var(--text-tertiary)] hover:text-[var(--accent-green)]" title="Convertir en tâche">
-            <ListChecks size={13} />
+      <div className="mt-5 pt-5 border-t border-[rgba(255,255,255,0.05)] flex items-center justify-between opacity-0 group-hover:opacity-100 transition-all translate-y-2 group-hover:translate-y-0">
+        <div className="flex gap-3">
+          <button 
+            onClick={(e) => { e.stopPropagation(); /* Synergy task conversion logic here */ }}
+            className="p-2 rounded-xl hover:bg-white/10 text-[var(--text-tertiary)] hover:text-white transition-all"
+            title="Convertir en tâche"
+          >
+            <ListChecks size={15} />
           </button>
         </div>
-        <button onClick={() => onDelete(note.id)} className="p-1.5 rounded-md hover:bg-[rgba(255,255,255,0.05)] text-[var(--text-tertiary)] hover:text-[var(--accent-red)]">
-          <Trash2 size={13} />
-        </button>
+        <div className="flex gap-2">
+           <button 
+            onClick={(e) => { e.stopPropagation(); togglePinNote(note.id); }}
+            className="p-2 rounded-xl hover:bg-white/10 text-[var(--text-tertiary)] hover:text-white transition-all"
+          >
+            <Pin size={15} />
+          </button>
+          <button 
+            onClick={(e) => { e.stopPropagation(); deleteNote(note.id); }}
+            className="p-2 rounded-xl hover:bg-white/10 text-[var(--text-tertiary)] hover:text-red-400 transition-all"
+          >
+            <Trash2 size={15} />
+          </button>
+        </div>
       </div>
     </motion.div>
   );

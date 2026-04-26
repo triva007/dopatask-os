@@ -95,7 +95,10 @@ export interface Note {
   content: string;
   color: string;
   pinned: boolean;
+  archived: boolean;
+  labels: string[];
   createdAt: number;
+  updatedAt: number;
 }
 
 export interface InboxItem {
@@ -191,6 +194,7 @@ interface AppState {
   updateNote: (id: string, updates: Partial<Omit<Note, "id" | "createdAt">>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
+  toggleArchiveNote: (id: string) => void;
 
   // ── Inbox (Quick Capture) ─────────────────────────────────────────────
   inboxItems: InboxItem[];
@@ -559,13 +563,23 @@ export const useAppStore = create<AppState>()(
       addNote: (title, content, color) =>
         set((s) => ({
           notes: [
-            { id: uid(), title: title.trim(), content: content.trim(), color: color ?? GOAL_COLORS[s.notes.length % GOAL_COLORS.length], pinned: false, createdAt: Date.now() },
+            { 
+              id: uid(), 
+              title: title.trim(), 
+              content: content.trim(), 
+              color: color ?? GOAL_COLORS[s.notes.length % GOAL_COLORS.length], 
+              pinned: false, 
+              archived: false,
+              labels: [],
+              createdAt: Date.now(),
+              updatedAt: Date.now()
+            },
             ...s.notes,
           ],
         })),
       updateNote: (id, updates) =>
         set((s) => ({
-          notes: s.notes.map((n) => n.id === id ? { ...n, ...updates } : n),
+          notes: s.notes.map((n) => n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n),
         })),
       deleteNote: (id) =>
         set((s) => ({
@@ -573,7 +587,11 @@ export const useAppStore = create<AppState>()(
         })),
       togglePinNote: (id) =>
         set((s) => ({
-          notes: s.notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n),
+          notes: s.notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned, updatedAt: Date.now() } : n),
+        })),
+      toggleArchiveNote: (id) =>
+        set((s) => ({
+          notes: s.notes.map((n) => n.id === id ? { ...n, archived: !n.archived, updatedAt: Date.now() } : n),
         })),
 
       // ── Inbox (Quick Capture) ─────────────────────────────────────────
@@ -663,7 +681,7 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "dopatask-storage",
-      version: 4,
+      version: 5,
       migrate: (persisted: unknown, version: number) => {
         return persisted;
       },
