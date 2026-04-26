@@ -89,12 +89,13 @@ export interface JournalEntry {
   tags: string[];
 }
 
-export interface GoogleKeepNote {
-  name: string;
-  title?: string;
-  body?: { text?: { text?: string } };
-  attachments?: any[];
-  permissions?: any[];
+export interface Note {
+  id: string;
+  title: string;
+  content: string;
+  color: string;
+  pinned: boolean;
+  createdAt: number;
 }
 
 export interface InboxItem {
@@ -184,10 +185,12 @@ interface AppState {
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
 
-  // ── Google Keep ───────────────────────────────────────────────────────
-  googleNotes: GoogleKeepNote[];
-  setGoogleNotes: (notes: GoogleKeepNote[]) => void;
-  syncGoogleNotes: () => Promise<void>;
+  // ── Notes (Keep Style) ────────────────────────────────────────────────
+  notes: Note[];
+  addNote: (title: string, content: string, color?: string) => void;
+  updateNote: (id: string, updates: Partial<Omit<Note, "id" | "createdAt">>) => void;
+  deleteNote: (id: string) => void;
+  togglePinNote: (id: string) => void;
 
   // ── Inbox (Quick Capture) ─────────────────────────────────────────────
   inboxItems: InboxItem[];
@@ -231,8 +234,6 @@ const OBJ_COLORS = ["#06b6d4", "#7c3aed", "#22c55e", "#f59e0b", "#ef4444", "#ec4
 const PROJECT_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
 const PROJECT_EMOJIS = ["📁", "🚀", "💡", "🎯", "⚡", "🔥"];
 const GOAL_COLORS = ["#7c3aed", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#3b82f6", "#10b981"];
-
-const todayStr = () => new Date().toISOString().slice(0, 10);
 
 // ─── Store ───────────────────────────────────────────────────────────────────
 
@@ -553,19 +554,27 @@ export const useAppStore = create<AppState>()(
         get().addToast("Note envoyée à l'Inbox", "info");
       },
 
-      // ── Google Keep ───────────────────────────────────────────────────────
-      googleNotes: [],
-      setGoogleNotes: (notes) => set({ googleNotes: notes }),
-      syncGoogleNotes: async () => {
-        try {
-          const res = await fetch("/api/google/keep");
-          if (!res.ok) throw new Error("Sync failed");
-          const data = await res.json();
-          set({ googleNotes: data.notes || [] });
-        } catch (err) {
-          console.error("Keep Sync Error:", err);
-        }
-      },
+      // ── Notes (Keep Style) ────────────────────────────────────────────
+      notes: [],
+      addNote: (title, content, color) =>
+        set((s) => ({
+          notes: [
+            { id: uid(), title: title.trim(), content: content.trim(), color: color ?? GOAL_COLORS[s.notes.length % GOAL_COLORS.length], pinned: false, createdAt: Date.now() },
+            ...s.notes,
+          ],
+        })),
+      updateNote: (id, updates) =>
+        set((s) => ({
+          notes: s.notes.map((n) => n.id === id ? { ...n, ...updates } : n),
+        })),
+      deleteNote: (id) =>
+        set((s) => ({
+          notes: s.notes.filter((n) => n.id !== id),
+        })),
+      togglePinNote: (id) =>
+        set((s) => ({
+          notes: s.notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned } : n),
+        })),
 
       // ── Inbox (Quick Capture) ─────────────────────────────────────────
       inboxItems: [],
@@ -654,23 +663,8 @@ export const useAppStore = create<AppState>()(
     }),
     {
       name: "dopatask-storage",
-      version: 3,
+      version: 4,
       migrate: (persisted: unknown, version: number) => {
-        const MOCK_TASK_TEXTS = new Set([
-          "Finir le rapport Q1",
-          "Répondre aux emails urgents",
-          "Préparer la réunion de 14h",
-          "Faire SEO site web",
-          "Montage vidéo client",
-          "Copyrighting page d'accueil",
-          "Script Reels (benchmark)",
-        ]);
-        if (version < 2 && persisted && typeof persisted === "object") {
-          const p = persisted as { tasks?: Array<{ text?: string }> };
-          if (Array.isArray(p.tasks)) {
-            p.tasks = p.tasks.filter((t) => !MOCK_TASK_TEXTS.has((t?.text || "").trim()));
-          }
-        }
         return persisted;
       },
       storage: createJSONStorage(() => supabaseStorage),
