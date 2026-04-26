@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Target, Settings,
   FolderKanban, Eye, BookOpen, Inbox, Phone,
-  Calendar,
+  Calendar, Map,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -24,6 +24,7 @@ const NAV_PRIMARY: NavItem[] = [
   { href: "/taches",     label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
   { href: "/calendrier", label: "Calendrier", Icon: Calendar },
   { href: "/inbox",      label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
+  { href: "/navigateur", label: "Navigateur", Icon: Map },
 ];
 
 const NAV_AGENCE: NavItem[] = [
