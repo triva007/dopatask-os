@@ -800,6 +800,8 @@ function ListColumn(p: ListColumnProps) {
               ))}
             </AnimatePresence>
           </>
+        )}
+      </div>
     </div>
   );
 }
