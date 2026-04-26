@@ -24,20 +24,18 @@ const NAV_PRIMARY: NavItem[] = [
   { href: "/taches",     label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
   { href: "/calendrier", label: "Calendrier", Icon: Calendar },
   { href: "/inbox",      label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
+];
+
+const NAV_AGENCE: NavItem[] = [
   { href: "/crm",        label: "CRM",       Icon: Phone, badge: "prospects_to_call" },
 ];
 
-const NAV_SECONDARY: NavItem[] = [
+const NAV_VIE: NavItem[] = [
   { href: "/projets",    label: "Projets",      Icon: FolderKanban },
   { href: "/objectifs",  label: "Objectifs",    Icon: Target       },
-];
-
-const NAV_TERTIARY: NavItem[] = [
   { href: "/vision",   label: "Vision",    Icon: Eye      },
   { href: "/journal",  label: "Journal",   Icon: BookOpen },
 ];
-
-// Removed NAV_GOOGLE
 
 function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: boolean; badgeCount: number }) {
   const { Icon, href, label, badge } = item;
@@ -141,12 +139,12 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* Divider + Secondary */}
+      {/* Divider + Agence */}
       <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
-        Organiser
+        Agence
       </p>
       <div className="flex flex-col gap-0.5 px-1">
-        {NAV_SECONDARY.map((item) => (
+        {NAV_AGENCE.map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -156,12 +154,12 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* Divider + Tertiary */}
+      {/* Divider + Vie */}
       <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
-        Explorer
+        Vie
       </p>
       <div className="flex flex-col gap-0.5 px-1">
-        {NAV_TERTIARY.map((item) => (
+        {NAV_VIE.map((item) => (
           <NavLink
             key={item.href}
             item={item}
@@ -170,8 +168,6 @@ export default function Sidebar() {
           />
         ))}
       </div>
-
-      {/* Google removed as its items have moved */}
 
       {/* Spacer */}
       <div className="flex-1" />

@@ -42,7 +42,7 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
   const {
     updateTask, updateTaskStatus, deleteTask, toggleTag,
     addMicroStep, toggleMicroStep, deleteMicroStep, setMicroSteps,
-    projects, sprints,
+    projects,
   } = useAppStore();
   const [microInput, setMicroInput] = useState("");
   const [editingTitle, setEditingTitle] = useState(false);
@@ -435,31 +435,6 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                   </div>
                 </div>
 
-                {/* Sprint Assignment */}
-                {sprints.length > 0 && (
-                  <div className="flex items-center gap-2">
-                    <Sparkles size={10} className="text-t-tertiary shrink-0" />
-                    <div className="flex gap-1.5 flex-wrap">
-                      <button onClick={() => updateTask(task.id, { sprintId: undefined })}
-                        className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
-                        style={{
-                          color: !task.sprintId ? "var(--text-primary)" : "var(--text-secondary)",
-                          border: `1px solid ${!task.sprintId ? "var(--accent-orange)" : "var(--border-primary)"}`,
-                        }}
-                      >Aucun sprint</button>
-                      {sprints.map((sp) => (
-                        <button key={sp.id} onClick={() => updateTask(task.id, { sprintId: sp.id })}
-                          className="text-[10px] px-2.5 py-1 rounded-lg font-medium transition-all"
-                          style={{
-                            background: task.sprintId === sp.id ? "color-mix(in srgb, var(--accent-orange) 10%, transparent)" : "transparent",
-                            color: task.sprintId === sp.id ? "var(--accent-orange)" : "var(--text-secondary)",
-                            border: `1px solid ${task.sprintId === sp.id ? "var(--accent-orange)" : "var(--border-primary)"}`,
-                          }}
-                        >{sp.name}</button>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>

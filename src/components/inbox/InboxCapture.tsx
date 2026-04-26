@@ -126,8 +126,8 @@ export default function InboxCapture() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Capture une idée…"
-              className="flex-1 text-[14px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
+              className="flex-1 text-[16px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
+              autoFocus
             />
             <button
               type="button"

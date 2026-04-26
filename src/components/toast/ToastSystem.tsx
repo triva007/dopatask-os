@@ -10,9 +10,6 @@ const TOAST_ICONS: Record<Toast["type"], { icon: typeof Zap; color: string }> = 
   success:     { icon: CheckCircle2, color: "var(--accent-green)" },
   error:       { icon: AlertCircle,  color: "var(--accent-red)" },
   info:        { icon: Info,         color: "var(--accent-blue)" },
-  xp:          { icon: Zap,          color: "var(--accent-orange)" },
-  achievement: { icon: Trophy,       color: "var(--accent-purple)" },
-  boss:        { icon: Skull,        color: "var(--accent-red)" },
 };
 
 function ToastItem({ toast }: { toast: Toast }) {

@@ -11,7 +11,6 @@ import {
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
 import { computeStatsMois, computeStreak, thermometreColor } from "@/lib/crmLogic";
-import { computeStatsMois, computeStreak, thermometreColor } from "@/lib/crmLogic";
 
 /* ───────────────────── Utils ───────────────────── */
 function businessDaysUntil(target: Date, from: Date = new Date()): number {
@@ -63,8 +62,7 @@ export default function CrmDashboard() {
       if (document.visibilityState !== "visible") return;
       loadAll();
       try {
-        // @ts-expect-error zustand persist API
-        if (useAppStore.persist?.rehydrate) useAppStore.persist.rehydrate();
+        if ((useAppStore as any).persist?.rehydrate) (useAppStore as any).persist.rehydrate();
       } catch {}
       setTick((t) => t + 1);
     };
@@ -72,8 +70,7 @@ export default function CrmDashboard() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === "dopatask-storage") {
         try {
-          // @ts-expect-error zustand persist API
-          if (useAppStore.persist?.rehydrate) useAppStore.persist.rehydrate();
+          if ((useAppStore as any).persist?.rehydrate) (useAppStore as any).persist.rehydrate();
         } catch {}
         setTick((t) => t + 1);
       }

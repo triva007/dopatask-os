@@ -8,7 +8,6 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
-import { celebrate } from "@/lib/dopamineFeedback";
 
 interface GTask {
   id: string;
@@ -90,9 +89,7 @@ export default function GoogleTasksKanban() {
   const [newTaskListId, setNewTaskListId] = useState<string>("");
   const [creating, setCreating] = useState(false);
 
-  const addXp     = useAppStore((s) => s.addXp);
   const addToast  = useAppStore((s) => s.addToast);
-  const damageBoss = useAppStore((s) => s.damageBoss);
 
   useEffect(() => {
     setStarred(loadSet(STAR_KEY));
@@ -145,13 +142,7 @@ export default function GoogleTasksKanban() {
       });
       if (!r.ok) throw new Error("Echec");
       if (next === "completed") {
-        const isCritical = Math.random() < 0.15;
-        const dmg  = isCritical ? 22 : 8;
-        const gain = isCritical ? 80 : 25;
-        addXp(gain);
-        damageBoss(dmg);
-        addToast(isCritical ? "COUP CRITIQUE ! +" + gain + " XP !" : "+" + gain + " XP", "xp");
-        celebrate(isCritical ? "critical" : "task-complete");
+        addToast("Tâche complétée", "success");
       }
     } catch {
       setTasks((prev) => prev.map((x) => x.id === t.id ? { ...x, status: t.status } : x));

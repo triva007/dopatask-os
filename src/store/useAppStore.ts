@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { celebrate } from "@/lib/dopamineFeedback";
 import { supabaseStorage } from "@/lib/supabaseStorage";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -11,8 +10,6 @@ export type ObjectiveHorizon = "week" | "month" | "quarter" | "year";
 export type ProjectStatus = "active" | "paused" | "completed" | "archived";
 export type LifeGoalHorizon = "court_terme" | "moyen_terme" | "long_terme";
 export type InboxItemType = "task" | "note" | "event";
-export type ThemeMode = "light" | "dark";
-export type SprintStatus = "planning" | "active" | "completed" | "cancelled";
 export type RecurrenceType = "none" | "daily" | "weekdays" | "weekly" | "monthly";
 
 export interface MicroStep {
@@ -98,14 +95,6 @@ export interface InboxItem {
   createdAt: number;
 }
 
-export interface HyperfocusSession {
-  id: string;
-  taskName: string;
-  durationMinutes: number;
-  completedAt: number;
-  noise: "brown" | "white" | "none";
-}
-
 export interface TimelineEvent {
   id: string;
   hour: number;
@@ -119,31 +108,15 @@ export interface TimelineEvent {
   googleUpdated?: string;
 }
 
-export interface Sprint {
-  id: string;
-  name: string;
-  startDate: string;
-  endDate: string;
-  status: SprintStatus;
-  goal: string;
-  retroNotes?: string;
-  createdAt: number;
-}
-
 export interface Toast {
   id: string;
   message: string;
-  type: "success" | "error" | "info" | "xp" | "achievement" | "boss";
+  type: "success" | "error" | "info";
   duration?: number;
   createdAt: number;
 }
 
 interface AppState {
-  // ── Theme ─────────────────────────────────────────────────────────────
-  theme: ThemeMode;
-  setTheme: (theme: ThemeMode) => void;
-  toggleTheme: () => void;
-
   // ── Onboarding ──────────────────────────────────────────────────────────
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (v: boolean) => void;
@@ -203,46 +176,11 @@ interface AppState {
   deleteInboxItem: (id: string) => void;
   clearProcessedInbox: () => void;
 
-  // ── Gamification ────────────────────────────────────────────────────────
-  xp: number;
-  streak: number;
-  bossHp: number;
-  bossLevel: number;
-  lastCritical: boolean;
-  totalTasksCompleted: number;
-  totalFocusMinutes: number;
-  unlockedAchievements: string[];
-  dailyChallengeId: string | null;
-  dailyChallengeCompleted: boolean;
-  lastStreakDate: string | null;
-  addXp: (amount: number) => void;
-  damageBoss: (dmg: number) => void;
-  respawnBoss: () => void;
-  unlockAchievement: (id: string) => void;
-  completeDailyChallenge: () => void;
-  setDailyChallenge: (id: string) => void;
-  checkAndResetStreak: () => void;
-
-  // ── Hyperfocus Sessions ─────────────────────────────────────────────────
-  hyperfocusSessions: HyperfocusSession[];
-  addHyperfocusSession: (session: Omit<HyperfocusSession, "id">) => void;
-
-  // ── Boutique ────────────────────────────────────────────────────────────
-  purchasedRewards: string[];
-  buyReward: (rewardId: string, cost: number) => void;
-
   // ── Timeline Events ─────────────────────────────────────────────────────
   timelineEvents: TimelineEvent[];
   addTimelineEvent: (event: Omit<TimelineEvent, "id">) => void;
   updateTimelineEvent: (id: string, updates: Partial<Omit<TimelineEvent, "id">>) => void;
   deleteTimelineEvent: (id: string) => void;
-
-  // ── Sprints ─────────────────────────────────────────────────────────────
-  sprints: Sprint[];
-  addSprint: (sprint: Omit<Sprint, "id" | "createdAt">) => void;
-  updateSprint: (id: string, updates: Partial<Omit<Sprint, "id" | "createdAt">>) => void;
-  deleteSprint: (id: string) => void;
-  assignTaskToSprint: (taskId: string, sprintId: string | undefined) => void;
 
   // ── Toasts ──────────────────────────────────────────────────────────────
   toasts: Toast[];
@@ -256,12 +194,7 @@ interface AppState {
 
   // ── Settings ────────────────────────────────────────────────────────────
   settings: {
-    pomodoroDefault: number;
-    noiseDefault: string;
-    maxDailyTasks: number;
-    showBodyDoubling: boolean;
     enableSounds: boolean;
-    tdahSubtype: "inattentif" | "hyperactif" | "mixte";
   };
   updateSettings: (updates: Partial<AppState["settings"]>) => void;
 }
@@ -270,12 +203,6 @@ interface AppState {
 
 const uid = () =>
   Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
-
-const BOSS_DMG_NORMAL   = 8;
-const BOSS_DMG_CRITICAL = 22;
-const XP_NORMAL         = 25;
-const XP_CRITICAL       = 80;
-const CRITICAL_RATE     = 0.15;
 
 const OBJ_COLORS = ["#06b6d4", "#7c3aed", "#22c55e", "#f59e0b", "#ef4444", "#ec4899"];
 const PROJECT_COLORS = ["#3b82f6", "#8b5cf6", "#06b6d4", "#10b981", "#f59e0b", "#ef4444"];
@@ -289,11 +216,6 @@ const todayStr = () => new Date().toISOString().slice(0, 10);
 export const useAppStore = create<AppState>()(
   persist(
     (set, get) => ({
-      // ── Theme ───────────────────────────────────────────────────────────
-      theme: "dark",
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((s) => ({ theme: s.theme === "light" ? "dark" : "light" })),
-
       // ── Onboarding ──────────────────────────────────────────────────────
       hasSeenTutorial: false,
       setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
@@ -303,7 +225,7 @@ export const useAppStore = create<AppState>()(
 
       addTask: (text, status, projectId) => {
         const { tasks, settings } = get();
-        const targetStatus = status ?? (tasks.filter((t) => t.status === "today").length < settings.maxDailyTasks ? "today" : "inbox");
+        const targetStatus = status ?? "today";
         const newTask: Task = {
           id: uid(), text: text.trim(), status: targetStatus, projectId,
           createdAt: Date.now(), tags: [], microSteps: [], expanded: false,
@@ -328,39 +250,12 @@ export const useAppStore = create<AppState>()(
         })),
 
       completeTask: (id) => {
-        const { tasks, bossHp, xp, streak, totalTasksCompleted, bossLevel, lastStreakDate } = get();
-        const isCritical = Math.random() < CRITICAL_RATE;
-        const dmg  = isCritical ? BOSS_DMG_CRITICAL : BOSS_DMG_NORMAL;
-        const gain = isCritical ? XP_CRITICAL       : XP_NORMAL;
-        const newHp = Math.max(0, bossHp - dmg);
-        const today = todayStr();
-        const isNewDay = lastStreakDate !== today;
-
-        set({
-          tasks: tasks.map((t) =>
+        set((s) => ({
+          tasks: s.tasks.map((t) =>
             t.id === id ? { ...t, status: "done", completedAt: Date.now() } : t
           ),
-          bossHp: newHp,
-          xp: xp + gain,
-          streak: isNewDay ? streak + 1 : streak,
-          lastStreakDate: today,
-          lastCritical: isCritical,
           lastActiveAt: Date.now(),
-          totalTasksCompleted: totalTasksCompleted + 1,
-        });
-
-        celebrate(isCritical ? "critical" : "task-complete");
-
-        if (isCritical) {
-          get().addToast(`COUP CRITIQUE ! +${XP_CRITICAL} XP !`, "xp");
-        } else {
-          get().addToast(`+${XP_NORMAL} XP`, "xp");
-        }
-
-        if (newHp === 0) {
-          get().addToast(`Boss Niv.${bossLevel} vaincu ! Le boss respawn plus fort...`, "boss");
-          setTimeout(() => get().respawnBoss(), 1500);
-        }
+        }));
       },
 
       deleteTask: (id) =>
@@ -655,23 +550,6 @@ export const useAppStore = create<AppState>()(
           inboxItems: s.inboxItems.filter((i) => !i.processed),
         })),
 
-      // ── Hyperfocus Sessions ──────────────────────────────────────────────
-      hyperfocusSessions: [],
-      addHyperfocusSession: (session) =>
-        set((s) => ({
-          hyperfocusSessions: [{ ...session, id: uid() }, ...s.hyperfocusSessions],
-          totalFocusMinutes: s.totalFocusMinutes + session.durationMinutes,
-        })),
-
-      // ── Boutique ─────────────────────────────────────────────────────────
-      purchasedRewards: [],
-      buyReward: (rewardId, cost) => {
-        const s = get();
-        if (s.xp < cost) return;
-        set({ xp: s.xp - cost, purchasedRewards: [...s.purchasedRewards, rewardId + "_" + Date.now()] });
-        celebrate("purchase");
-      },
-
       // ── Timeline Events ───────────────────────────────────────────────────
       timelineEvents: [],
       addTimelineEvent: (event) =>
@@ -689,30 +567,6 @@ export const useAppStore = create<AppState>()(
           timelineEvents: s.timelineEvents.filter((e) => e.id !== id),
         })),
 
-      // ── Sprints ─────────────────────────────────────────────────────────
-      sprints: [],
-      addSprint: (sprint) =>
-        set((s) => ({
-          sprints: [...s.sprints, { ...sprint, id: uid(), createdAt: Date.now() }],
-        })),
-      updateSprint: (id, updates) =>
-        set((s) => ({
-          sprints: s.sprints.map((sp) =>
-            sp.id === id ? { ...sp, ...updates } : sp
-          ),
-        })),
-      deleteSprint: (id) =>
-        set((s) => ({
-          sprints: s.sprints.filter((sp) => sp.id !== id),
-          tasks: s.tasks.map((t) => t.sprintId === id ? { ...t, sprintId: undefined } : t),
-        })),
-      assignTaskToSprint: (taskId, sprintId) =>
-        set((s) => ({
-          tasks: s.tasks.map((t) =>
-            t.id === taskId ? { ...t, sprintId } : t
-          ),
-        })),
-
       // ── Toasts ──────────────────────────────────────────────────────────
       toasts: [],
       addToast: (message, type = "info", duration = 3000) =>
@@ -723,56 +577,6 @@ export const useAppStore = create<AppState>()(
         set((s) => ({
           toasts: s.toasts.filter((t) => t.id !== id),
         })),
-
-      // ── Gamification ────────────────────────────────────────────────────
-      xp: 0,
-      streak: 0,
-      bossHp: 100,
-      bossLevel: 1,
-      lastCritical: false,
-      totalTasksCompleted: 0,
-      totalFocusMinutes: 0,
-      unlockedAchievements: [],
-      dailyChallengeId: null,
-      dailyChallengeCompleted: false,
-      lastStreakDate: null,
-      addXp: (amount) => set((s) => ({ xp: s.xp + amount })),
-      damageBoss: (dmg) => set((s) => ({ bossHp: Math.max(0, s.bossHp - dmg) })),
-      respawnBoss: () =>
-        set((s) => {
-          const newLevel = s.bossLevel + 1;
-          const bonusXp = 50 * s.bossLevel;
-          return {
-            bossHp: 100,
-            bossLevel: newLevel,
-            xp: s.xp + bonusXp,
-          };
-        }),
-      unlockAchievement: (id) => {
-        const s = get();
-        if (s.unlockedAchievements.includes(id)) return;
-        set({ unlockedAchievements: [...s.unlockedAchievements, id] });
-        celebrate("achievement");
-      },
-      completeDailyChallenge: () => {
-        const s = get();
-        if (s.dailyChallengeCompleted) return;
-        set({ dailyChallengeCompleted: true, xp: s.xp + 150 });
-        celebrate("critical");
-      },
-      setDailyChallenge: (id) =>
-        set({ dailyChallengeId: id, dailyChallengeCompleted: false }),
-      checkAndResetStreak: () => {
-        const { lastStreakDate } = get();
-        if (!lastStreakDate) return;
-        const last = new Date(lastStreakDate);
-        const now = new Date();
-        const diffDays = Math.floor((now.getTime() - last.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays > 1) {
-          set({ streak: 0 });
-          get().addToast("Streak perdu ! Recommence aujourd'hui.", "info");
-        }
-      },
 
       // ── Fil d'Ariane ────────────────────────────────────────────────────
       lastActiveAt: Date.now(),
@@ -785,12 +589,7 @@ export const useAppStore = create<AppState>()(
 
       // ── Settings ────────────────────────────────────────────────────────
       settings: {
-        pomodoroDefault: 25,
-        noiseDefault: "brown",
-        maxDailyTasks: 5,
-        showBodyDoubling: true,
         enableSounds: true,
-        tdahSubtype: "mixte",
       },
       updateSettings: (updates) =>
         set((s) => ({

@@ -19,8 +19,7 @@ export default function DashboardPage() {
     const refreshAll = () => {
       if (document.visibilityState !== "visible") return;
       try {
-        // @ts-expect-error zustand persist API
-        if (useAppStore.persist?.rehydrate) useAppStore.persist.rehydrate();
+        if ((useAppStore as any).persist?.rehydrate) (useAppStore as any).persist.rehydrate();
       } catch {}
       setTick((t) => t + 1);
     };
@@ -28,8 +27,7 @@ export default function DashboardPage() {
     const onStorage = (e: StorageEvent) => {
       if (e.key === "dopatask-storage") {
         try {
-          // @ts-expect-error zustand persist API
-          if (useAppStore.persist?.rehydrate) useAppStore.persist.rehydrate();
+          if ((useAppStore as any).persist?.rehydrate) (useAppStore as any).persist.rehydrate();
         } catch {}
         setTick((t) => t + 1);
       }

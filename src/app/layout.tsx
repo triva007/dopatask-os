@@ -11,16 +11,9 @@ const ThemeProvider = dynamic(() => import("@/components/ThemeProvider"), {
   ssr: false,
 });
 
-const geistSans = localFont({
-  src: "./fonts/GeistVF.woff",
-  variable: "--font-geist-sans",
-  weight: "100 900",
-});
-const geistMono = localFont({
-  src: "./fonts/GeistMonoVF.woff",
-  variable: "--font-geist-mono",
-  weight: "100 900",
-});
+import { Inter } from "next/font/google";
+
+const inter = Inter({ subsets: ["latin"], variable: "--font-inter" });
 
 export const metadata: Metadata = {
   title: "Aaron-OS — Productivity Reimagined",
@@ -35,7 +28,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-t-primary h-screen overflow-hidden`}>
+      <body className={`${inter.variable} font-sans antialiased bg-background text-t-primary h-screen overflow-hidden`}>
         <ThemeProvider>
           <AppShell>{children}</AppShell>
         </ThemeProvider>

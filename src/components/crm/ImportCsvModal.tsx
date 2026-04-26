@@ -55,7 +55,8 @@ export default function ImportCsvModal({ onClose }: { onClose: () => void }) {
 
   const runImport = async () => {
     setImporting(true);
-    const n = await importProspects(parsed);
+    const toImport = parsed.map(p => ({ ...p, statut: p.statut || undefined }));
+    const n = await importProspects(toImport);
     setDone(n);
     setImporting(false);
   };

@@ -5,18 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Maximize2, Minimize2 } from "lucide-react";
 import Sidebar from "@/components/sidebar/Sidebar";
 import SpotlightSearch from "@/components/spotlight/SpotlightSearch";
-import TodayRecap from "@/components/recap/TodayRecap";
 import ToastSystem from "@/components/toast/ToastSystem";
 import { useAppStore } from "@/store/useAppStore";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [focusMode, setFocusMode] = useState(false);
-  const checkAndResetStreak = useAppStore((s) => s.checkAndResetStreak);
-
-  // Check streak on mount
-  useEffect(() => {
-    checkAndResetStreak();
-  }, [checkAndResetStreak]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -72,7 +65,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
       {/* Global overlays */}
       <SpotlightSearch />
-      <TodayRecap />
       <ToastSystem />
     </>
   );

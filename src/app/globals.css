@@ -2,104 +2,8 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   DOPATASK · PREMIUM ADHD THEME
-   Design : warm neutrals, soft violet accent, whisper-quiet surfaces
-   ═══════════════════════════════════════════════════════════════════════════ */
+/* DOPATASK OS — Permanent Dark Mode */
 :root {
-  --background: #FAFAF7;
-  --foreground: #0D0D10;
-
-  /* Surface hierarchy — paper-warm tones */
-  --surface-0: #FAFAF7;
-  --surface-1: #FFFFFF;
-  --surface-2: #F5F4EF;
-  --surface-3: #EFEEE8;
-  --surface-4: #E7E5DE;
-
-  /* Borders — barely-there */
-  --border-primary: rgba(13, 13, 16, 0.06);
-  --border-secondary: rgba(13, 13, 16, 0.10);
-  --border-hover: rgba(13, 13, 16, 0.14);
-
-  /* Text — graphite scale */
-  --text-primary: #0D0D10;
-  --text-secondary: #6E6E76;
-  --text-tertiary: #9A9AA2;
-  --text-ghost: #C4C4CC;
-
-  /* Accents — quiet, sophisticated */
-  --accent-blue: #4F46E5;
-  --accent-blue-light: rgba(79, 70, 229, 0.08);
-  --accent-green: #5FA87D;
-  --accent-green-light: rgba(95, 168, 125, 0.10);
-  --accent-red: #D4604A;
-  --accent-red-light: rgba(212, 96, 74, 0.10);
-  --accent-orange: #D9944E;
-  --accent-orange-light: rgba(217, 148, 78, 0.10);
-  --accent-purple: #7C6BD4;
-  --accent-purple-light: rgba(124, 107, 212, 0.10);
-  --accent-cyan: #5FA3B8;
-
-  /* Sidebar */
-  --sidebar-bg: #FAFAF7;
-  --sidebar-width: 232px;
-  --sidebar-active-bg: rgba(79, 70, 229, 0.08);
-  --sidebar-active-text: #4F46E5;
-  --sidebar-inactive-text: #6E6E76;
-
-  /* Card system — whisper quiet */
-  --card-bg: #FFFFFF;
-  --card-border: rgba(13, 13, 16, 0.05);
-  --card-shadow: 0 1px 2px rgba(13, 13, 16, 0.02), 0 2px 8px rgba(13, 13, 16, 0.02);
-  --card-shadow-hover: 0 2px 4px rgba(13, 13, 16, 0.03), 0 8px 28px rgba(13, 13, 16, 0.04);
-  --shadow-elevated: 0 4px 16px rgba(13, 13, 16, 0.05), 0 24px 64px rgba(13, 13, 16, 0.03);
-
-  /* Glows off in light */
-  --shadow-glow-green: none;
-  --shadow-glow-violet: none;
-  --shadow-glow-cyan: none;
-  --shadow-glow-amber: none;
-
-  /* Scrollbar */
-  --scrollbar-thumb: rgba(13, 13, 16, 0.08);
-  --scrollbar-thumb-hover: rgba(13, 13, 16, 0.18);
-
-  /* Selection */
-  --selection-bg: rgba(79, 70, 229, 0.15);
-  --selection-color: #4F46E5;
-
-  /* Focus ring */
-  --focus-ring: rgba(79, 70, 229, 0.35);
-
-  /* Backdrop */
-  --backdrop-bg: rgba(13, 13, 16, 0.35);
-  --backdrop-blur: blur(16px);
-
-  /* Empty state */
-  --empty-bg: #F5F4EF;
-
-  /* Input */
-  --input-bg: #FFFFFF;
-  --input-border: rgba(13, 13, 16, 0.08);
-
-  /* Badge */
-  --badge-bg: rgba(13, 13, 16, 0.05);
-  --badge-text: #6E6E76;
-
-  /* Checkbox */
-  --checkbox-border: rgba(13, 13, 16, 0.18);
-  --checkbox-checked-bg: #4F46E5;
-
-  /* Toast */
-  --toast-bg: #FFFFFF;
-  --toast-shadow: 0 8px 32px rgba(13, 13, 16, 0.12);
-}
-
-/* ═══════════════════════════════════════════════════════════════════════════
-   DARK THEME — Obsidian with warm violet glow
-   ═══════════════════════════════════════════════════════════════════════════ */
-.dark {
   --background: #0A0A0C;
   --foreground: #EDEDF0;
 
@@ -167,13 +71,22 @@
   --toast-shadow: 0 8px 32px rgba(0,0,0,0.6);
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   DOPATASK · PREMIUM ADHD THEME
+   Design : warm neutrals, soft violet accent, whisper-quiet surfaces
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   DARK THEME — Obsidian with warm violet glow
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 * { box-sizing: border-box; padding: 0; margin: 0; }
 html, body { max-width: 100vw; overflow: hidden; height: 100vh; }
 
 body {
   color: var(--text-primary);
   background: var(--background);
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', system-ui, sans-serif;
+  font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   font-feature-settings: "ss01", "cv11", "case";
   letter-spacing: -0.015em;
   -webkit-font-smoothing: antialiased;
