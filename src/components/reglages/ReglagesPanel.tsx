@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCrmStore } from "@/store/useCrmStore";
+import GoogleSyncSection from "./GoogleSyncSection";
 
 function SettingRow({ icon: Icon, label, description, badge, color = "var(--text-secondary)", onClick, isClickable = false }: {
   icon: typeof Settings; label: string; description: string; badge?: string; color?: string; onClick?: () => void; isClickable?: boolean;
@@ -340,6 +341,9 @@ export default function ReglagesPanel() {
               </div>
             </button>
           </Section>
+
+          {/* Google Calendar + Tasks sync */}
+          <GoogleSyncSection />
 
           {/* CRM cold-call config */}
           <CrmConfigSection />

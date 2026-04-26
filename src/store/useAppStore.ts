@@ -37,6 +37,10 @@ export interface Task {
   priority?: "low" | "medium" | "high";
   recurrence?: RecurrenceType;
   order?: number;
+  // Google Tasks sync
+  googleTaskId?: string;
+  googleTaskListId?: string;
+  googleUpdated?: string;
 }
 
 export interface Project {
@@ -108,6 +112,10 @@ export interface TimelineEvent {
   label: string;
   color: string;
   day?: string; // ISO date string, defaults to today
+  // Google Calendar sync
+  googleEventId?: string;
+  googleCalendarId?: string;
+  googleUpdated?: string;
 }
 
 export interface Sprint {
