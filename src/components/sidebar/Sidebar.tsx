@@ -43,30 +43,30 @@ function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: bool
   return (
     <Link
       href={href}
-      className="relative flex items-center px-3 py-2 rounded-lg group transition-colors duration-150"
+      className="relative flex items-center px-4 py-3 rounded-xl group transition-all duration-150"
     >
       {isActive && (
         <motion.div
           layoutId="sidebar-active"
-          className="absolute inset-0 rounded-lg"
+          className="absolute inset-0 rounded-xl"
           style={{ background: "var(--sidebar-active-bg)" }}
           initial={false}
           transition={{ type: "spring", stiffness: 400, damping: 32 }}
         />
       )}
-      <div className="relative z-10 flex items-center gap-2.5 w-full">
+      <div className="relative z-10 flex items-center gap-3.5 w-full">
         <Icon
-          size={15}
+          size={20}
           className={`shrink-0 transition-colors duration-150 ${
-            isActive ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-t-primary"
+            isActive ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-white"
           }`}
           strokeWidth={1.75}
         />
         <span
-          className={`text-[13px] transition-colors duration-150 leading-none flex-1 ${
+          className={`text-[15px] transition-colors duration-150 leading-none flex-1 ${
             isActive
-              ? "text-sidebar-active-text font-medium"
-              : "text-sidebar-inactive font-normal group-hover:text-t-primary"
+              ? "text-sidebar-active-text font-semibold"
+              : "text-sidebar-inactive font-medium group-hover:text-white"
           }`}
         >
           {label}
@@ -75,7 +75,7 @@ function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: bool
           <motion.span
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="inline-flex items-center justify-center min-w-[18px] h-[18px] px-1.5 text-[10px] font-semibold rounded-full whitespace-nowrap tabular-nums"
+            className="inline-flex items-center justify-center min-w-[22px] h-[22px] px-2 text-[11px] font-bold rounded-full whitespace-nowrap tabular-nums shadow-sm"
             style={{
               background: isActive ? "var(--accent-blue)" : "var(--badge-bg)",
               color: isActive ? "#fff" : "var(--badge-text)",
@@ -107,29 +107,29 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="flex flex-col h-full w-full px-3 py-6 gap-0.5">
-      {/* Logo — minimal */}
-      <div className="flex items-center gap-2.5 pb-7 pt-1 px-2">
+    <nav className="flex flex-col h-full w-full px-4 py-8 gap-1.5">
+      {/* Logo — larger for PC */}
+      <div className="flex items-center gap-3.5 pb-10 pt-2 px-3">
         <div
-          className="w-7 h-7 rounded-[8px] flex items-center justify-center shrink-0"
+          className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-lg"
           style={{
             background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))",
           }}
         >
-          <span className="text-[13px] text-white font-semibold">A</span>
+          <span className="text-[18px] text-white font-bold">A</span>
         </div>
         <div>
-          <p className="text-[13px] font-semibold leading-none tracking-tight text-t-primary">
+          <p className="text-[16px] font-bold leading-none tracking-tight text-white">
             Aaron-OS
           </p>
-          <p className="text-[9px] leading-none mt-1 font-medium text-t-tertiary tracking-wider uppercase">
-            v4.1 · premium
+          <p className="text-[10px] leading-none mt-1.5 font-bold text-t-tertiary tracking-widest uppercase opacity-60">
+            v5.0 · Ultra PC
           </p>
         </div>
       </div>
 
       {/* Primary group */}
-      <div className="flex flex-col gap-0.5 px-1">
+      <div className="flex flex-col gap-1 px-1">
         {NAV_PRIMARY.map((item) => (
           <NavLink
             key={item.href}
@@ -141,10 +141,10 @@ export default function Sidebar() {
       </div>
 
       {/* Divider + Agence */}
-      <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
+      <p className="px-4 pt-8 pb-3 text-[10px] font-bold tracking-[0.25em] uppercase text-t-tertiary opacity-50">
         Agence
       </p>
-      <div className="flex flex-col gap-0.5 px-1">
+      <div className="flex flex-col gap-1 px-1">
         {NAV_AGENCE.map((item) => (
           <NavLink
             key={item.href}
@@ -156,10 +156,10 @@ export default function Sidebar() {
       </div>
 
       {/* Divider + Vie */}
-      <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
+      <p className="px-4 pt-8 pb-3 text-[10px] font-bold tracking-[0.25em] uppercase text-t-tertiary opacity-50">
         Vie
       </p>
-      <div className="flex flex-col gap-0.5 px-1">
+      <div className="flex flex-col gap-1 px-1">
         {NAV_VIE.map((item) => (
           <NavLink
             key={item.href}
@@ -174,7 +174,7 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* Settings */}
-      <div className="px-1">
+      <div className="px-1 mt-6 pt-6 border-t border-white/5">
         <NavLink
           item={{ href: "/reglages", label: "Réglages", Icon: Settings }}
           isActive={pathname === "/reglages"}

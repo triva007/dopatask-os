@@ -28,7 +28,6 @@ import {
   arrayMove,
   SortableContext,
   sortableKeyboardCoordinates,
-  verticalListSortingStrategy,
   rectSortingStrategy,
   useSortable,
 } from '@dnd-kit/sortable';
@@ -54,7 +53,6 @@ export default function NotesView() {
   const [contextMenu, setContextMenu] = useState<{ x: number, y: number, noteId: string } | null>(null);
   const [editingNote, setEditingNote] = useState<any | null>(null);
 
-  // DND Sensors
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -101,28 +99,17 @@ export default function NotesView() {
   const pinnedNotes = filteredNotes.filter(n => n.pinned);
   const otherNotes = filteredNotes.filter(n => !n.pinned);
 
-  const handleDragStart = (event: any) => {
-    setActiveId(event.active.id);
-  };
-
+  const handleDragStart = (event: any) => setActiveId(event.active.id);
   const handleDragEnd = (event: DragEndEvent, list: Note[]) => {
     const { active, over } = event;
     setActiveId(null);
-
     if (over && active.id !== over.id) {
       const oldIndex = list.findIndex(n => n.id === active.id);
       const newIndex = list.findIndex(n => n.id === over.id);
-      
       const newList = arrayMove(list, oldIndex, newIndex);
-      
-      // Merge with the other half of notes (pinned/other)
       const isPinned = list[0]?.pinned;
       const otherHalf = notes.filter(n => n.pinned !== isPinned);
-      
-      const finalOrder = isPinned 
-        ? [...newList.map(n => n.id), ...otherHalf.map(n => n.id)]
-        : [...otherHalf.map(n => n.id), ...newList.map(n => n.id)];
-        
+      const finalOrder = isPinned ? [...newList.map(n => n.id), ...otherHalf.map(n => n.id)] : [...otherHalf.map(n => n.id), ...newList.map(n => n.id)];
       reorderNotes(finalOrder);
     }
   };
@@ -130,80 +117,74 @@ export default function NotesView() {
   const activeNote = activeId ? notes.find(n => n.id === activeId) : null;
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-primary)]">
-      {/* Header */}
-      <div className="shrink-0 px-8 pt-8 pb-5 border-b border-[var(--border-primary)] flex items-center justify-between">
+    <div className="flex flex-col h-full bg-[var(--surface-0)]">
+      {/* Header — larger for PC */}
+      <div className="shrink-0 px-12 pt-12 pb-8 border-b border-white/5 flex items-center justify-between">
         <div>
-          <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none flex items-center gap-3">
-            <StickyNote size={24} className="text-[var(--accent-blue)]" />
+          <h1 className="text-[36px] font-bold text-white tracking-tight leading-none flex items-center gap-4">
+            <StickyNote size={32} className="text-[var(--accent-blue)]" />
             {showArchived ? "Archives" : "Notes"}
           </h1>
-          <p className="text-[13px] text-[var(--text-secondary)] mt-2">
-            Organise tes idées avec un glisser-déposer fluide.
+          <p className="text-[14px] text-[var(--text-secondary)] mt-4 font-medium">
+            Capture tes idées dans cet espace optimisé.
           </p>
         </div>
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-6">
           <div className="relative group">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent-blue)]" size={14} />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--text-tertiary)] group-focus-within:text-[var(--accent-blue)]" size={18} />
             <input 
-              type="text" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 pr-4 py-2 bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl text-[13px] w-64 focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] transition-all"
+              type="text" placeholder="Rechercher une idée..." value={search} onChange={(e) => setSearch(e.target.value)}
+              className="pl-12 pr-6 py-3.5 bg-[var(--surface-1)] border border-white/5 rounded-2xl text-[14px] w-80 focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] transition-all shadow-sm"
             />
           </div>
           <button 
             onClick={() => setShowArchived(!showArchived)}
-            className={`p-2.5 rounded-xl border transition-all flex items-center gap-2 text-[13px] font-medium
-              ${showArchived ? "bg-[var(--accent-blue)] text-white border-transparent" : "bg-[var(--surface-1)] text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--surface-2)]"}
+            className={`px-6 py-3.5 rounded-2xl border transition-all flex items-center gap-3 text-[14px] font-bold shadow-lg
+              ${showArchived ? "bg-[var(--accent-blue)] text-white border-transparent" : "bg-[var(--surface-1)] text-white border-white/5 hover:bg-[var(--surface-2)]"}
             `}
           >
-            <Archive size={16} />
-            {showArchived ? "Notes" : "Archives"}
+            <Archive size={18} />
+            {showArchived ? "Retour aux Notes" : "Voir les Archives"}
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-8 flex flex-col gap-12">
+      <div className="flex-1 overflow-y-auto p-12 flex flex-col gap-16">
         
-        {/* Quick Add */}
+        {/* Quick Add — wider for PC */}
         {!showArchived && (
           <div className="flex justify-center">
             {!isAdding ? (
               <motion.div layoutId="add-note-box" onClick={() => setIsAdding(true)}
-                className="w-full max-w-xl p-3.5 rounded-xl bg-[var(--card-bg)] border border-[var(--border-primary)] shadow-sm cursor-text text-[var(--text-tertiary)] text-[14px] font-medium flex items-center justify-between group hover:border-[var(--accent-blue)] transition-colors"
+                className="w-full max-w-2xl p-5 rounded-2xl bg-[var(--surface-1)] border border-white/5 shadow-xl cursor-text text-[var(--text-secondary)] text-[16px] font-medium flex items-center justify-between group hover:border-[var(--accent-blue)] transition-all"
               >
-                <span>Créer une note...</span>
-                <Plus size={16} className="opacity-0 group-hover:opacity-100 transition-opacity" />
+                <span>Prendre une note rapide...</span>
+                <Plus size={20} className="opacity-40 group-hover:opacity-100 transition-opacity" />
               </motion.div>
             ) : (
               <motion.div layoutId="add-note-box" onPaste={(e) => handlePaste(e, true)}
-                className="w-full max-w-xl rounded-2xl border border-[var(--border-primary)] bg-[var(--card-bg)] shadow-2xl overflow-hidden z-20"
+                className="w-full max-w-3xl rounded-[32px] border border-white/10 bg-[var(--card-bg)] shadow-[0_32px_64px_rgba(0,0,0,0.5)] overflow-hidden z-20"
                 style={{ background: selectedColor }}
               >
                 {newImages.length > 0 && (
-                  <div className="flex gap-2 p-4 overflow-x-auto bg-black/10">
+                  <div className="flex gap-4 p-6 overflow-x-auto bg-black/20">
                     {newImages.map((img, i) => (
                       <div key={i} className="relative shrink-0 group">
-                        <img src={img} className="h-32 rounded-lg border border-white/10" />
-                        <button onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                          <X size={12} />
-                        </button>
+                        <img src={img} className="h-48 rounded-2xl border border-white/10 shadow-lg" />
+                        <button onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={16} /></button>
                       </div>
                     ))}
                   </div>
                 )}
-                <div className="p-5 space-y-4">
-                  <input placeholder="Titre" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full bg-transparent text-[18px] font-bold text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-tertiary)]" autoFocus />
-                  <textarea placeholder="Écris quelque chose..." value={newContent} onChange={(e) => setNewContent(e.target.value)} rows={4} className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)] leading-relaxed" />
+                <div className="p-10 space-y-6">
+                  <input placeholder="Titre de la note" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full bg-transparent text-[28px] font-bold text-white focus:outline-none placeholder:text-white/20" autoFocus />
+                  <textarea placeholder="Le contenu de ton idée..." value={newContent} onChange={(e) => setNewContent(e.target.value)} rows={6} className="w-full bg-transparent text-[18px] text-white/80 focus:outline-none resize-none placeholder:text-white/20 leading-relaxed" />
                 </div>
-                <div className="px-5 py-3 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.05)]">
-                  <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-[60%] scrollbar-none">
-                    {COLORS.map(c => (
-                      <button key={c} onClick={() => setSelectedColor(c)} className={`w-5 h-5 shrink-0 rounded-full border transition-transform hover:scale-125 ${selectedColor === c ? "border-white scale-110" : "border-transparent"}`} style={{ background: c }} />
-                    ))}
-                  </div>
-                  <div className="flex gap-3">
-                    <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Annuler</button>
-                    <button onClick={handleAdd} className="px-5 py-2 rounded-xl bg-white text-black text-[12px] font-bold hover:bg-gray-100 transition-colors shadow-lg">Terminer</button>
+                <div className="px-10 py-6 flex items-center justify-between border-t border-white/5 bg-black/20">
+                  <div className="flex gap-2">{COLORS.map(c => <button key={c} onClick={() => setSelectedColor(c)} className={`w-6 h-6 rounded-full border-2 transition-transform hover:scale-125 ${selectedColor === c ? "border-white scale-110 shadow-lg" : "border-transparent"}`} style={{ background: c }} />)}</div>
+                  <div className="flex gap-6">
+                    <button onClick={() => setIsAdding(false)} className="px-6 py-3 text-[14px] font-bold text-white/60 hover:text-white transition-colors">Annuler</button>
+                    <button onClick={handleAdd} className="px-10 py-3.5 rounded-2xl bg-white text-black text-[14px] font-bold hover:bg-gray-100 transition-all shadow-xl">Ajouter la note</button>
                   </div>
                 </div>
               </motion.div>
@@ -211,81 +192,75 @@ export default function NotesView() {
           </div>
         )}
 
-        {/* Pinned Section */}
+        {/* Notes Grid — Optimized for 1080p width */}
         {pinnedNotes.length > 0 && (
-          <div className="space-y-6">
-            <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-tertiary)] flex items-center gap-2.5 px-2">
-              <Pin size={12} className="text-[var(--accent-blue)]" /> Notes épinglées
+          <div className="space-y-8">
+            <h2 className="text-[12px] font-bold tracking-[0.3em] uppercase text-[var(--accent-blue)] flex items-center gap-3 px-4">
+              <Pin size={14} fill="currentColor" /> Notes épinglées
             </h2>
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={(e) => handleDragEnd(e, pinnedNotes)}>
               <SortableContext items={pinnedNotes.map(n => n.id)} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
                   {pinnedNotes.map((note) => (
                     <SortableNote key={note.id} note={note} onEdit={() => setEditingNote(note)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, noteId: note.id }); }} />
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
+              <DragOverlay dropAnimation={null}>
                 {activeNote ? <NoteCard note={activeNote} isOverlay /> : null}
               </DragOverlay>
             </DndContext>
           </div>
         )}
 
-        {/* Other Section */}
-        <div className="space-y-6">
-          {pinnedNotes.length > 0 && (
-            <h2 className="text-[11px] font-bold tracking-[0.2em] uppercase text-[var(--text-tertiary)] px-2">
-              Autres notes
-            </h2>
-          )}
+        <div className="space-y-8">
+          {pinnedNotes.length > 0 && <h2 className="text-[12px] font-bold tracking-[0.3em] uppercase text-[var(--text-tertiary)] px-4">Autres notes</h2>}
           {otherNotes.length > 0 ? (
             <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={(e) => handleDragEnd(e, otherNotes)}>
               <SortableContext items={otherNotes.map(n => n.id)} strategy={rectSortingStrategy}>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-8">
                   {otherNotes.map((note) => (
                     <SortableNote key={note.id} note={note} onEdit={() => setEditingNote(note)} onContextMenu={(e) => { e.preventDefault(); setContextMenu({ x: e.clientX, y: e.clientY, noteId: note.id }); }} />
                   ))}
                 </div>
               </SortableContext>
-              <DragOverlay dropAnimation={{ sideEffects: defaultDropAnimationSideEffects({ styles: { active: { opacity: '0.4' } } }) }}>
+              <DragOverlay dropAnimation={null}>
                 {activeNote ? <NoteCard note={activeNote} isOverlay /> : null}
               </DragOverlay>
             </DndContext>
           ) : (
             !pinnedNotes.length && !isAdding && (
-              <div className="flex flex-col items-center justify-center py-32 text-center opacity-40">
-                <StickyNote size={48} className="mb-4" />
-                <p>Aucune note ici. Commence à écrire !</p>
+              <div className="flex flex-col items-center justify-center py-40 text-center opacity-20">
+                <StickyNote size={80} className="mb-6" />
+                <p className="text-[20px] font-medium">Capture ta première idée</p>
               </div>
             )
           )}
         </div>
-
       </div>
 
-      {/* Editor Modal & Context Menu (Same as before but cleaned up) */}
+      {/* Editor Modal */}
       <AnimatePresence>
         {editingNote && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} onPaste={(e) => handlePaste(e, false)} className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[90vh]" style={{ background: editingNote.color }}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-8 bg-black/80 backdrop-blur-2xl" onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.9, y: 40 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 40 }} onClick={(e) => e.stopPropagation()} onPaste={(e) => handlePaste(e, false)} className="w-full max-w-5xl rounded-[40px] overflow-hidden shadow-[0_64px_128px_rgba(0,0,0,0.8)] border border-white/10 flex flex-col max-h-[92vh]" style={{ background: editingNote.color }}>
               {editingNote.images?.length > 0 && (
-                <div className="flex gap-4 p-6 overflow-x-auto bg-black/10 border-b border-white/5">
+                <div className="flex gap-6 p-8 overflow-x-auto bg-black/20 border-b border-white/5">
                   {editingNote.images.map((img: string, i: number) => (
                     <div key={i} className="relative shrink-0 group">
-                      <img src={img} className="h-48 rounded-xl border border-white/10" />
-                      <button onClick={() => setEditingNote((prev: any) => ({ ...prev, images: prev.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={16} /></button>
+                      <img src={img} className="h-64 rounded-3xl border border-white/10 shadow-2xl" />
+                      <button onClick={() => setEditingNote((prev: any) => ({ ...prev, images: prev.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute top-4 right-4 p-3 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={20} /></button>
                     </div>
                   ))}
                 </div>
               )}
-              <div className="p-8 space-y-6 flex-1 overflow-y-auto">
-                <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[24px] font-bold text-white focus:outline-none" placeholder="Titre" />
-                <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[16px] text-white/80 focus:outline-none min-h-[300px] resize-none leading-relaxed" placeholder="Contenu..." />
+              <div className="p-12 space-y-8 flex-1 overflow-y-auto">
+                <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[36px] font-bold text-white focus:outline-none" placeholder="Titre de la note" />
+                <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[20px] text-white/80 focus:outline-none min-h-[400px] resize-none leading-relaxed" placeholder="Développe ton idée..." />
               </div>
-              <div className="px-8 py-5 flex items-center justify-between border-t border-white/5 bg-black/20">
-                <div className="flex gap-1.5">{COLORS.map(c => <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-5 h-5 rounded-full border ${editingNote.color === c ? "border-white" : "border-transparent"}`} style={{ background: c }} />)}</div>
-                <button onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }} className="px-8 py-3 rounded-2xl bg-white text-black font-bold">Terminé</button>
+              <div className="px-12 py-8 flex items-center justify-between border-t border-white/5 bg-black/30">
+                <div className="flex gap-3">{COLORS.map(c => <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-8 h-8 rounded-full border-2 transition-all ${editingNote.color === c ? "border-white scale-110" : "border-transparent opacity-60 hover:opacity-100"}`} style={{ background: c }} />)}</div>
+                <button onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }} className="px-12 py-4 rounded-2xl bg-white text-black text-[16px] font-bold hover:scale-105 transition-all shadow-2xl">Sauvegarder</button>
               </div>
             </motion.div>
           </div>
@@ -293,11 +268,10 @@ export default function NotesView() {
       </AnimatePresence>
 
       {contextMenu && (
-        <ContextMenu
-          x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}
+        <ContextMenu x={contextMenu.x} y={contextMenu.y} onClose={() => setContextMenu(null)}
           items={[
-            { label: notes.find(n => n.id === contextMenu.noteId)?.pinned ? "Désépingler" : "Épingler", icon: <Pin size={14} />, onClick: () => togglePinNote(contextMenu.noteId) },
-            { label: "Supprimer", icon: <Trash2 size={14} />, variant: "danger", onClick: () => deleteNote(contextMenu.noteId) },
+            { label: notes.find(n => n.id === contextMenu.noteId)?.pinned ? "Désépingler" : "Épingler en haut", icon: <Pin size={16} />, onClick: () => togglePinNote(contextMenu.noteId) },
+            { label: "Supprimer définitivement", icon: <Trash2 size={16} />, variant: "danger", onClick: () => deleteNote(contextMenu.noteId) },
           ]}
         />
       )}
@@ -305,18 +279,17 @@ export default function NotesView() {
   );
 }
 
-function SortableNote({ note, onEdit, onContextMenu }: { note: Note, onEdit: () => void, onContextMenu: (e: any) => void }) {
+function SortableNote({ note, onEdit, onContextMenu }: any) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: note.id });
-  const style = { transform: CSS.Translate.toString(transform), transition };
-
+  const style = { transform: CSS.Translate.toString(transform), transition, zIndex: isDragging ? 50 : 1 };
   return (
-    <div ref={setNodeRef} style={style} className={`${isDragging ? "opacity-0" : "opacity-100"}`}>
+    <div ref={setNodeRef} style={style} className={`${isDragging ? "opacity-20" : "opacity-100"}`}>
       <NoteCard note={note} onEdit={onEdit} onContextMenu={onContextMenu} dragListeners={listeners} dragAttributes={attributes} />
     </div>
   );
 }
 
-function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, isOverlay }: { note: Note, onEdit?: () => void, onContextMenu?: (e: any) => void, dragListeners?: any, dragAttributes?: any, isOverlay?: boolean }) {
+function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, isOverlay }: any) {
   const { updateNote } = useAppStore();
   const toggleCheckbox = (lineIndex: number) => {
     const lines = note.content.split("\n");
@@ -328,37 +301,25 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
 
   return (
     <div 
-      className={`rounded-[22px] border border-white/5 p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-lg ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:y-[-4px]"}`}
-      style={{ background: note.color }}
-      onContextMenu={onContextMenu}
-      onClick={onEdit}
+      className={`rounded-[32px] border border-white/5 p-8 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-2xl ${isOverlay ? "scale-105 rotate-2 z-50 ring-4 ring-[var(--accent-blue)]" : "hover:scale-[1.02] hover:border-white/10"}`}
+      style={{ background: note.color }} onContextMenu={onContextMenu} onClick={onEdit}
     >
-      <div {...dragListeners} {...dragAttributes} className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 cursor-grab active:cursor-grabbing p-1">
-        <GripVertical size={16} />
-      </div>
-
-      {note.images?.length > 0 && (
-        <div className="mb-4 -mx-6 -mt-6">
-          <img src={note.images[0]} className="w-full h-auto max-h-64 object-cover" />
-        </div>
-      )}
-
-      {note.title && <h3 className="text-[16px] font-bold text-white mb-3 pr-6 leading-tight">{note.title}</h3>}
-      <div className="text-[14px] text-white/80 whitespace-pre-wrap leading-relaxed line-clamp-[12]">
+      <div {...dragListeners} {...dragAttributes} className="absolute top-6 left-6 opacity-0 group-hover:opacity-100 transition-opacity text-white/40 cursor-grab active:cursor-grabbing p-2 bg-black/20 rounded-xl"><GripVertical size={20} /></div>
+      {note.images?.length > 0 && <div className="mb-6 -mx-8 -mt-8"><img src={note.images[0]} className="w-full h-auto max-h-80 object-cover" /></div>}
+      {note.title && <h3 className="text-[20px] font-bold text-white mb-4 pr-8 leading-tight tracking-tight">{note.title}</h3>}
+      <div className="text-[16px] text-white/80 whitespace-pre-wrap leading-relaxed line-clamp-[12]">
         {note.content.split("\n").map((line: string, i: number) => {
           if (line.startsWith("[ ] ") || line.startsWith("[x] ")) {
             const checked = line.startsWith("[x] ");
             return (
-              <div key={i} className="flex items-start gap-2 py-0.5" onClick={(e) => { e.stopPropagation(); toggleCheckbox(i); }}>
-                {checked ? <CheckSquare size={14} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={14} className="mt-1 text-white/30" />}
-                <span className={checked ? "line-through opacity-50" : ""}>{line.slice(4)}</span>
+              <div key={i} className="flex items-start gap-3 py-1" onClick={(e) => { e.stopPropagation(); toggleCheckbox(i); }}>
+                {checked ? <CheckSquare size={18} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={18} className="mt-1 text-white/20" />}
+                <span className={checked ? "line-through opacity-40" : "font-medium"}>{line.slice(4)}</span>
               </div>
             );
           }
-          if (line.startsWith("- ") || line.startsWith("* ")) {
-            return <div key={i} className="flex items-start gap-2 py-0.5"><span className="mt-2 w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" /><span>{line.slice(2)}</span></div>;
-          }
-          return <div key={i} className="min-h-[1.2em]">{line}</div>;
+          if (line.startsWith("- ") || line.startsWith("* ")) return <div key={i} className="flex items-start gap-3 py-1"><span className="mt-2.5 w-2 h-2 rounded-full bg-white/20 shrink-0" /><span className="font-medium">{line.slice(2)}</span></div>;
+          return <div key={i} className="min-h-[1.2em] font-medium">{line}</div>;
         })}
       </div>
     </div>

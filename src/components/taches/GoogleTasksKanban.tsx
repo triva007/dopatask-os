@@ -277,14 +277,14 @@ export default function GoogleTasksKanban() {
       {/* ─── Header ─────────────────────────────────────────────────────── */}
       <div className="shrink-0 px-8 pt-7 pb-5 border-b flex items-center justify-between gap-4" style={{ borderColor: "var(--border-primary)" }}>
         <div>
-          <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-3">
-            <ListChecks size={20} style={{ color: "var(--accent-blue)" }} />
+          <h1 className="text-[32px] font-bold text-white tracking-tight flex items-center gap-4">
+            <ListChecks size={28} style={{ color: "var(--accent-blue)" }} />
             Tâches
           </h1>
-          <p className="text-[12.5px] text-[var(--text-secondary)] mt-1.5">
-            {totalOpen} tache{totalOpen > 1 ? "s" : ""} ouverte{totalOpen > 1 ? "s" : ""}
+          <p className="text-[14px] text-[var(--text-secondary)] mt-2 font-medium">
+            {totalOpen} tâche{totalOpen > 1 ? "s" : ""} ouverte{totalOpen > 1 ? "s" : ""}
             {hiddenLists.size > 0 && (
-              <span className="ml-1.5 text-[var(--text-tertiary)]"> · {hiddenLists.size} liste{hiddenLists.size > 1 ? "s" : ""} masquee{hiddenLists.size > 1 ? "s" : ""}</span>
+              <span className="ml-2 text-[var(--text-tertiary)] opacity-60"> · {hiddenLists.size} masquée{hiddenLists.size > 1 ? "s" : ""}</span>
             )}
           </p>
         </div>
@@ -300,10 +300,10 @@ export default function GoogleTasksKanban() {
                 addToast("Veuillez d'abord afficher une liste", "error");
               }
             }}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold text-white transition-all shadow-sm hover:opacity-90 active:scale-95"
+            className="inline-flex items-center gap-2 px-6 py-3.5 rounded-2xl text-[14px] font-bold text-white transition-all shadow-lg hover:opacity-90 active:scale-95"
             style={{ background: "var(--accent-blue)" }}
           >
-            <Plus size={14} strokeWidth={2.5} />
+            <Plus size={18} strokeWidth={2.5} />
             Nouvelle Tâche
           </button>
 
@@ -718,7 +718,7 @@ function ListColumn(p: ListColumnProps) {
 
   return (
     <div
-      className="shrink-0 w-[340px] h-full flex flex-col rounded-2xl border overflow-hidden"
+      className="shrink-0 w-[400px] h-full flex flex-col rounded-[28px] border overflow-hidden"
       style={{
         background: "var(--card-bg)",
         borderColor: "var(--card-border)",
