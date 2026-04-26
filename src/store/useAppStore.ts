@@ -97,7 +97,7 @@ export interface Note {
   pinned: boolean;
   archived: boolean;
   labels: string[];
-  images: string[]; // Base64 strings for now
+  images: string[];
   createdAt: number;
   updatedAt: number;
 }
@@ -133,9 +133,11 @@ export interface Toast {
   createdAt: number;
 }
 
+// ── AppState Interface ──
 interface AppState {
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (v: boolean) => void;
+
   tasks: Task[];
   addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string, linkedNoteId?: string) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -151,10 +153,12 @@ interface AppState {
   setMicroSteps: (taskId: string, steps: MicroStep[]) => void;
   newStart: () => void;
   reorderTasks: (taskIds: string[]) => void;
+
   projects: Project[];
   addProject: (name: string, emoji?: string, objectiveId?: string, color?: string) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
+
   objectives: Objective[];
   addObjective: (title: string, horizon: ObjectiveHorizon, color?: string) => void;
   updateObjectiveProgress: (id: string, progress: number) => void;
@@ -162,6 +166,7 @@ interface AppState {
   toggleMilestone: (objId: string, msId: string) => void;
   deleteMilestone: (objId: string, msId: string) => void;
   deleteObjective: (id: string) => void;
+
   lifeGoals: LifeGoal[];
   addLifeGoal: (goal: Omit<LifeGoal, "id" | "createdAt">) => void;
   updateLifeGoal: (id: string, updates: Partial<LifeGoal>) => void;
@@ -169,28 +174,34 @@ interface AppState {
   toggleLifeGoalStep: (goalId: string, stepId: string) => void;
   addLifeGoalStep: (goalId: string, text: string) => void;
   deleteLifeGoalStep: (goalId: string, stepId: string) => void;
+
   journalEntries: JournalEntry[];
   addJournalEntry: (content: string, mood?: JournalEntry["mood"], tags?: string[]) => void;
   updateJournalEntry: (id: string, updates: Partial<JournalEntry>) => void;
   deleteJournalEntry: (id: string) => void;
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
+
   notes: Note[];
   addNote: (title: string, content: string, color?: string, images?: string[]) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
   toggleArchiveNote: (id: string) => void;
+
   inboxItems: InboxItem[];
   addInboxItem: (text: string, type?: InboxItemType) => void;
   processInboxItem: (id: string) => void;
   convertInboxToTask: (id: string, projectId?: string) => void;
   deleteInboxItem: (id: string) => void;
   clearProcessedInbox: () => void;
+
   timelineEvents: TimelineEvent[];
   addTimelineEvent: (event: Omit<TimelineEvent, "id">) => void;
   updateTimelineEvent: (id: string, updates: Partial<TimelineEvent>) => void;
   deleteTimelineEvent: (id: string) => void;
+
+  // ── Gamification (All keys found in Supabase) ──
   xp: number;
   bossHp: number;
   streak: number;
@@ -206,12 +217,19 @@ interface AppState {
   dailyChallengeCompleted: boolean;
   addXp: (amount: number) => void;
   attackBoss: (damage: number) => void;
+
+  // ── Other keys from V5 ──
+  googleNotes?: any[];
+  sprints?: any[];
+
   toasts: Toast[];
   addToast: (message: string, type?: Toast["type"], duration?: number) => void;
   removeToast: (id: string) => void;
+
   lastActiveAt: number;
   lastActiveTaskId: string | null;
   setLastActive: (taskId?: string) => void;
+
   settings: { enableSounds: boolean };
   updateSettings: (updates: Partial<{ enableSounds: boolean }>) => void;
   theme: "dark" | "light";
@@ -314,7 +332,12 @@ export const useAppStore = create<AppState>()(
     ),
     {
       name: "dopatask-storage",
-      version: 7, // Increment for Note images field
+      version: 7,
+      migrate: (persistedState: any, version: number) => {
+        // ALWAYS return the persisted state if we want to avoid wipes.
+        // Even if version is old, we want the data.
+        return persistedState;
+      },
       storage: createJSONStorage(() => supabaseStorage),
     }
   )
