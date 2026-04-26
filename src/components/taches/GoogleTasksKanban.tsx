@@ -88,6 +88,7 @@ export default function GoogleTasksKanban() {
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskListId, setNewTaskListId] = useState<string>("");
+  const [creating, setCreating] = useState(false);
 
   const addXp     = useAppStore((s) => s.addXp);
   const addToast  = useAppStore((s) => s.addToast);
@@ -210,6 +211,7 @@ export default function GoogleTasksKanban() {
 
   const handleCreateNewTask = async () => {
     if (!newTaskTitle.trim() || !newTaskListId) return;
+    setCreating(true);
     try {
       await createTask(newTaskListId, newTaskTitle.trim());
       addToast("Tâche créée avec succès !", "success");
@@ -218,6 +220,8 @@ export default function GoogleTasksKanban() {
     } catch (e) {
       console.error(e);
       addToast("Erreur lors de la création", "error");
+    } finally {
+      setCreating(false);
     }
   };
 
@@ -600,7 +604,7 @@ export default function GoogleTasksKanban() {
                     onChange={(e) => setNewTaskListId(e.target.value)}
                     className="w-full px-4 py-2.5 bg-surface-2 border border-surface-3 rounded-xl text-[13px] text-t-primary focus:outline-none focus:border-dopa-cyan transition-colors"
                   >
-                    {sortedLists.map(l => (
+                    {lists.map(l => (
                       <option key={l.id} value={l.id}>{l.title}</option>
                     ))}
                   </select>

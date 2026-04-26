@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useRef, useCallback, useState } from "react";
+import { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import type { CalendarEvent, CalendarInfo } from "../useCalendarEvents";
 import { getEventStart, getEventEnd, isAllDay, formatTime, getEventColor, isSameDay, addDays } from "../useCalendarEvents";
 
