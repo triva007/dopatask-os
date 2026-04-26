@@ -113,7 +113,7 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
 
 export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onEventDrop }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; startY: number; origTop: number; offsetY: number } | null>(null);
+  const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; startY: number; origTop: number; offsetY: number; currentY: number } | null>(null);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -125,6 +125,12 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
     const now = new Date();
     return timeToY(now);
   }, []);
+
+  useEffect(() => {
+    if (gridRef.current) {
+      gridRef.current.scrollTop = Math.max(0, nowY - 100);
+    }
+  }, [nowY]);
 
   const isMultiDay = days.length > 1;
 
@@ -149,12 +155,13 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       startY: e.clientY,
       origTop: timeToY(getEventStart(ev)),
       offsetY: e.clientY - rect.top,
+      currentY: e.clientY,
     });
   }, [onEventDrop]);
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!dragEvent || !gridRef.current) return;
-    // Visual feedback handled with CSS
+    setDragEvent(prev => prev ? { ...prev, currentY: e.clientY } : null);
   }, [dragEvent]);
 
   const handleMouseUp = useCallback((e: React.MouseEvent) => {
@@ -166,10 +173,11 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       setDragEvent(null);
       return;
     }
-    const gridRect = gridRef.current.getBoundingClientRect();
-    const y = e.clientY - gridRect.top - dragEvent.offsetY;
-    const hour = Math.floor(y / HOUR_HEIGHT);
-    const minutes = Math.round(((y % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+    
+    const deltaY = e.clientY - dragEvent.startY;
+    const newTop = Math.max(0, dragEvent.origTop + deltaY);
+    const hour = Math.floor(newTop / HOUR_HEIGHT);
+    const minutes = Math.round(((newTop % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
 
     const origStart = getEventStart(dragEvent.ev);
     const origEnd = getEventEnd(dragEvent.ev);
@@ -333,19 +341,24 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                   const color = getEventColor(l.ev, calendars);
                   const isTask = l.ev.type === "task";
                   const colWidth = 100 / l.totalCols;
+                  const isDragging = dragEvent?.ev.id === l.ev.id;
+                  const top = isDragging ? Math.max(0, dragEvent.origTop + dragEvent.currentY - dragEvent.startY) : l.top;
+                  
                   return (
                     <button
                       key={l.ev.id}
                       className="cal-event absolute rounded-[4px] text-left overflow-hidden transition-all hover:opacity-90 group cursor-pointer"
                       style={{
-                        top: l.top,
+                        top: top,
                         height: Math.max(l.height, MIN_EVENT_HEIGHT),
                         left: `calc(${l.col * colWidth}% + 1px)`,
                         width: `calc(${colWidth}% - 2px)`,
                         background: isTask ? `var(--card-bg)` : `${color}25`,
                         border: isTask ? `1px solid var(--card-border)` : `1px solid ${color}40`,
                         borderLeft: `3px solid ${color}`,
-                        zIndex: 10,
+                        zIndex: isDragging ? 50 : 10,
+                        opacity: isDragging ? 0.8 : 1,
+                        pointerEvents: isDragging ? "none" : "auto",
                       }}
                       onClick={(e) => {
                         e.stopPropagation();
