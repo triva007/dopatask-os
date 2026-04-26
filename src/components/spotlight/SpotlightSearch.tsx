@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useMemo } from "react";
+import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Search, ListChecks, FolderKanban, Target,
@@ -14,6 +15,7 @@ interface SearchResult {
   title: string;
   subtitle?: string;
   status?: string;
+  href: string;
 }
 
 const TYPE_CONFIG = {
@@ -29,13 +31,14 @@ export default function SpotlightSearch() {
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const { tasks, projects, objectives, journalEntries, inboxItems } = useAppStore();
 
-  // Keyboard shortcut: Ctrl+Shift+Q
+  // Keyboard shortcut: Ctrl+K or Cmd+K
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === "q") {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
         setOpen((prev) => !prev);
       }
@@ -71,6 +74,7 @@ export default function SpotlightSearch() {
           title: t.text,
           subtitle: t.status === "today" ? "Priorité du jour" : t.status === "inbox" ? "Inbox" : t.status === "completed" || t.status === "done" ? "Terminé" : t.status === "in_progress" ? "En cours" : t.status,
           status: t.status,
+          href: "/taches"
         });
       }
     });
@@ -83,6 +87,7 @@ export default function SpotlightSearch() {
           type: "project",
           title: `${p.emoji} ${p.name}`,
           subtitle: p.status === "active" ? "Actif" : p.status,
+          href: "/projets"
         });
       }
     });
@@ -95,6 +100,7 @@ export default function SpotlightSearch() {
           type: "objective",
           title: o.title,
           subtitle: `${o.progress}% · ${o.horizon}`,
+          href: "/objectifs"
         });
       }
     });
@@ -107,6 +113,7 @@ export default function SpotlightSearch() {
           type: "journal",
           title: j.content.slice(0, 80) + (j.content.length > 80 ? "…" : ""),
           subtitle: new Date(j.createdAt).toLocaleDateString("fr-FR"),
+          href: "/journal"
         });
       }
     });
@@ -119,12 +126,18 @@ export default function SpotlightSearch() {
           type: "inbox",
           title: i.text,
           subtitle: i.processed ? "Traité" : "À traiter",
+          href: "/inbox"
         });
       }
     });
 
     return r.slice(0, 12);
   }, [query, tasks, projects, objectives, journalEntries, inboxItems]);
+
+  const handleSelect = (result: SearchResult) => {
+    setOpen(false);
+    router.push(result.href);
+  };
 
   // Keyboard navigation
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -135,7 +148,8 @@ export default function SpotlightSearch() {
       e.preventDefault();
       setSelectedIndex((i) => Math.max(i - 1, 0));
     } else if (e.key === "Enter" && results[selectedIndex]) {
-      setOpen(false);
+      e.preventDefault();
+      handleSelect(results[selectedIndex]);
     }
   };
 
@@ -199,7 +213,7 @@ export default function SpotlightSearch() {
                           background: i === selectedIndex ? "var(--empty-bg)" : "transparent",
                         }}
                         onMouseEnter={() => setSelectedIndex(i)}
-                        onClick={() => setOpen(false)}
+                        onClick={() => handleSelect(result)}
                       >
                         <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
                           style={{ background: `color-mix(in srgb, ${config.color} 10%, transparent)` }}

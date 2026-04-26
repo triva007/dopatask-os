@@ -15,7 +15,7 @@ export default function TodayRecap() {
     new Date(t.completedAt).toDateString() === new Date().toDateString()
   ).length;
 
-  // Show recap at 20h or after 3+ tasks completed today
+  // Show recap at 20h if tasks were completed today
   useEffect(() => {
     if (dismissed) return;
 
@@ -26,12 +26,6 @@ export default function TodayRecap() {
         setVisible(true);
       }
     };
-
-    // Also show if user completed 3+ tasks today
-    if (todayCompleted >= 3 && !dismissed) {
-      const timer = setTimeout(() => setVisible(true), 2000);
-      return () => clearTimeout(timer);
-    }
 
     const interval = setInterval(checkTime, 60000);
     checkTime();

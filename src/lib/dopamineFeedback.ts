@@ -2,8 +2,6 @@
 // Feedback dopaminergique : confetti visuel + sons synthétisés via Web Audio API.
 // Aucune dépendance MP3, 100 % client-side. Safe à appeler depuis le store.
 
-import confetti from "canvas-confetti";
-
 export type FeedbackType =
   | "task-complete"   // petit pop joyeux
   | "critical"        // gros combo (1 tâche sur ~7)
@@ -95,17 +93,19 @@ function playSound(type: FeedbackType) {
 function triggerConfetti(type: FeedbackType) {
   if (typeof window === "undefined") return;
 
-  switch (type) {
-    case "task-complete":
-      confetti({
-        particleCount: 30,
-        spread: 60,
-        origin: { y: 0.7 },
-        ticks: 80,
-        scalar: 0.8,
-        colors: ["#22c55e", "#3b82f6", "#f97316"],
-      });
-      break;
+  import("canvas-confetti").then((module) => {
+    const confetti = module.default;
+    switch (type) {
+      case "task-complete":
+        confetti({
+          particleCount: 30,
+          spread: 60,
+          origin: { y: 0.7 },
+          ticks: 80,
+          scalar: 0.8,
+          colors: ["#22c55e", "#3b82f6", "#f97316"],
+        });
+        break;
     case "critical":
       confetti({
         particleCount: 90,
@@ -151,15 +151,16 @@ function triggerConfetti(type: FeedbackType) {
       })();
       break;
     }
-    case "purchase":
-      confetti({
-        particleCount: 50,
-        spread: 70,
-        origin: { y: 0.65 },
-        colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
-      });
-      break;
-  }
+      case "purchase":
+        confetti({
+          particleCount: 50,
+          spread: 70,
+          origin: { y: 0.65 },
+          colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
+        });
+        break;
+    }
+  });
 }
 
 // ─── API publique ────────────────────────────────────────────────────────────

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Calendar, ArrowRight, Clock } from "lucide-react";
+import { CALENDAR_CENSOR_REGEX } from "@/lib/constants";
 
 interface GEvent {
   id: string;
@@ -41,7 +42,7 @@ export default function UpcomingEventsWidget() {
         const upcoming = (d.events || [])
           .filter((e) => {
             const sum = e.summary || "";
-            if (/\b(domicile|dormir|sommeil|nuit|sleep|emails|admin|déjeuner|dejeuner|recompense|récompense)\b/i.test(sum)) return false;
+            if (CALENDAR_CENSOR_REGEX.test(sum)) return false;
             const iso = e.start?.dateTime || e.start?.date;
             if (!iso) return false;
             const startDate = new Date(e.start?.dateTime ? iso : iso + "T00:00:00");

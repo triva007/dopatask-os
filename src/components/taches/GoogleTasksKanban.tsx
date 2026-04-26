@@ -83,6 +83,11 @@ export default function GoogleTasksKanban() {
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [showListFilter, setShowListFilter] = useState(false);
   const [view, setView] = useState<"kanban" | "list">("kanban");
+  
+  // New task modal state
+  const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
+  const [newTaskTitle, setNewTaskTitle] = useState("");
+  const [newTaskListId, setNewTaskListId] = useState<string>("");
 
   const addXp     = useAppStore((s) => s.addXp);
   const addToast  = useAppStore((s) => s.addToast);
@@ -203,6 +208,19 @@ export default function GoogleTasksKanban() {
     } catch { setError("Creation impossible"); }
   };
 
+  const handleCreateNewTask = async () => {
+    if (!newTaskTitle.trim() || !newTaskListId) return;
+    try {
+      await createTask(newTaskListId, newTaskTitle.trim());
+      addToast("Tâche créée avec succès !", "success");
+      setIsNewTaskModalOpen(false);
+      setNewTaskTitle("");
+    } catch (e) {
+      console.error(e);
+      addToast("Erreur lors de la création", "error");
+    }
+  };
+
   const toggleStar = (id: string) => {
     setStarred((prev) => {
       const next = new Set(prev);
@@ -236,7 +254,7 @@ export default function GoogleTasksKanban() {
         <div className="text-center max-w-md">
           <h2 className="text-xl font-semibold text-[var(--text-primary)]">Connecte Google Tasks</h2>
           <p className="text-[13.5px] text-[var(--text-secondary)] mt-2 leading-relaxed">
-            Va dans Reglages pour connecter ton compte Google.
+            Va dans Réglages pour connecter ton compte Google.
           </p>
         </div>
         <a
@@ -244,7 +262,7 @@ export default function GoogleTasksKanban() {
           className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-[13.5px] font-semibold hover:opacity-90 transition-all"
           style={{ background: "var(--accent-blue)", color: "white" }}
         >
-          Aller aux reglages
+          Aller aux Réglages
         </a>
       </div>
     );
@@ -265,7 +283,7 @@ export default function GoogleTasksKanban() {
         <div>
           <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-3">
             <ListChecks size={20} style={{ color: "var(--accent-blue)" }} />
-            Taches
+            Tâches
           </h1>
           <p className="text-[12.5px] text-[var(--text-secondary)] mt-1.5">
             {totalOpen} tache{totalOpen > 1 ? "s" : ""} ouverte{totalOpen > 1 ? "s" : ""}
@@ -278,9 +296,12 @@ export default function GoogleTasksKanban() {
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => {
-              const text = window.prompt("Nouvelle tâche rapide :");
-              if (text && text.trim()) {
-                useAppStore.getState().addInboxItem(text.trim());
+              if (visibleLists.length > 0) {
+                setNewTaskListId(visibleLists[0].id);
+                setIsNewTaskModalOpen(true);
+                setNewTaskTitle("");
+              } else {
+                addToast("Veuillez d'abord afficher une liste", "error");
               }
             }}
             className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-[12px] font-bold text-white transition-all shadow-sm hover:opacity-90 active:scale-95"
@@ -415,7 +436,7 @@ export default function GoogleTasksKanban() {
           {visibleLists.length === 0 ? (
             <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
               <Filter size={28} className="text-[var(--text-tertiary)] opacity-50" />
-              <p className="text-[14px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquees</p>
+              <p className="text-[14px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquées</p>
               <p className="text-[12.5px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
             </div>
           ) : (
@@ -698,6 +719,89 @@ function ListColumn(p: ListColumnProps) {
           </>
         )}
       </div>
+
+      {/* NEW TASK MODAL */}
+      <AnimatePresence>
+        {isNewTaskModalOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-sm"
+            onClick={() => setIsNewTaskModalOpen(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0, y: 10 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.95, opacity: 0, y: 10 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-md bg-surface-1 border border-surface-3 rounded-2xl shadow-xl overflow-hidden"
+            >
+              <div className="px-6 py-4 border-b border-surface-2 flex items-center justify-between">
+                <h3 className="text-[15px] font-bold">Nouvelle Tâche Google</h3>
+                <button
+                  onClick={() => setIsNewTaskModalOpen(false)}
+                  className="p-1 rounded-md hover:bg-surface-2 text-t-tertiary transition-colors"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-5">
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-semibold text-t-secondary">
+                    Titre de la tâche
+                  </label>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={newTaskTitle}
+                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleCreateNewTask();
+                      if (e.key === "Escape") setIsNewTaskModalOpen(false);
+                    }}
+                    placeholder="ex: Appeler le comptable..."
+                    className="w-full px-4 py-2.5 bg-surface-2 border border-surface-3 rounded-xl text-[14px] focus:outline-none focus:border-dopa-cyan transition-colors"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-semibold text-t-secondary">
+                    Liste de destination
+                  </label>
+                  <select
+                    value={newTaskListId}
+                    onChange={(e) => setNewTaskListId(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-surface-2 border border-surface-3 rounded-xl text-[13px] text-t-primary focus:outline-none focus:border-dopa-cyan transition-colors"
+                  >
+                    {sortedLists.map(l => (
+                      <option key={l.id} value={l.id}>{l.title}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="px-6 py-4 bg-surface-2/50 border-t border-surface-2 flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setIsNewTaskModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-[13px] font-medium text-t-secondary hover:text-t-primary transition-colors"
+                >
+                  Annuler
+                </button>
+                <button
+                  onClick={handleCreateNewTask}
+                  disabled={!newTaskTitle.trim() || creating}
+                  className="px-5 py-2 rounded-xl text-[13px] font-bold text-white shadow-sm transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{ background: "var(--accent-blue)" }}
+                >
+                  {creating ? "Création..." : "Créer"}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

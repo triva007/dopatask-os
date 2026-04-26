@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useRef, useEffect } from "react";
+import { CALENDAR_CENSOR_REGEX } from "@/lib/constants";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -170,7 +171,7 @@ export function useCalendarEvents() {
       const filtered = (d.events || []).filter(
         (e) => {
           const sum = e.summary || "";
-          return !/\b(domicile|dormir|sommeil|nuit|sleep|emails|admin|déjeuner|dejeuner|recompense|récompense)\b/i.test(sum);
+          return !CALENDAR_CENSOR_REGEX.test(sum);
         }
       );
       setEvents(filtered);
