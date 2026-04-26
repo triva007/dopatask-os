@@ -10,6 +10,7 @@ interface TimeGridProps {
   calendars: CalendarInfo[];
   onEventClick: (ev: CalendarEvent, rect: { top: number; left: number }) => void;
   onSlotClick: (date: Date) => void;
+  onSlotSelect?: (start: Date, end: Date) => void;
   onEventDrop?: (ev: CalendarEvent, newStart: Date, newEnd: Date) => void;
 }
 
@@ -42,7 +43,6 @@ function timeToY(d: Date): number {
   return (d.getHours() + d.getMinutes() / 60) * HOUR_HEIGHT;
 }
 
-// Compute overlapping columns for events
 interface LayoutEvent {
   ev: CalendarEvent;
   top: number;
@@ -63,7 +63,6 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
     const rawH = timeToY(getEventEnd(ev)) - top;
     const height = Math.max(rawH, MIN_EVENT_HEIGHT);
 
-    // Find first column where this event doesn't overlap
     let placed = false;
     for (let g = 0; g < columns.length; g++) {
       const group = columns[g];
@@ -93,8 +92,6 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
     }
   }
 
-  // Update totalCols for all events in same group
-  // Simple approach: overlapping events share column count
   for (let i = 0; i < layouts.length; i++) {
     let maxCols = layouts[i].totalCols;
     for (let j = 0; j < layouts.length; j++) {
@@ -111,9 +108,10 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
   return layouts;
 }
 
-export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onEventDrop }: TimeGridProps) {
+export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; startY: number; origTop: number; offsetY: number; currentY: number } | null>(null);
+  const [selection, setSelection] = useState<{ startY: number; currentY: number; dayIndex: number; startTop: number } | null>(null);
 
   const today = useMemo(() => {
     const d = new Date();
@@ -134,21 +132,22 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
 
   const isMultiDay = days.length > 1;
 
-  const handleGridClick = useCallback((dayIndex: number, e: React.MouseEvent<HTMLDivElement>) => {
+  const handleGridMouseDown = useCallback((dayIndex: number, e: React.MouseEvent<HTMLDivElement>) => {
     if ((e.target as HTMLElement).closest(".cal-event")) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const y = e.clientY - rect.top;
-    const hour = Math.floor(y / HOUR_HEIGHT);
-    const minutes = Math.round(((y % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
-    const d = new Date(days[dayIndex]);
-    d.setHours(hour, minutes, 0, 0);
-    onSlotClick(d);
-  }, [days, onSlotClick]);
+    setSelection({
+      startY: e.clientY,
+      currentY: e.clientY,
+      dayIndex,
+      startTop: y,
+    });
+  }, []);
 
-  // Drag handlers
-  const handleMouseDown = useCallback((ev: CalendarEvent, e: React.MouseEvent) => {
+  const handleEventMouseDown = useCallback((ev: CalendarEvent, e: React.MouseEvent) => {
     if (!onEventDrop) return;
     e.stopPropagation();
+    e.preventDefault(); // Prevents selection
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     setDragEvent({
       ev,
@@ -159,53 +158,91 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
     });
   }, [onEventDrop]);
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    if (!dragEvent || !gridRef.current) return;
-    setDragEvent(prev => prev ? { ...prev, currentY: e.clientY } : null);
-  }, [dragEvent]);
+  useEffect(() => {
+    const handleGlobalMouseMove = (e: MouseEvent) => {
+      if (dragEvent) {
+        setDragEvent(prev => prev ? { ...prev, currentY: e.clientY } : null);
+      } else if (selection) {
+        setSelection(prev => prev ? { ...prev, currentY: e.clientY } : null);
+      }
+    };
 
-  const handleMouseUp = useCallback((e: React.MouseEvent) => {
-    if (!dragEvent || !gridRef.current || !onEventDrop) {
-      setDragEvent(null);
-      return;
+    const handleGlobalMouseUp = (e: MouseEvent) => {
+      if (dragEvent && onEventDrop) {
+        const deltaY = e.clientY - dragEvent.startY;
+        if (Math.abs(deltaY) > 5) {
+          const newTop = Math.max(0, dragEvent.origTop + deltaY);
+          const hour = Math.floor(newTop / HOUR_HEIGHT);
+          const minutes = Math.round(((newTop % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+
+          const origStart = getEventStart(dragEvent.ev);
+          const origEnd = getEventEnd(dragEvent.ev);
+          const duration = origEnd.getTime() - origStart.getTime();
+
+          const newStart = new Date(origStart);
+          newStart.setHours(hour, minutes, 0, 0);
+          const newEnd = new Date(newStart.getTime() + duration);
+
+          onEventDrop(dragEvent.ev, newStart, newEnd);
+        }
+        setDragEvent(null);
+      } else if (selection) {
+        const deltaY = e.clientY - selection.startY;
+        if (Math.abs(deltaY) < 5) {
+          // Simple click
+          const hour = Math.floor(selection.startTop / HOUR_HEIGHT);
+          const minutes = Math.round(((selection.startTop % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+          const d = new Date(days[selection.dayIndex]);
+          d.setHours(hour, minutes, 0, 0);
+          onSlotClick(d);
+        } else if (onSlotSelect) {
+          // Drag selection
+          const endTop = selection.startTop + deltaY;
+          const top = Math.max(0, Math.min(selection.startTop, endTop));
+          const bottom = Math.max(0, Math.max(selection.startTop, endTop));
+          
+          const startHour = Math.floor(top / HOUR_HEIGHT);
+          const startMin = Math.round(((top % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+          
+          const endHour = Math.floor(bottom / HOUR_HEIGHT);
+          const endMin = Math.round(((bottom % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+          
+          const startD = new Date(days[selection.dayIndex]);
+          startD.setHours(startHour, startMin, 0, 0);
+          
+          const endD = new Date(days[selection.dayIndex]);
+          endD.setHours(endHour, endMin, 0, 0);
+          
+          if (startD.getTime() !== endD.getTime()) {
+            onSlotSelect(startD, endD);
+          } else {
+            onSlotClick(startD);
+          }
+        }
+        setSelection(null);
+      }
+    };
+
+    if (dragEvent || selection) {
+      window.addEventListener("mousemove", handleGlobalMouseMove);
+      window.addEventListener("mouseup", handleGlobalMouseUp);
     }
-    if (Math.abs(e.clientY - dragEvent.startY) < 5) {
-      setDragEvent(null);
-      return;
-    }
-    
-    const deltaY = e.clientY - dragEvent.startY;
-    const newTop = Math.max(0, dragEvent.origTop + deltaY);
-    const hour = Math.floor(newTop / HOUR_HEIGHT);
-    const minutes = Math.round(((newTop % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+    return () => {
+      window.removeEventListener("mousemove", handleGlobalMouseMove);
+      window.removeEventListener("mouseup", handleGlobalMouseUp);
+    };
+  }, [dragEvent, selection, days, onEventDrop, onSlotClick, onSlotSelect]);
 
-    const origStart = getEventStart(dragEvent.ev);
-    const origEnd = getEventEnd(dragEvent.ev);
-    const duration = origEnd.getTime() - origStart.getTime();
-
-    const newStart = new Date(origStart);
-    newStart.setHours(hour, minutes, 0, 0);
-    const newEnd = new Date(newStart.getTime() + duration);
-
-    onEventDrop(dragEvent.ev, newStart, newEnd);
-    setDragEvent(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [dragEvent, onEventDrop]);
-
-  // Get all-day events for header
   const allDayRows = days.map((day) => getAllDayEventsForDay(events, day));
   const hasAllDay = allDayRows.some((r) => r.length > 0);
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* All-day section */}
       {hasAllDay && (
         <div className="shrink-0 flex border-b" style={{ borderColor: "var(--border-primary)" }}>
-          {/* Time gutter */}
           <div className="shrink-0 w-[52px] text-right pr-2 py-1">
             <span className="text-[10px] text-[var(--text-tertiary)]">j. entier</span>
           </div>
-          {/* Day columns */}
           {days.map((day, di) => (
             <div
               key={di}
@@ -240,7 +277,6 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
         </div>
       )}
 
-      {/* Day headers (multi-day only) */}
       {isMultiDay && (
         <div className="shrink-0 flex border-b" style={{ borderColor: "var(--border-primary)" }}>
           <div className="shrink-0 w-[52px]" />
@@ -271,15 +307,11 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
         </div>
       )}
 
-      {/* Time grid */}
       <div
         ref={gridRef}
         className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden relative"
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
       >
         <div className="flex" style={{ height: 24 * HOUR_HEIGHT }}>
-          {/* Time labels */}
           <div className="shrink-0 w-[52px] relative">
             {HOURS.map((h) => (
               <div
@@ -292,7 +324,6 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
             ))}
           </div>
 
-          {/* Day columns */}
           {days.map((day, di) => {
             const dayEvents = getEventsForDay(events, day);
             const laid = layoutEvents(dayEvents);
@@ -303,27 +334,24 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                 key={di}
                 className="flex-1 min-w-0 relative border-l"
                 style={{ borderColor: "var(--border-primary)" }}
-                onClick={(e) => handleGridClick(di, e)}
+                onMouseDown={(e) => handleGridMouseDown(di, e)}
               >
-                {/* Hour lines */}
                 {HOURS.map((h) => (
                   <div
                     key={h}
-                    className="absolute left-0 right-0 border-t"
+                    className="absolute left-0 right-0 border-t pointer-events-none"
                     style={{ top: h * HOUR_HEIGHT, borderColor: "var(--border-primary)" }}
                   />
                 ))}
 
-                {/* Half-hour lines */}
                 {HOURS.map((h) => (
                   <div
                     key={`half-${h}`}
-                    className="absolute left-0 right-0 border-t"
+                    className="absolute left-0 right-0 border-t pointer-events-none"
                     style={{ top: h * HOUR_HEIGHT + HOUR_HEIGHT / 2, borderColor: "var(--border-primary)", opacity: 0.4 }}
                   />
                 ))}
 
-                {/* Now indicator */}
                 {isToday && (
                   <div
                     className="absolute left-0 right-0 z-20 pointer-events-none"
@@ -336,7 +364,19 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                   </div>
                 )}
 
-                {/* Events */}
+                {/* Selection Box */}
+                {selection?.dayIndex === di && (
+                  <div
+                    className="absolute left-0 right-0 z-30 pointer-events-none rounded-[4px]"
+                    style={{
+                      background: "color-mix(in srgb, var(--accent-blue) 20%, transparent)",
+                      border: "1px solid color-mix(in srgb, var(--accent-blue) 50%, transparent)",
+                      top: Math.min(selection.startTop, selection.startTop + (selection.currentY - selection.startY)),
+                      height: Math.abs(selection.currentY - selection.startY),
+                    }}
+                  />
+                )}
+
                 {laid.map((l) => {
                   const color = getEventColor(l.ev, calendars);
                   const isTask = l.ev.type === "task";
@@ -365,7 +405,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                         const rect = e.currentTarget.getBoundingClientRect();
                         onEventClick(l.ev, { top: rect.top, left: rect.right });
                       }}
-                      onMouseDown={(e) => handleMouseDown(l.ev, e)}
+                      onMouseDown={(e) => handleEventMouseDown(l.ev, e)}
                     >
                       <div className="px-1.5 py-0.5 h-full flex flex-col justify-start min-h-0">
                         <div className="flex items-start gap-1">
@@ -378,7 +418,6 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                             {formatTime(getEventStart(l.ev))} – {formatTime(getEventEnd(l.ev))}
                           </span>
                         )}
-
                       </div>
                     </button>
                   );

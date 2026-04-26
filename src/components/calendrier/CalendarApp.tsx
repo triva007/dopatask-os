@@ -42,6 +42,7 @@ export default function CalendarApp() {
   const [modalEvent, setModalEvent] = useState<CalendarEvent | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createDefaultDate, setCreateDefaultDate] = useState<Date | null>(null);
+  const [createDefaultEndDate, setCreateDefaultEndDate] = useState<Date | null>(null);
   const initialFetchDone = useRef(false);
 
   const {
@@ -188,6 +189,13 @@ export default function CalendarApp() {
 
   const handleSlotClick = useCallback((date: Date) => {
     setCreateDefaultDate(date);
+    setCreateDefaultEndDate(null);
+    setShowCreateModal(true);
+  }, []);
+
+  const handleSlotSelect = useCallback((start: Date, end: Date) => {
+    setCreateDefaultDate(start);
+    setCreateDefaultEndDate(end);
     setShowCreateModal(true);
   }, []);
 
@@ -302,7 +310,7 @@ export default function CalendarApp() {
     onPrev: () => navigate(-1),
     onNext: () => navigate(1),
     onCreate: () => { setCreateDefaultDate(new Date()); setShowCreateModal(true); },
-    onClose: () => { setPopoverEvent(null); setModalEvent(null); setShowCreateModal(false); },
+    onClose: () => { setPopoverEvent(null); setModalEvent(null); setShowCreateModal(false); setCreateDefaultEndDate(null); },
   });
 
   // Not connected
@@ -354,7 +362,7 @@ export default function CalendarApp() {
         onPrev={() => navigate(-1)}
         onNext={() => navigate(1)}
         onToday={goToday}
-        onCreate={() => { setCreateDefaultDate(new Date()); setShowCreateModal(true); }}
+        onCreate={() => { setCreateDefaultDate(new Date()); setCreateDefaultEndDate(null); setShowCreateModal(true); }}
       />
 
       {/* Body */}
@@ -377,6 +385,7 @@ export default function CalendarApp() {
               calendars={calendars}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
+              onSlotSelect={handleSlotSelect}
               onEventDrop={handleEventDrop}
             />
           )}
@@ -387,6 +396,7 @@ export default function CalendarApp() {
               calendars={calendars}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
+              onSlotSelect={handleSlotSelect}
               onEventDrop={handleEventDrop}
             />
           )}
@@ -397,6 +407,7 @@ export default function CalendarApp() {
               calendars={calendars}
               onEventClick={handleEventClick}
               onSlotClick={handleSlotClick}
+              onSlotSelect={handleSlotSelect}
               onEventDrop={handleEventDrop}
             />
           )}
@@ -455,11 +466,11 @@ export default function CalendarApp() {
         {showCreateModal && (
           <EventModal
             defaultDate={createDefaultDate || undefined}
-            defaultEndDate={createDefaultDate ? new Date(createDefaultDate.getTime() + 60 * 60 * 1000) : undefined}
+            defaultEndDate={createDefaultEndDate || (createDefaultDate ? new Date(createDefaultDate.getTime() + 60 * 60 * 1000) : undefined)}
             calendars={calendars}
             taskLists={googleTaskLists}
             onSave={handleCreate as any}
-            onClose={() => { setShowCreateModal(false); setCreateDefaultDate(null); }}
+            onClose={() => { setShowCreateModal(false); setCreateDefaultDate(null); setCreateDefaultEndDate(null); }}
           />
         )}
       </AnimatePresence>

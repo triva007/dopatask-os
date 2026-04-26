@@ -11,14 +11,15 @@ interface FourDayViewProps {
   calendars: CalendarInfo[];
   onEventClick: (ev: CalendarEvent, rect: { top: number; left: number }) => void;
   onSlotClick: (date: Date) => void;
+  onSlotSelect?: (start: Date, end: Date) => void;
   onEventDrop?: (ev: CalendarEvent, newStart: Date, newEnd: Date) => void;
 }
 
-export default function FourDayView({ currentDate, events, calendars, onEventClick, onSlotClick, onEventDrop }: FourDayViewProps) {
+export default function FourDayView({ currentDate, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop }: FourDayViewProps) {
   const days = useMemo(() => {
     const d = startOfDay(currentDate);
     return Array.from({ length: 4 }, (_, i) => addDays(d, i));
   }, [currentDate]);
 
-  return <TimeGrid days={days} events={events} calendars={calendars} onEventClick={onEventClick} onSlotClick={onSlotClick} onEventDrop={onEventDrop} />;
+  return <TimeGrid days={days} events={events} calendars={calendars} onEventClick={onEventClick} onSlotClick={onSlotClick} onSlotSelect={onSlotSelect} onEventDrop={onEventDrop} />;
 }

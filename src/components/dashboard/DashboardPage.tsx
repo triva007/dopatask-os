@@ -45,7 +45,7 @@ export default function DashboardPage() {
   }, []);
 
   // Compteurs visu globale
-  const pendingTasks = tasks.filter((t) => ["todo", "in_progress"].includes(t.status)).length;
+  const pendingTasks = tasks.filter((t) => t.status !== "done" && t.status !== "completed").length;
   const doneToday = tasks.filter(
     (t) =>
       (t.status === "done" || t.status === "completed") &&

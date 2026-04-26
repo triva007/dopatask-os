@@ -44,8 +44,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </AnimatePresence>
 
         {/* Main content */}
-        <div className="flex-1 h-full overflow-hidden relative">
-          {children}
+        <div className="flex-1 h-full overflow-hidden relative bg-[var(--surface-0)]">
+          <AnimatePresence mode="wait">
+            {children}
+          </AnimatePresence>
 
           {/* Focus mode toggle button */}
           <button
