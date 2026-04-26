@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Target, Settings,
   FolderKanban, Eye, BookOpen, Inbox, Phone,
+  Calendar, CheckSquare,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -33,6 +34,11 @@ const NAV_SECONDARY: NavItem[] = [
 const NAV_TERTIARY: NavItem[] = [
   { href: "/vision",   label: "Vision",    Icon: Eye      },
   { href: "/journal",  label: "Journal",   Icon: BookOpen },
+];
+
+const NAV_GOOGLE: NavItem[] = [
+  { href: "/calendrier",   label: "Calendrier",     Icon: Calendar     },
+  { href: "/google-tasks", label: "Google Tasks",   Icon: CheckSquare  },
 ];
 
 function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: boolean; badgeCount: number }) {
@@ -158,6 +164,21 @@ export default function Sidebar() {
       </p>
       <div className="flex flex-col gap-0.5 px-1">
         {NAV_TERTIARY.map((item) => (
+          <NavLink
+            key={item.href}
+            item={item}
+            isActive={pathname === item.href}
+            badgeCount={countFor(item.badge)}
+          />
+        ))}
+      </div>
+
+      {/* Divider + Google */}
+      <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
+        Google
+      </p>
+      <div className="flex flex-col gap-0.5 px-1">
+        {NAV_GOOGLE.map((item) => (
           <NavLink
             key={item.href}
             item={item}

@@ -32,22 +32,6 @@ export default function GoogleSyncSection() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchStatus();
-    // Lire feedback URL après callback OAuth
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("google") === "connected") {
-      addToast("Google connecté !", "success");
-      // Nettoyer l'URL
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-    if (params.get("google") === "error") {
-      const reason = params.get("reason") || "inconnue";
-      setError(`Connexion refusée : ${reason}`);
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, [fetchStatus, addToast]);
-
   const handleConnect = () => {
     window.location.href = "/api/google/auth";
   };
@@ -55,11 +39,10 @@ export default function GoogleSyncSection() {
   const handleDisconnect = async () => {
     await fetch("/api/google/disconnect", { method: "POST" });
     setStatus({ connected: false, email: null });
-    addToast("Google déconnecté", "info");
+    addToast("Google deconnecte", "info");
   };
 
   const handleSync = useCallback(async () => {
-    if (syncing) return;
     setSyncing(true);
     setError(null);
     try {
@@ -72,17 +55,19 @@ export default function GoogleSyncSection() {
         result.calendar.pushed;
       setLastSync(new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }));
       if (total === 0) {
-        addToast("Tout est déjà à jour", "info");
+        addToast("Tout est deja a jour", "info");
       } else {
+        const imported = result.tasks.pulled + result.calendar.pulled;
+        const sent     = result.tasks.pushed + result.calendar.pushed;
         addToast(
-          `Sync OK · ${result.tasks.pulled + result.calendar.pulled} importés, ${result.tasks.pushed + result.calendar.pushed} envoyés, ${result.tasks.updated} mis à jour`,
+          "Sync OK - " + imported + " importes, " + sent + " envoyes, " + result.tasks.updated + " mis a jour",
           "success"
         );
       }
     } catch (e) {
       const msg = e instanceof Error ? e.message : "erreur inconnue";
       if (msg === "UNAUTHENTICATED") {
-        setError("Session Google expirée. Reconnecte-toi.");
+        setError("Session Google expiree. Reconnecte-toi.");
         setStatus({ connected: false, email: null });
       } else {
         setError(msg);
@@ -91,21 +76,33 @@ export default function GoogleSyncSection() {
     } finally {
       setSyncing(false);
     }
-  }, [syncing, addToast]);
+  }, [addToast]);
 
-  // Auto-sync toutes les 5 min
+  useEffect(() => {
+    fetchStatus();
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("google") === "connected") {
+      addToast("Google connecte ! Premiere sync...", "success");
+      window.history.replaceState({}, "", window.location.pathname);
+      setTimeout(() => { handleSync(); }, 800);
+    }
+    if (params.get("google") === "error") {
+      const reason = params.get("reason") || "inconnue";
+      setError("Connexion refusee : " + reason);
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [fetchStatus, addToast, handleSync]);
+
   useEffect(() => {
     if (!autoSync || !status.connected) return;
-    const interval = setInterval(() => {
-      handleSync();
-    }, 5 * 60 * 1000);
+    const interval = setInterval(() => { handleSync(); }, 5 * 60 * 1000);
     return () => clearInterval(interval);
   }, [autoSync, status.connected, handleSync]);
 
   return (
     <div className="flex flex-col gap-2.5">
       <p className="text-[10px] font-medium text-[var(--text-secondary)] uppercase tracking-widest px-1">
-        Google · Calendar & Tasks
+        Google - Calendar et Tasks
       </p>
 
       <div className="rounded-3xl bg-surface border border-b-primary p-5 space-y-4">
@@ -120,8 +117,8 @@ export default function GoogleSyncSection() {
               {loading
                 ? "Chargement..."
                 : status.connected
-                  ? `Connecté · ${status.email || "compte Google"}`
-                  : "Non connecté"}
+                  ? "Connecte - " + (status.email || "compte Google")
+                  : "Non connecte"}
             </p>
           </div>
           {status.connected && (
@@ -161,30 +158,27 @@ export default function GoogleSyncSection() {
                 className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-empty-bg text-[var(--text-primary)] rounded-xl text-[13px] font-semibold hover:bg-[var(--surface-2)] transition-all"
               >
                 <Unplug size={14} />
-                Déconnecter
+                Deconnecter
               </button>
             </div>
 
             <div className="flex items-center justify-between pt-2 border-t border-b-primary">
               <div>
-                <p className="text-[12.5px] text-[var(--text-primary)]">Sync auto (toutes les 5 min)</p>
+                <p className="text-[12.5px] text-[var(--text-primary)]">Sync auto (5 min)</p>
                 <p className="text-[10.5px] text-[var(--text-secondary)] mt-0.5">
-                  {lastSync ? `Dernière sync : ${lastSync}` : "Pas encore synchronisé"}
+                  {lastSync ? "Derniere sync : " + lastSync : "Pas encore synchronise"}
                 </p>
               </div>
               <button
                 onClick={() => setAutoSync(!autoSync)}
-                className={`w-11 h-6 rounded-full transition-all flex items-center ${
-                  autoSync ? "bg-accent-blue" : "bg-empty-bg"
-                } p-0.5`}
+                className={"w-11 h-6 rounded-full transition-all flex items-center p-0.5 " + (autoSync ? "bg-accent-blue" : "bg-empty-bg")}
               >
-                <div className={`w-5 h-5 bg-white rounded-full transition-all ${autoSync ? "translate-x-5" : ""}`} />
+                <div className={"w-5 h-5 bg-white rounded-full transition-all " + (autoSync ? "translate-x-5" : "")} />
               </button>
             </div>
 
             <p className="text-[10.5px] text-[var(--text-secondary)] leading-relaxed">
-              Tâches Google ↔ Tâches DopaTask · Events Google ↔ Timeline.
-              Les modifs vont dans les deux sens.
+              Tes tasks Google sont importees dans DopaTask. Les events Google apparaissent dans la timeline. Modifications synchro dans les deux sens.
             </p>
           </>
         )}
