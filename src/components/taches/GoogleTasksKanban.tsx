@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   Plus, Check, Loader2, Trash2, AlertCircle, RefreshCw, X,
   Calendar as CalendarIcon, Star, ChevronDown, ChevronRight,
-  ListChecks, MoreHorizontal,
+  ListChecks, Eye, EyeOff, Filter,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
@@ -24,27 +24,36 @@ interface GTask {
   listTitle: string;
 }
 
-interface GList {
-  id: string;
-  title?: string;
-}
+interface GList { id: string; title?: string }
 
-const STAR_KEY = "dopatask-starred-google-tasks";
+const STAR_KEY   = "dopatask-starred-google-tasks";
+const HIDDEN_KEY = "dopatask-hidden-google-lists";
 
-function loadStarred(): Set<string> {
+function loadSet(key: string): Set<string> {
   if (typeof window === "undefined") return new Set();
   try {
-    const raw = localStorage.getItem(STAR_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return new Set();
     return new Set(JSON.parse(raw) as string[]);
-  } catch {
-    return new Set();
-  }
+  } catch { return new Set(); }
+}
+function saveSet(key: string, s: Set<string>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(key, JSON.stringify(Array.from(s)));
 }
 
-function saveStarred(s: Set<string>) {
-  if (typeof window === "undefined") return;
-  localStorage.setItem(STAR_KEY, JSON.stringify(Array.from(s)));
+// Couleur stable basée sur l'ID de la liste pour identifier visuellement les colonnes
+const LIST_COLORS = [
+  { hue: "var(--accent-blue)",   light: "var(--accent-blue-light)"   },
+  { hue: "var(--accent-purple)", light: "var(--accent-purple-light)" },
+  { hue: "var(--accent-green)",  light: "var(--accent-green-light)"  },
+  { hue: "var(--accent-orange)", light: "var(--accent-orange-light)" },
+  { hue: "var(--accent-cyan)",   light: "var(--accent-cyan-light, rgba(95, 163, 184, 0.12))" },
+  { hue: "var(--accent-red)",    light: "var(--accent-red-light)"    },
+];
+function colorForList(id: string) {
+  let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffffffff;
+  return LIST_COLORS[Math.abs(h) % LIST_COLORS.length];
 }
 
 export default function GoogleTasksKanban() {
@@ -56,15 +65,20 @@ export default function GoogleTasksKanban() {
   const [pending, setPending] = useState<Set<string>>(new Set());
   const [showCompleted, setShowCompleted] = useState<Record<string, boolean>>({});
   const [starred, setStarred] = useState<Set<string>>(new Set());
+  const [hiddenLists, setHiddenLists] = useState<Set<string>>(new Set());
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editValue, setEditValue] = useState("");
   const [openCardId, setOpenCardId] = useState<string | null>(null);
+  const [showListFilter, setShowListFilter] = useState(false);
 
   const addXp     = useAppStore((s) => s.addXp);
   const addToast  = useAppStore((s) => s.addToast);
   const damageBoss = useAppStore((s) => s.damageBoss);
 
-  useEffect(() => { setStarred(loadStarred()); }, []);
+  useEffect(() => {
+    setStarred(loadSet(STAR_KEY));
+    setHiddenLists(loadSet(HIDDEN_KEY));
+  }, []);
 
   const markPending = (id: string, on: boolean) => {
     setPending((prev) => {
@@ -79,10 +93,7 @@ export default function GoogleTasksKanban() {
     setError(null);
     try {
       const r = await fetch("/api/google/tasks", { cache: "no-store" });
-      if (r.status === 401) {
-        setConnected(false);
-        return;
-      }
+      if (r.status === 401) { setConnected(false); return; }
       if (!r.ok) throw new Error("Echec recuperation");
       const d = (await r.json()) as { lists: GList[]; tasks: GTask[] };
       setLists(d.lists || []);
@@ -97,7 +108,6 @@ export default function GoogleTasksKanban() {
 
   useEffect(() => { fetchAll(); }, [fetchAll]);
 
-  // Auto-refresh toutes les 90s pour voir les changements faits ailleurs
   useEffect(() => {
     if (!connected) return;
     const interval = setInterval(() => { fetchAll(); }, 90 * 1000);
@@ -115,7 +125,6 @@ export default function GoogleTasksKanban() {
         body: JSON.stringify({ listId: t.listId, taskId: t.id, updates: { status: next } }),
       });
       if (!r.ok) throw new Error("Echec");
-      // XP / boss damage si on vient de COMPLETER
       if (next === "completed") {
         const isCritical = Math.random() < 0.15;
         const dmg  = isCritical ? 22 : 8;
@@ -177,37 +186,44 @@ export default function GoogleTasksKanban() {
       });
       if (!r.ok) throw new Error("Echec");
       await fetchAll();
-    } catch {
-      setError("Creation impossible");
-    }
+    } catch { setError("Creation impossible"); }
   };
 
   const toggleStar = (id: string) => {
     setStarred((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id); else next.add(id);
-      saveStarred(next);
+      saveSet(STAR_KEY, next);
       return next;
     });
   };
+
+  const toggleListVisible = (id: string) => {
+    setHiddenLists((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      saveSet(HIDDEN_KEY, next);
+      return next;
+    });
+  };
+
+  const visibleLists = useMemo(() => lists.filter((l) => !hiddenLists.has(l.id)), [lists, hiddenLists]);
+  const totalOpen   = useMemo(() => tasks.filter((t) => t.status !== "completed" && !hiddenLists.has(t.listId)).length, [tasks, hiddenLists]);
 
   if (connected === false) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-4 px-6">
         <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-          style={{ background: "var(--accent-blue)12" }}>
+          style={{ background: "var(--accent-blue-light)" }}>
           <ListChecks size={26} className="text-accent-blue" />
         </div>
         <div className="text-center max-w-md">
           <h2 className="text-lg font-semibold text-[var(--text-primary)]">Connecte Google Tasks</h2>
           <p className="text-sm text-[var(--text-secondary)] mt-2">
-            Va dans Reglages pour connecter ton compte Google. Tes taches Google apparaitront ici.
+            Va dans Reglages pour connecter ton compte Google.
           </p>
         </div>
-        <a
-          href="/reglages"
-          className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent-blue text-white rounded-xl text-[13px] font-semibold hover:opacity-90 transition-all"
-        >
+        <a href="/reglages" className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent-blue text-white rounded-xl text-[13px] font-semibold hover:opacity-90 transition-all">
           Aller aux reglages
         </a>
       </div>
@@ -225,23 +241,95 @@ export default function GoogleTasksKanban() {
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary flex items-center justify-between">
+      <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary flex items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
-            <ListChecks size={18} className="text-accent-blue" /> Taches
+            <ListChecks size={18} className="text-accent-blue" />
+            Taches
           </h1>
           <p className="text-xs text-[var(--text-secondary)] mt-1">
-            {tasks.filter((t) => t.status !== "completed").length} ouverte(s) - sync Google Tasks
+            {totalOpen} tache{totalOpen > 1 ? "s" : ""} ouverte{totalOpen > 1 ? "s" : ""}
+            {hiddenLists.size > 0 && (
+              <span className="ml-1.5 text-[var(--text-secondary)]">- {hiddenLists.size} liste{hiddenLists.size > 1 ? "s" : ""} masquee{hiddenLists.size > 1 ? "s" : ""}</span>
+            )}
           </p>
         </div>
-        <button
-          onClick={fetchAll}
-          disabled={loading}
-          className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-empty-bg border border-b-primary text-[12px] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-all disabled:opacity-50"
-        >
-          {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-          Actualiser
-        </button>
+
+        <div className="flex items-center gap-2">
+          {/* Filtre listes */}
+          <div className="relative">
+            <button
+              onClick={() => setShowListFilter(!showListFilter)}
+              className={
+                "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[12px] transition-all " +
+                (hiddenLists.size > 0
+                  ? "bg-accent-blue text-white border-accent-blue"
+                  : "bg-empty-bg border-b-primary text-[var(--text-secondary)] hover:bg-[var(--surface-2)]")
+              }
+            >
+              <Filter size={12} />
+              Listes
+              {hiddenLists.size > 0 && (
+                <span className="ml-0.5 text-[10px] px-1 rounded bg-white/20 tabular-nums">
+                  {visibleLists.length}/{lists.length}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showListFilter && (
+                <>
+                  <div className="fixed inset-0 z-10" onClick={() => setShowListFilter(false)} />
+                  <motion.div
+                    initial={{ opacity: 0, y: -4, scale: 0.96 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.96 }}
+                    transition={{ duration: 0.12 }}
+                    className="absolute right-0 top-full mt-1.5 z-20 min-w-[260px] rounded-2xl bg-surface border border-b-primary shadow-2xl overflow-hidden"
+                  >
+                    <div className="px-3 py-2.5 border-b border-b-primary text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                      Afficher / masquer
+                    </div>
+                    <div className="max-h-[400px] overflow-y-auto py-1">
+                      {lists.map((l) => {
+                        const hidden = hiddenLists.has(l.id);
+                        const c = colorForList(l.id);
+                        const taskCount = tasks.filter((t) => t.listId === l.id && t.status !== "completed").length;
+                        return (
+                          <button
+                            key={l.id}
+                            onClick={() => toggleListVisible(l.id)}
+                            className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-[var(--surface-2)] transition-all text-left"
+                          >
+                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.hue }} />
+                            <span className={"flex-1 text-[13px] truncate " + (hidden ? "text-[var(--text-secondary)] line-through" : "text-[var(--text-primary)]")}>
+                              {l.title || "(sans nom)"}
+                            </span>
+                            <span className="text-[10.5px] text-[var(--text-secondary)] tabular-nums">{taskCount}</span>
+                            {hidden ? (
+                              <EyeOff size={13} className="text-[var(--text-secondary)] shrink-0" />
+                            ) : (
+                              <Eye size={13} className="text-accent-blue shrink-0" />
+                            )}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </motion.div>
+                </>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <button
+            onClick={fetchAll}
+            disabled={loading}
+            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-empty-bg border border-b-primary text-[12px] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-all disabled:opacity-50"
+          >
+            {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+            Actualiser
+          </button>
+        </div>
       </div>
 
       {error && (
@@ -256,15 +344,17 @@ export default function GoogleTasksKanban() {
         </div>
       )}
 
-      {/* Kanban : listes en colonnes */}
+      {/* Kanban */}
       <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
         <div className="flex gap-4 px-7 py-5 h-full min-w-min">
-          {lists.length === 0 ? (
-            <div className="flex items-center justify-center w-full text-[13px] text-[var(--text-secondary)]">
-              Aucune liste Google Tasks trouvee.
+          {visibleLists.length === 0 ? (
+            <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
+              <Filter size={28} className="text-[var(--text-secondary)] opacity-50" />
+              <p className="text-[13.5px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquees</p>
+              <p className="text-[12px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
             </div>
           ) : (
-            lists.map((list) => {
+            visibleLists.map((list) => {
               const listTasks = tasks
                 .filter((t) => t.listId === list.id)
                 .sort((a, b) => (a.position || "").localeCompare(b.position || ""));
@@ -283,10 +373,7 @@ export default function GoogleTasksKanban() {
                   pending={pending}
                   editingId={editingId}
                   editValue={editValue}
-                  openCardId={openCardId}
-                  onToggleCompleted={() =>
-                    setShowCompleted((prev) => ({ ...prev, [list.id]: !prev[list.id] }))
-                  }
+                  onToggleCompleted={() => setShowCompleted((p) => ({ ...p, [list.id]: !p[list.id] }))}
                   onCreate={(title) => createTask(list.id, title)}
                   onCheck={toggleTask}
                   onDelete={removeTask}
@@ -309,7 +396,6 @@ export default function GoogleTasksKanban() {
         </div>
       </div>
 
-      {/* Detail modal */}
       <AnimatePresence>
         {openCardId && (() => {
           const t = tasks.find((x) => x.id === openCardId);
@@ -330,7 +416,7 @@ export default function GoogleTasksKanban() {
 }
 
 /* =============================================================== */
-/* ListColumn : colonne kanban = une liste Google Tasks            */
+/* ListColumn                                                       */
 /* =============================================================== */
 
 interface ListColumnProps {
@@ -342,7 +428,6 @@ interface ListColumnProps {
   pending: Set<string>;
   editingId: string | null;
   editValue: string;
-  openCardId: string | null;
   onToggleCompleted: () => void;
   onCreate: (title: string) => void;
   onCheck: (t: GTask) => void;
@@ -360,31 +445,33 @@ function ListColumn(p: ListColumnProps) {
   const [adding, setAdding] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
+  const c = colorForList(p.list.id);
 
   useEffect(() => { if (adding) inputRef.current?.focus(); }, [adding]);
 
   const submitNew = () => {
-    if (newTitle.trim()) {
-      p.onCreate(newTitle);
-      setNewTitle("");
-    }
+    if (newTitle.trim()) { p.onCreate(newTitle); setNewTitle(""); }
     setAdding(false);
   };
 
   return (
-    <div className="shrink-0 w-[320px] h-full overflow-hidden flex flex-col rounded-3xl bg-surface border border-b-primary">
-      {/* Header colonne */}
-      <div className="shrink-0 flex items-center justify-between px-4 py-3 border-b border-b-primary">
-        <h2 className="text-[14.5px] font-semibold text-[var(--text-primary)] truncate">
-          {p.list.title || "(sans nom)"}
-        </h2>
-        <span className="text-[11px] text-[var(--text-secondary)] tabular-nums">
-          {p.open.length}
-        </span>
+    <div className="shrink-0 w-[330px] h-full flex flex-col rounded-2xl bg-surface border border-b-primary overflow-hidden shadow-sm">
+      {/* Header colonne avec couleur */}
+      <div className="shrink-0 relative px-4 py-3.5 border-b border-b-primary">
+        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: c.hue }} />
+        <div className="flex items-center gap-2 mt-0.5">
+          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: c.hue }} />
+          <h2 className="flex-1 text-[14.5px] font-semibold text-[var(--text-primary)] truncate">
+            {p.list.title || "(sans nom)"}
+          </h2>
+          <span className="text-[11px] text-[var(--text-secondary)] tabular-nums px-1.5 py-0.5 rounded bg-empty-bg">
+            {p.open.length}
+          </span>
+        </div>
       </div>
 
       {/* Ajouter une tache */}
-      <div className="shrink-0 px-3 py-2 border-b border-b-primary">
+      <div className="shrink-0 px-3 py-2.5 border-b border-b-primary">
         {adding ? (
           <input
             ref={inputRef}
@@ -396,13 +483,14 @@ function ListColumn(p: ListColumnProps) {
               if (e.key === "Escape") { setNewTitle(""); setAdding(false); }
             }}
             onBlur={submitNew}
-            placeholder="Nouvelle tache..."
+            placeholder="Titre de la nouvelle tache..."
             className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
           />
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex items-center gap-2 w-full px-2 py-2 rounded-lg text-[13px] text-accent-blue hover:bg-[var(--surface-2)] transition-all font-medium"
+            className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all hover:bg-[var(--surface-2)]"
+            style={{ color: c.hue }}
           >
             <Plus size={14} />
             Ajouter une tache
@@ -410,10 +498,10 @@ function ListColumn(p: ListColumnProps) {
         )}
       </div>
 
-      {/* Liste des taches */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-2 py-2 flex flex-col gap-1">
+      {/* Liste */}
+      <div className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1">
         {p.open.length === 0 && p.done.length === 0 && (
-          <div className="text-center text-[12px] text-[var(--text-secondary)] py-8">
+          <div className="text-center text-[12px] text-[var(--text-secondary)] py-12">
             Aucune tache
           </div>
         )}
@@ -422,6 +510,7 @@ function ListColumn(p: ListColumnProps) {
           <TaskCard
             key={t.id}
             t={t}
+            accent={c.hue}
             starred={p.starred.has(t.id)}
             isPending={p.pending.has(t.id)}
             isEditing={p.editingId === t.id}
@@ -438,20 +527,20 @@ function ListColumn(p: ListColumnProps) {
           />
         ))}
 
-        {/* Taches terminees deroulant */}
         {p.done.length > 0 && (
           <>
             <button
               onClick={p.onToggleCompleted}
-              className="flex items-center gap-2 px-2 py-2 mt-2 text-[12px] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              className="flex items-center gap-2 px-2 py-2 mt-3 text-[11px] font-medium uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
             >
-              {p.isCompletedOpen ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
-              <span>Taches terminees ({p.done.length})</span>
+              {p.isCompletedOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
+              <span>Terminees ({p.done.length})</span>
             </button>
             {p.isCompletedOpen && p.done.map((t) => (
               <TaskCard
                 key={t.id}
                 t={t}
+                accent={c.hue}
                 starred={p.starred.has(t.id)}
                 isPending={p.pending.has(t.id)}
                 isEditing={false}
@@ -475,11 +564,12 @@ function ListColumn(p: ListColumnProps) {
 }
 
 /* =============================================================== */
-/* TaskCard : carte de tache style capture Google                  */
+/* TaskCard                                                         */
 /* =============================================================== */
 
 interface TaskCardProps {
   t: GTask;
+  accent: string;
   starred: boolean;
   isPending: boolean;
   isEditing: boolean;
@@ -518,30 +608,35 @@ function TaskCard(p: TaskCardProps) {
   return (
     <motion.div
       layout
+      onClick={(e) => {
+        if ((e.target as HTMLElement).closest(".no-open")) return;
+        p.onOpenCard();
+      }}
       className={
-        "group relative px-3 py-2.5 rounded-xl transition-all " +
+        "group relative px-3 py-2.5 rounded-xl border transition-all cursor-pointer " +
         (p.isPending ? "opacity-60 " : "") +
-        (completed ? "bg-empty-bg " : "bg-surface hover:bg-[var(--surface-2)] ")
+        (completed
+          ? "bg-empty-bg border-transparent "
+          : "bg-surface border-b-primary hover:border-accent-blue/40 hover:shadow-sm ")
       }
     >
       <div className="flex items-start gap-2.5">
-        {/* Checkbox */}
         <button
-          onClick={p.onCheck}
+          onClick={(e) => { e.stopPropagation(); p.onCheck(); }}
           disabled={p.isPending}
-          className="shrink-0 mt-0.5"
+          className="shrink-0 mt-0.5 no-open"
+          aria-label={completed ? "Decocher" : "Cocher"}
         >
           <span className={
-            "block w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center " +
+            "block w-[18px] h-[18px] rounded-full border-2 transition-all flex items-center justify-center " +
             (completed
               ? "bg-accent-blue border-accent-blue"
-              : "border-[var(--text-secondary)] hover:border-accent-blue hover:bg-accent-blue/10")
+              : "border-[var(--text-secondary)] hover:border-accent-blue")
           }>
-            {completed && <Check size={10} className="text-white" strokeWidth={3} />}
+            {completed && <Check size={11} className="text-white" strokeWidth={3} />}
           </span>
         </button>
 
-        {/* Contenu */}
         <div className="flex-1 min-w-0">
           {p.isEditing ? (
             <input
@@ -550,21 +645,18 @@ function TaskCard(p: TaskCardProps) {
               value={p.editValue}
               onChange={(e) => p.onChangeEdit(e.target.value)}
               onBlur={p.onSaveEdit}
+              onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 if (e.key === "Enter") p.onSaveEdit();
                 if (e.key === "Escape") p.onCancelEdit();
               }}
-              className="w-full bg-empty-bg border border-b-primary rounded-md px-2 py-1 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
+              className="no-open w-full bg-empty-bg border border-b-primary rounded-md px-2 py-1 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
             />
           ) : (
             <p
-              onDoubleClick={p.onStartEdit}
-              onClick={(e) => {
-                if ((e.target as HTMLElement).closest(".no-open")) return;
-                p.onOpenCard();
-              }}
+              onDoubleClick={(e) => { e.stopPropagation(); p.onStartEdit(); }}
               className={
-                "text-[13.5px] leading-snug cursor-pointer break-words " +
+                "text-[13.5px] leading-snug break-words " +
                 (completed ? "line-through text-[var(--text-secondary)]" : "text-[var(--text-primary)]")
               }
             >
@@ -574,25 +666,26 @@ function TaskCard(p: TaskCardProps) {
 
           {p.t.notes && (
             <p
-              onClick={p.onOpenCard}
               className={
-                "text-[11.5px] mt-1 leading-relaxed cursor-pointer break-words line-clamp-3 " +
-                (completed ? "text-[var(--text-secondary)]" : "text-[var(--text-secondary)]")
+                "text-[11.5px] mt-1 leading-relaxed break-words line-clamp-3 " +
+                (completed ? "text-[var(--text-secondary)] opacity-70" : "text-[var(--text-secondary)]")
               }
             >
               {p.t.notes}
             </p>
           )}
 
-          {/* Date */}
           {!completed && (
             <div className="mt-2 flex items-center gap-1 no-open">
-              <label className={
-                "inline-flex items-center gap-1 text-[10.5px] cursor-pointer rounded-md px-1.5 py-0.5 transition-all relative " +
-                (overdue ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]" :
-                 p.t.due ? "bg-[var(--accent-blue-light)] text-accent-blue" :
-                 "text-[var(--text-secondary)] hover:bg-empty-bg opacity-0 group-hover:opacity-100")
-              }>
+              <label
+                onClick={(e) => e.stopPropagation()}
+                className={
+                  "inline-flex items-center gap-1 text-[10.5px] cursor-pointer rounded-md px-1.5 py-0.5 transition-all relative font-medium " +
+                  (overdue ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]" :
+                   p.t.due ? "bg-[var(--accent-blue-light)] text-accent-blue" :
+                   "text-[var(--text-secondary)] hover:bg-empty-bg opacity-0 group-hover:opacity-100")
+                }
+              >
                 <CalendarIcon size={10} />
                 {p.t.due ? formatDue(p.t.due) : "Date"}
                 <input
@@ -600,13 +693,12 @@ function TaskCard(p: TaskCardProps) {
                   value={dueIso}
                   onChange={(e) => p.onSetDate(e.target.value || null)}
                   className="absolute inset-0 opacity-0 cursor-pointer"
-                  onClick={(e) => e.stopPropagation()}
                 />
               </label>
               {p.t.due && (
                 <button
                   onClick={(e) => { e.stopPropagation(); p.onSetDate(null); }}
-                  className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent-red)]"
+                  className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent-red)] transition-all"
                 >
                   ×
                 </button>
@@ -615,21 +707,24 @@ function TaskCard(p: TaskCardProps) {
           )}
         </div>
 
-        {/* Etoile + Trash */}
-        <div className="shrink-0 flex flex-col items-end gap-1 no-open">
+        <div className="shrink-0 flex flex-col items-end gap-1.5 no-open">
           <button
-            onClick={p.onStar}
+            onClick={(e) => { e.stopPropagation(); p.onStar(); }}
             className={
               "transition-all " +
-              (p.starred ? "opacity-100 text-[var(--accent-orange)]" : "opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-[var(--accent-orange)]")
+              (p.starred
+                ? "opacity-100 text-[var(--accent-orange)]"
+                : "opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-[var(--accent-orange)]")
             }
+            aria-label="Favori"
           >
             <Star size={13} fill={p.starred ? "currentColor" : "none"} />
           </button>
           <button
-            onClick={p.onDelete}
+            onClick={(e) => { e.stopPropagation(); p.onDelete(); }}
             disabled={p.isPending}
             className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-[var(--accent-red)] transition-all"
+            aria-label="Supprimer"
           >
             <Trash2 size={12} />
           </button>
@@ -640,7 +735,7 @@ function TaskCard(p: TaskCardProps) {
 }
 
 /* =============================================================== */
-/* DetailModal : modal d'edition complete d'une tache              */
+/* DetailModal - redesigned                                         */
 /* =============================================================== */
 
 interface DetailModalProps {
@@ -655,7 +750,8 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
   const [title, setTitle] = useState(t.title || "");
   const [notes, setNotes] = useState(t.notes || "");
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
-  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const c = colorForList(t.listId);
 
   const completed = t.status === "completed";
 
@@ -666,92 +762,150 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     const newDueIso = due ? due + "T00:00:00.000Z" : undefined;
     if (newDueIso !== t.due) updates.due = newDueIso;
     if (Object.keys(updates).length > 0) {
-      setSaving(true);
       onUpdate(updates);
-      setTimeout(() => setSaving(false), 300);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 1500);
     }
   };
+
+  // Save sur Cmd+Enter ou Escape pour fermer
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { save(); onClose(); }
+    };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [title, notes, due]);
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.95, y: 10 }}
+        initial={{ opacity: 0, scale: 0.97, y: 12 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.95, y: 10 }}
+        exit={{ opacity: 0, scale: 0.97, y: 12 }}
+        transition={{ type: "spring", stiffness: 380, damping: 32 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface rounded-3xl max-w-lg w-full border border-b-primary p-6 shadow-2xl"
+        className="bg-surface rounded-3xl max-w-xl w-full border border-b-primary shadow-2xl overflow-hidden flex flex-col"
+        style={{ maxHeight: "90vh" }}
       >
-        <div className="flex items-start gap-3 mb-4">
-          <button onClick={onCheck} className="shrink-0 mt-1">
-            <span className={
-              "block w-5 h-5 rounded-full border-2 transition-all flex items-center justify-center " +
-              (completed ? "bg-accent-blue border-accent-blue" : "border-[var(--text-secondary)]")
-            }>
-              {completed && <Check size={12} className="text-white" strokeWidth={3} />}
-            </span>
-          </button>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            onBlur={save}
-            className={
-              "flex-1 bg-transparent text-lg font-semibold focus:outline-none text-[var(--text-primary)] " +
-              (completed ? "line-through text-[var(--text-secondary)]" : "")
-            }
-          />
-          <button onClick={onClose} className="shrink-0 text-[var(--text-secondary)] hover:text-[var(--text-primary)]">
-            <X size={18} />
-          </button>
+        {/* Header sticky avec bordure couleur de la liste */}
+        <div className="shrink-0 relative">
+          <div className="absolute top-0 left-0 right-0 h-1" style={{ background: c.hue }} />
+          <div className="flex items-center gap-3 px-6 py-4 border-b border-b-primary">
+            <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold">
+              <span className="w-2 h-2 rounded-full" style={{ background: c.hue }} />
+              {t.listTitle}
+            </div>
+            <div className="flex-1" />
+            <div className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5">
+              {saved ? (
+                <>
+                  <Check size={12} className="text-accent-green" />
+                  Enregistre
+                </>
+              ) : (
+                <span className="opacity-60">Auto-save</span>
+              )}
+            </div>
+            <button
+              onClick={onClose}
+              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-empty-bg p-1.5 rounded-lg transition-all"
+              aria-label="Fermer"
+            >
+              <X size={16} />
+            </button>
+          </div>
         </div>
 
-        <div className="space-y-4">
+        {/* Body scrollable */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
+          {/* Titre + checkbox */}
+          <div className="flex items-start gap-3">
+            <button
+              onClick={onCheck}
+              className="shrink-0 mt-1.5"
+              aria-label={completed ? "Decocher" : "Cocher"}
+            >
+              <span className={
+                "block w-[22px] h-[22px] rounded-full border-2 transition-all flex items-center justify-center " +
+                (completed
+                  ? "bg-accent-blue border-accent-blue"
+                  : "border-[var(--text-secondary)] hover:border-accent-blue")
+              }>
+                {completed && <Check size={13} className="text-white" strokeWidth={3} />}
+              </span>
+            </button>
+            <textarea
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              onBlur={save}
+              rows={1}
+              placeholder="Titre de la tache..."
+              className={
+                "flex-1 bg-transparent text-[19px] font-semibold focus:outline-none resize-none leading-tight " +
+                (completed ? "line-through text-[var(--text-secondary)]" : "text-[var(--text-primary)]")
+              }
+              style={{ minHeight: "1.5em" }}
+            />
+          </div>
+
+          {/* Date */}
           <div>
-            <label className="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-1.5 font-semibold">
+            <label className="block text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] mb-2 font-semibold">
+              Date d&apos;echeance
+            </label>
+            <div className="flex items-center gap-2">
+              <CalendarIcon size={14} className="text-[var(--text-secondary)] shrink-0" />
+              <input
+                type="date"
+                value={due}
+                onChange={(e) => setDue(e.target.value)}
+                onBlur={save}
+                className="flex-1 bg-empty-bg border border-b-primary rounded-xl px-3 py-2.5 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
+              />
+              {due && (
+                <button
+                  onClick={() => { setDue(""); setTimeout(save, 0); }}
+                  className="text-[12px] text-[var(--text-secondary)] hover:text-[var(--accent-red)] px-2 py-1 transition-all"
+                >
+                  Retirer
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] mb-2 font-semibold">
               Description
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={save}
-              rows={4}
-              placeholder="Ajouter une description, notes, lien..."
-              className="w-full bg-empty-bg border border-b-primary rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)] resize-none"
+              rows={6}
+              placeholder="Ajouter une description, des notes, un lien..."
+              className="w-full bg-empty-bg border border-b-primary rounded-xl px-4 py-3 text-[13.5px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)] resize-y placeholder:text-[var(--text-secondary)]"
             />
-          </div>
-
-          <div>
-            <label className="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-1.5 font-semibold">
-              Date d'echeance
-            </label>
-            <input
-              type="date"
-              value={due}
-              onChange={(e) => setDue(e.target.value)}
-              onBlur={save}
-              className="w-full bg-empty-bg border border-b-primary rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
-            />
-          </div>
-
-          <div className="text-[11px] text-[var(--text-secondary)] flex items-center gap-2">
-            Liste : <span className="font-medium text-[var(--text-primary)]">{t.listTitle}</span>
           </div>
 
           {t.links && t.links.length > 0 && (
             <div>
-              <label className="block text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-1.5 font-semibold">
+              <label className="block text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] mb-2 font-semibold">
                 Liens
               </label>
-              <ul className="space-y-1">
+              <ul className="space-y-1.5">
                 {t.links.map((l, i) => (
                   <li key={i}>
-                    <a href={l.link} target="_blank" rel="noopener noreferrer" className="text-[12px] text-accent-blue hover:underline break-all">
+                    <a href={l.link} target="_blank" rel="noopener noreferrer" className="text-[12.5px] text-accent-blue hover:underline break-all">
                       {l.description || l.link}
                     </a>
                   </li>
@@ -761,18 +915,21 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
           )}
         </div>
 
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-b-primary">
+        {/* Footer */}
+        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-b-primary bg-[var(--surface-2)]">
           <button
             onClick={onDelete}
-            className="inline-flex items-center gap-1.5 text-[12.5px] text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] px-3 py-2 rounded-xl transition-all"
+            className="inline-flex items-center gap-1.5 text-[13px] text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] px-3 py-2 rounded-xl transition-all font-medium"
           >
             <Trash2 size={13} />
             Supprimer
           </button>
-          <div className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5">
-            {saving && <Loader2 size={11} className="animate-spin" />}
-            {saving ? "Enregistrement..." : "Auto-save active"}
-          </div>
+          <button
+            onClick={() => { save(); onClose(); }}
+            className="px-5 py-2 rounded-xl text-[13px] bg-accent-blue text-white hover:opacity-90 transition-all font-semibold"
+          >
+            Fermer
+          </button>
         </div>
       </motion.div>
     </motion.div>
