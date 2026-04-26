@@ -21,9 +21,10 @@ type NavItem = {
 
 const NAV_PRIMARY: NavItem[] = [
   { href: "/",           label: "Dashboard", Icon: LayoutDashboard },
-  { href: "/crm",        label: "CRM",       Icon: Phone, badge: "prospects_to_call" },
-  { href: "/inbox",      label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
   { href: "/taches",     label: "Tâches",    Icon: ListChecks,      badge: "pending_tasks" },
+  { href: "/calendrier", label: "Calendrier", Icon: Calendar },
+  { href: "/inbox",      label: "Inbox",     Icon: Inbox,           badge: "inbox_count" },
+  { href: "/crm",        label: "CRM",       Icon: Phone, badge: "prospects_to_call" },
 ];
 
 const NAV_SECONDARY: NavItem[] = [
@@ -36,9 +37,7 @@ const NAV_TERTIARY: NavItem[] = [
   { href: "/journal",  label: "Journal",   Icon: BookOpen },
 ];
 
-const NAV_GOOGLE: NavItem[] = [
-  { href: "/calendrier",   label: "Calendrier",     Icon: Calendar     },
-];
+// Removed NAV_GOOGLE
 
 function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: boolean; badgeCount: number }) {
   const { Icon, href, label, badge } = item;
@@ -111,7 +110,7 @@ export default function Sidebar() {
   return (
     <nav className="flex flex-col h-full w-full px-3 py-6 gap-0.5">
       {/* Logo — minimal */}
-      <div className="flex items-center gap-2.5 pb-7 pt-1 px-2">
+      <div className="flex items-center gap-2.5 pb-5 pt-1 px-2">
         <div
           className="w-7 h-7 rounded-[8px] flex items-center justify-center shrink-0"
           style={{
@@ -128,6 +127,23 @@ export default function Sidebar() {
             v4.1 · premium
           </p>
         </div>
+      </div>
+
+      {/* Global Action */}
+      <div className="px-2 mb-4">
+        <button
+          onClick={() => {
+            const text = window.prompt("Nouvelle tâche rapide :");
+            if (text && text.trim()) {
+              useAppStore.getState().addInboxItem(text.trim());
+            }
+          }}
+          className="w-full flex items-center justify-center gap-2 py-2 rounded-xl text-[12.5px] font-bold text-white transition-all shadow-sm hover:opacity-90 active:scale-95"
+          style={{ background: "var(--accent-blue)" }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+          Nouvelle Tâche
+        </button>
       </div>
 
       {/* Primary group */}
@@ -172,20 +188,7 @@ export default function Sidebar() {
         ))}
       </div>
 
-      {/* Divider + Google */}
-      <p className="px-3 pt-5 pb-2 text-[9px] font-medium tracking-[0.2em] uppercase text-t-tertiary">
-        Google
-      </p>
-      <div className="flex flex-col gap-0.5 px-1">
-        {NAV_GOOGLE.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            isActive={pathname === item.href}
-            badgeCount={countFor(item.badge)}
-          />
-        ))}
-      </div>
+      {/* Google removed as its items have moved */}
 
       {/* Spacer */}
       <div className="flex-1" />

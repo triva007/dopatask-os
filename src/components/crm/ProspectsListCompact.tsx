@@ -447,7 +447,6 @@ export default function ProspectsListCompact({
             allSelectedInView={allSelectedInView}
             someSelectedInView={someSelectedInView}
             toggleSelectAll={toggleSelectAll}
-            onUpdateValue={(id, field, value) => updateProspect(id, { [field]: value })}
           />
         )}
       </div>
@@ -463,7 +462,7 @@ export default function ProspectsListCompact({
 function ListView({
   prospects, selectedId, selected, onSelect, toggleSelectOne,
   onChangeStatut, callCountFor, lastCallFor, taskCountFor,
-  allSelectedInView, someSelectedInView, toggleSelectAll, onUpdateValue,
+  allSelectedInView, someSelectedInView, toggleSelectAll,
 }: {
   prospects: Prospect[];
   selectedId: string | null;
@@ -477,131 +476,152 @@ function ListView({
   allSelectedInView: boolean;
   someSelectedInView: boolean;
   toggleSelectAll: () => void;
-  onUpdateValue: (id: string, field: keyof Prospect, value: string) => void;
 }) {
   return (
-    <div className="w-full min-w-[900px] pb-10">
-      {/* Header du tableau */}
-      <div className="grid grid-cols-[auto_2fr_1fr_2fr_1.5fr] gap-4 px-5 py-3 text-[11px] font-bold uppercase tracking-wider text-[var(--text-tertiary)] border-b border-[var(--border-primary)] sticky top-0 bg-background/90 backdrop-blur z-10">
-        <div className="flex items-center gap-3 w-[40px]">
-          {prospects.length > 0 && (
-            <input
-              type="checkbox"
-              checked={allSelectedInView}
-              ref={(el) => { if (el) el.indeterminate = !allSelectedInView && someSelectedInView; }}
-              onChange={toggleSelectAll}
-              className="accent-[var(--accent-blue)] cursor-pointer"
-            />
-          )}
-        </div>
-        <div>Entreprise & Niche</div>
-        <div>Téléphone</div>
-        <div>Notes de prospection</div>
-        <div>Statut</div>
-      </div>
-
+    <ul className="py-1">
+      {prospects.length > 5 && (
+        <li className="px-3 py-1.5 flex items-center gap-2 border-b border-surface-3/50 sticky top-0 bg-background z-10 backdrop-blur">
+          <input
+            type="checkbox"
+            checked={allSelectedInView}
+            ref={(el) => { if (el) el.indeterminate = !allSelectedInView && someSelectedInView; }}
+            onChange={toggleSelectAll}
+            className="accent-dopa-cyan cursor-pointer"
+          />
+          <span className="text-[10px] text-t-tertiary uppercase tracking-wider">
+            Tout sélectionner ({prospects.length})
+          </span>
+        </li>
+      )}
       <AnimatePresence initial={false}>
         {prospects.map((p, idx) => {
           const isSel = selected.has(p.id);
           const isActive = selectedId === p.id;
+          const nbCalls = callCountFor(p.id);
+          const nbTasks = taskCountFor(p.id);
+          const last = lastCallFor(p.id);
           const c = STATUT_COLORS[p.statut];
           return (
-            <motion.div
+            <motion.li
               key={p.id}
               layout
-              initial={{ opacity: 0, y: 10 }}
+              initial={{ opacity: 0, y: 4 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.2, delay: Math.min(idx * 0.02, 0.2) }}
-              onClick={() => onSelect(p.id)}
-              className={`group grid grid-cols-[auto_2fr_1fr_2fr_1.5fr] gap-4 px-5 py-4 items-center border-b border-[var(--border-secondary)] transition-all cursor-pointer ${
-                isActive ? "bg-[var(--accent-blue-light)]" : isSel ? "bg-[var(--surface-2)]" : "hover:bg-[var(--surface-2)]"
-              } ${p.archived ? "opacity-40" : ""}`}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{
+                duration: 0.18,
+                delay: Math.min(idx * 0.012, 0.18),
+                ease: [0.22, 1, 0.36, 1],
+              }}
+              className={`group relative border-b border-surface-3/20 transition-colors ${
+                isActive ? "bg-dopa-cyan/10" : isSel ? "bg-dopa-cyan/5" : "hover:bg-surface-2/40"
+              } ${p.archived ? "opacity-50" : ""}`}
             >
-              {/* Checkbox */}
-              <div className="flex items-center w-[40px]" onClick={(e) => e.stopPropagation()}>
+              <span
+                aria-hidden
+                className="absolute left-0 top-0 bottom-0 w-[3px] opacity-70"
+                style={{ background: c.text }}
+              />
+              <div className="flex items-stretch gap-4 pl-5 pr-4 py-5">
                 <input
                   type="checkbox"
                   checked={isSel}
                   onChange={() => toggleSelectOne(p.id)}
-                  className="accent-[var(--accent-blue)] cursor-pointer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="accent-dopa-cyan cursor-pointer shrink-0 mt-1"
                 />
-              </div>
 
-              {/* Entreprise & Niche */}
-              <div className="min-w-0 pr-4">
-                <div className="flex items-center gap-2">
-                  <span className="text-[14px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
-                  <input
-                    value={p.entreprise}
-                    onChange={(e) => onUpdateValue(p.id, "entreprise", e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="Nom de l'entreprise"
-                    className="flex-1 bg-transparent text-[14px] font-bold text-[var(--text-primary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] rounded px-1 -ml-1 transition-all"
-                  />
-                </div>
-                <div className="mt-1 flex items-center gap-1.5 ml-6">
-                  <input
-                    value={p.niche || ""}
-                    onChange={(e) => onUpdateValue(p.id, "niche", e.target.value)}
-                    onClick={(e) => e.stopPropagation()}
-                    placeholder="+ Ajouter niche"
-                    className="text-[11px] bg-[var(--surface-2)] text-[var(--text-tertiary)] px-2 py-0.5 rounded focus:outline-none focus:bg-[var(--surface-3)] focus:text-[var(--text-primary)] transition-all w-24"
-                  />
-                  {p.gmb_url && (
-                    <a
+                <button
+                  onClick={() => onSelect(p.id)}
+                  className="flex-1 min-w-0 text-left"
+                >
+                  <div className="flex items-center gap-2.5 mb-1.5">
+                    <span className="text-[15px]" aria-hidden>{STATUT_EMOJI[p.statut]}</span>
+                    <p className="text-[16px] font-medium text-t-primary truncate leading-relaxed tracking-wide">
+                      {p.entreprise}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 mt-1 text-[10.5px] text-t-tertiary flex-wrap">
+                    {nbCalls > 0 && (
+                      <span
+                        className={`inline-flex items-center gap-0.5 font-bold ${
+                          nbCalls >= 3 ? "text-dopa-orange" : "text-t-secondary"
+                        }`}
+                        title={`${nbCalls} appel(s)`}
+                      >
+                        <RotateCcw size={9} />{nbCalls}
+                      </span>
+                    )}
+                    {nbTasks > 0 && (
+                      <span
+                        className="inline-flex items-center gap-0.5 font-bold text-dopa-violet"
+                        title={`${nbTasks} tâche(s) liée(s)`}
+                      >
+                        <ListChecks size={9} />{nbTasks}
+                      </span>
+                    )}
+                    {last && (
+                      <span className="inline-flex items-center gap-0.5">
+                        <Clock size={9} />{relativeDate(last)}
+                      </span>
+                    )}
+                    {p.niche && (
+                      <span className="px-1.5 py-px rounded bg-surface-2 text-t-tertiary truncate max-w-[100px]">
+                        {p.niche}
+                      </span>
+                    )}
+                    {p.date_rdv && (
+                      <span className="inline-flex items-center gap-0.5 text-dopa-cyan font-semibold">
+                        <Calendar size={9} />{shortDate(p.date_rdv)}
+                      </span>
+                    )}
+                  </div>
+                </button>
+
+                {/* Quick actions : GMB en gros bouton + select statut */}
+                <div className="flex items-stretch gap-1.5 shrink-0">
+                  {p.gmb_url ? (
+                    <motion.a
                       href={p.gmb_url}
                       target="_blank"
                       rel="noreferrer"
                       onClick={(e) => e.stopPropagation()}
-                      className="text-[11px] font-bold text-[var(--accent-blue)] hover:underline"
+                      whileHover={{ scale: 1.04 }}
+                      whileTap={{ scale: 0.96 }}
+                      transition={{ type: "spring", stiffness: 400, damping: 18 }}
+                      title="Ouvrir la fiche GMB"
+                      className="inline-flex items-center gap-1.5 px-3 py-2 bg-dopa-cyan text-black rounded-lg text-[12px] font-bold hover:brightness-110 shadow-sm shadow-dopa-cyan/20 min-w-[68px] justify-center"
                     >
+                      <MapPin size={14} strokeWidth={2.5} />
                       GMB
-                    </a>
+                    </motion.a>
+                  ) : (
+                    <span
+                      className="inline-flex items-center justify-center px-3 py-2 bg-surface-2 text-t-tertiary rounded-lg text-[10.5px] italic min-w-[68px]"
+                      title="Pas de fiche GMB"
+                    >
+                      —
+                    </span>
                   )}
+                  <select
+                    value={p.statut}
+                    onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
+                    onClick={(e) => e.stopPropagation()}
+                    title="Changer le statut"
+                    className="text-[11px] bg-surface-2 border border-surface-3 rounded-lg px-2 cursor-pointer focus:outline-none focus:border-dopa-cyan/50 max-w-[110px] font-semibold"
+                    style={{ color: c.text }}
+                  >
+                    {STATUTS_ORDRE.map((s) => (
+                      <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
-
-              {/* Téléphone */}
-              <div className="min-w-0 pr-4">
-                <input
-                  value={p.telephone || ""}
-                  onChange={(e) => onUpdateValue(p.id, "telephone", e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="---"
-                  className="w-full bg-transparent text-[13px] font-medium text-[var(--text-secondary)] tabular-nums focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] rounded px-2 py-1 -ml-2 transition-all hover:bg-[var(--surface-3)]"
-                />
-              </div>
-
-              {/* Notes */}
-              <div className="min-w-0 pr-4">
-                <input
-                  value={p.notes || ""}
-                  onChange={(e) => onUpdateValue(p.id, "notes", e.target.value)}
-                  onClick={(e) => e.stopPropagation()}
-                  placeholder="Ajouter une note rapide..."
-                  className="w-full bg-transparent text-[12.5px] italic text-[var(--text-tertiary)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-blue)] focus:not-italic focus:text-[var(--text-primary)] rounded px-2 py-1 -ml-2 transition-all hover:bg-[var(--surface-3)] truncate"
-                />
-              </div>
-
-              {/* Statut */}
-              <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                <select
-                  value={p.statut}
-                  onChange={(e) => onChangeStatut(p.id, e.target.value as StatutProspect)}
-                  className="text-[12px] font-bold bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-2.5 py-1.5 cursor-pointer focus:outline-none focus:border-[var(--accent-blue)] shadow-sm max-w-full"
-                  style={{ color: c.text }}
-                >
-                  {STATUTS_ORDRE.map((s) => (
-                    <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
-                  ))}
-                </select>
-              </div>
-
-            </motion.div>
+            </motion.li>
           );
         })}
       </AnimatePresence>
-    </div>
+    </ul>
   );
 }
 

@@ -168,7 +168,10 @@ export function useCalendarEvents() {
       if (!r.ok) throw new Error("Echec recuperation events");
       const d = (await r.json()) as { events: CalendarEvent[] };
       const filtered = (d.events || []).filter(
-        (e) => !e.summary?.toLowerCase().includes("domicile")
+        (e) => {
+          const sum = e.summary || "";
+          return !/\b(domicile|dormir|sommeil|nuit|sleep|emails|admin|déjeuner|dejeuner|recompense|récompense)\b/i.test(sum);
+        }
       );
       setEvents(filtered);
       setConnected(true);

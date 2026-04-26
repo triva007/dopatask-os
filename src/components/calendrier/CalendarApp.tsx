@@ -283,8 +283,8 @@ export default function CalendarApp() {
       } else {
         const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Paris";
         await updateEvent(ev.calendarId, ev.id, {
-          start: { dateTime: newStart.toISOString(), timeZone: tz },
-          end: { dateTime: newEnd.toISOString(), timeZone: tz },
+          start: { dateTime: newStart.toISOString(), timeZone: tz, date: null },
+          end: { dateTime: newEnd.toISOString(), timeZone: tz, date: null },
         });
       }
     } catch {

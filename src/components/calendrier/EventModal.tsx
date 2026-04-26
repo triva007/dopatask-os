@@ -120,8 +120,8 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         calendarId,
         summary: summary.trim(),
         description,
-        start: { date: startDate },
-        end: { date: endDate },
+        start: { date: startDate, dateTime: null as any, timeZone: null as any },
+        end: { date: endDate, dateTime: null as any, timeZone: null as any },
         colorId: colorId || undefined,
       });
     } else {
@@ -130,8 +130,8 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         calendarId,
         summary: summary.trim(),
         description,
-        start: { dateTime: new Date(startStr).toISOString(), timeZone: TZ },
-        end: { dateTime: new Date(endStr).toISOString(), timeZone: TZ },
+        start: { dateTime: new Date(startStr).toISOString(), timeZone: TZ, date: null as any },
+        end: { dateTime: new Date(endStr).toISOString(), timeZone: TZ, date: null as any },
         colorId: colorId || undefined,
       });
     }

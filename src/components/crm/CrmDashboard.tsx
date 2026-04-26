@@ -480,6 +480,53 @@ export default function CrmDashboard() {
             value={activeProjects} sub="actifs" accent="cyan" />
         </div>
 
+        {/* ═══ SYNERGIE PROJETS DE VIE ═══ */}
+        {projects.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="rounded-xl p-5"
+            style={{
+              background: "var(--surface-1)",
+              border: "1px solid var(--border-primary)",
+            }}
+          >
+            <div className="flex items-center gap-2 mb-4">
+              <FolderKanban size={14} className="text-[var(--accent-blue)]" />
+              <h3 className="text-[13px] font-semibold tracking-tight">Projets de Vie</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {projects.filter(p => p.status === "active").slice(0, 3).map((project) => {
+                const projectTasks = tasks.filter((t) => t.projectId === project.id);
+                const doneTasks = projectTasks.filter((t) => t.status === "done" || t.status === "completed").length;
+                const pct = projectTasks.length > 0 ? Math.round((doneTasks / projectTasks.length) * 100) : 0;
+                
+                return (
+                  <Link href="/projets" key={project.id} className="block group">
+                    <div className="p-4 rounded-xl border transition-all group-hover:bg-[var(--surface-2)]" style={{ borderColor: "var(--border-primary)", background: "var(--card-bg)" }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="text-[18px] leading-none">{project.emoji}</span>
+                          <span className="text-[14px] font-semibold text-[var(--text-primary)] leading-none">{project.name}</span>
+                        </div>
+                        <span className="text-[11px] font-bold tabular-nums" style={{ color: project.color }}>{pct}%</span>
+                      </div>
+                      <div className="h-[4px] rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
+                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: project.color }} />
+                      </div>
+                      <div className="flex items-center justify-between mt-3">
+                        <p className="text-[11px] text-[var(--text-tertiary)]">{projectTasks.length} tâches totales</p>
+                        <p className="text-[11px] font-medium" style={{ color: project.color }}>{doneTasks} complétées</p>
+                      </div>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+        )}
+
       </div>
     </div>
   );

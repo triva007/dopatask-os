@@ -442,16 +442,16 @@ export const useAppStore = create<AppState>()(
       // ── Projets ─────────────────────────────────────────────────────────
       projects: [
         {
-          id: "proj_agence", name: "Site Agence Web", objectiveId: undefined,
+          id: "proj_agence", name: "Agence Web", objectiveId: undefined,
           status: "active", emoji: "🚀", color: "#3b82f6", createdAt: Date.now() - 604800000,
         },
         {
-          id: "proj_seo", name: "Campagne SEO Q1", objectiveId: undefined,
-          status: "active", emoji: "📈", color: "#10b981", createdAt: Date.now() - 432000000,
+          id: "proj_aaronos", name: "Aaron-OS", objectiveId: undefined,
+          status: "active", emoji: "🧠", color: "#8b5cf6", createdAt: Date.now() - 432000000,
         },
         {
-          id: "proj_content", name: "Contenu Réseaux", objectiveId: undefined,
-          status: "active", emoji: "🎬", color: "#8b5cf6", createdAt: Date.now() - 259200000,
+          id: "proj_perso", name: "Perso", objectiveId: undefined,
+          status: "active", emoji: "🌱", color: "#10b981", createdAt: Date.now() - 259200000,
         },
       ],
 
