@@ -485,44 +485,7 @@ export const useAppStore = create<AppState>()(
         })),
 
       // ── Objectifs ──────────────────────────────────────────────────────────
-      objectives: [
-        {
-          id: uid(), title: "Lancer l'agence web", horizon: "quarter", progress: 35,
-          color: "#7c3aed", createdAt: Date.now() - 2592000000,
-          milestones: [
-            { id: uid(), text: "Créer le site vitrine", done: true },
-            { id: uid(), text: "5 premiers clients", done: false },
-            { id: uid(), text: "Process de vente rodé", done: false },
-          ],
-        },
-        {
-          id: uid(), title: "Maîtriser le SEO", horizon: "month", progress: 60,
-          color: "#06b6d4", createdAt: Date.now() - 604800000,
-          milestones: [
-            { id: uid(), text: "Suivre la formation Rank Math", done: true },
-            { id: uid(), text: "Optimiser 3 pages client", done: true },
-            { id: uid(), text: "Obtenir 1er résultat page 1", done: false },
-          ],
-        },
-        {
-          id: uid(), title: "Routine matinale stable", horizon: "week", progress: 70,
-          color: "#22c55e", createdAt: Date.now() - 172800000,
-          milestones: [
-            { id: uid(), text: "Se lever à 7h 5j/7", done: true },
-            { id: uid(), text: "20 min exercice", done: false },
-          ],
-        },
-        {
-          id: uid(), title: "100 clients agence", horizon: "year", progress: 5,
-          color: "#f59e0b", createdAt: Date.now() - 5184000000,
-          milestones: [
-            { id: uid(), text: "10 clients", done: false },
-            { id: uid(), text: "Recruter un freelance", done: false },
-            { id: uid(), text: "50 clients", done: false },
-            { id: uid(), text: "100 clients", done: false },
-          ],
-        },
-      ],
+      objectives: [],
 
       addObjective: (title, horizon, color) =>
         set((s) => ({
@@ -709,14 +672,7 @@ export const useAppStore = create<AppState>()(
       },
 
       // ── Timeline Events ───────────────────────────────────────────────────
-      timelineEvents: [
-        { id: uid(), hour: 8,  duration: 1,   label: "Routine matinale", color: "orange" },
-        { id: uid(), hour: 9,  duration: 2.5, label: "Deep Work",        color: "purple" },
-        { id: uid(), hour: 12, duration: 1,   label: "Déjeuner",         color: "green" },
-        { id: uid(), hour: 14, duration: 1.5, label: "Emails & admin",   color: "blue" },
-        { id: uid(), hour: 16, duration: 2,   label: "Focus session",    color: "purple" },
-        { id: uid(), hour: 19, duration: 1,   label: "Récompense",       color: "orange" },
-      ],
+      timelineEvents: [],
       addTimelineEvent: (event) =>
         set((s) => ({
           timelineEvents: [...s.timelineEvents, { ...event, id: uid() }],
