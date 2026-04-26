@@ -11,6 +11,7 @@ import {
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
 import { computeStatsMois, computeStreak, thermometreColor } from "@/lib/crmLogic";
+import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
 
 /* ───────────────────── Utils ───────────────────── */
 function businessDaysUntil(target: Date, from: Date = new Date()): number {
@@ -181,6 +182,9 @@ export default function CrmDashboard() {
             Vue d&apos;ensemble
           </h1>
         </div>
+
+        {/* ═══ Prochains evenements Google ═══ */}
+        <UpcomingEventsWidget />
 
         {/* ═══ CHALLENGE RASAGE — compact ═══ */}
         <motion.div

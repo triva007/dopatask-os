@@ -1,10 +1,10 @@
 import dynamic from "next/dynamic";
 
-const KanbanBoard = dynamic(
-  () => import("@/components/taches/KanbanBoard"),
+const GoogleTasksKanban = dynamic(
+  () => import("@/components/taches/GoogleTasksKanban"),
   { ssr: false }
 );
 
 export default function TachesPage() {
-  return <KanbanBoard />;
+  return <GoogleTasksKanban />;
 }

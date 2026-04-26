@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Target, Settings,
   FolderKanban, Eye, BookOpen, Inbox, Phone,
-  Calendar, CheckSquare,
+  Calendar,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -38,7 +38,6 @@ const NAV_TERTIARY: NavItem[] = [
 
 const NAV_GOOGLE: NavItem[] = [
   { href: "/calendrier",   label: "Calendrier",     Icon: Calendar     },
-  { href: "/google-tasks", label: "Google Tasks",   Icon: CheckSquare  },
 ];
 
 function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: boolean; badgeCount: number }) {
