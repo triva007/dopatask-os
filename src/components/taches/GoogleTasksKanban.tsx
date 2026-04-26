@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
+import { celebrate } from "@/lib/dopamineFeedback";
 
 interface GTask {
   id: string;
@@ -143,6 +144,7 @@ export default function GoogleTasksKanban() {
         addXp(gain);
         damageBoss(dmg);
         addToast(isCritical ? "COUP CRITIQUE ! +" + gain + " XP !" : "+" + gain + " XP", "xp");
+        celebrate(isCritical ? "critical" : "task-complete");
       }
     } catch {
       setTasks((prev) => prev.map((x) => x.id === t.id ? { ...x, status: t.status } : x));
@@ -744,7 +746,15 @@ function TaskCard(p: TaskCardProps) {
                 (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
               }
             >
-              {p.t.title || "(sans titre)"}
+              {(p.t.title || "(sans titre)").split(/(\s+)/).map((word, i) => {
+                if (word.match(/^#[\w-]+/)) {
+                  return <span key={i} className="text-[var(--accent-blue)]">{word}</span>;
+                }
+                if (word.match(/^@[\w-]+/)) {
+                  return <span key={i} className="text-[var(--accent-orange)]">{word}</span>;
+                }
+                return word;
+              })}
             </p>
           )}
 

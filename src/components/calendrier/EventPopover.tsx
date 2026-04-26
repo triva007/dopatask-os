@@ -112,12 +112,7 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
             </div>
 
             {/* Location */}
-            {event.location && (
-              <div className="flex items-center gap-2 text-[12.5px] text-[var(--text-secondary)] mb-2">
-                <MapPin size={13} className="text-[var(--text-tertiary)] shrink-0" />
-                <span className="truncate">{event.location}</span>
-              </div>
-            )}
+
 
             {/* Description preview */}
             {event.description && (

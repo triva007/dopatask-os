@@ -365,11 +365,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                             {formatTime(getEventStart(l.ev))} – {formatTime(getEventEnd(l.ev))}
                           </span>
                         )}
-                        {l.height > 40 && l.ev.location && !isTask && (
-                          <span className="text-[10px] opacity-70 mt-1 truncate" style={{ color: color }}>
-                            📍 {l.ev.location}
-                          </span>
-                        )}
+
                       </div>
                     </button>
                   );

@@ -17,7 +17,6 @@ interface EventModalProps {
     taskListId?: string;
     summary: string;
     description: string;
-    location: string;
     start: { dateTime?: string; date?: string; timeZone?: string };
     end: { dateTime?: string; date?: string; timeZone?: string };
     colorId?: string;
@@ -62,7 +61,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
 
   const [summary, setSummary] = useState(event?.summary || "");
   const [description, setDescription] = useState(event?.description || "");
-  const [location, setLocation] = useState(event?.location || "");
   const [allDay, setAllDay] = useState(!!existingAllDay);
   const [startStr, setStartStr] = useState(
     event?.start?.dateTime
@@ -91,7 +89,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [summary, description, location, startStr, endStr, calendarId, colorId, allDay]);
+  }, [summary, description, startStr, endStr, calendarId, colorId, allDay]);
 
   const handleSave = () => {
     if (!summary.trim()) return;
@@ -103,7 +101,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         taskListId,
         summary: summary.trim(),
         description,
-        location: "",
         start: { date: d },
         end: { date: d },
       });
@@ -123,7 +120,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         calendarId,
         summary: summary.trim(),
         description,
-        location,
         start: { date: startDate },
         end: { date: endDate },
         colorId: colorId || undefined,
@@ -134,7 +130,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         calendarId,
         summary: summary.trim(),
         description,
-        location,
         start: { dateTime: new Date(startStr).toISOString(), timeZone: TZ },
         end: { dateTime: new Date(endStr).toISOString(), timeZone: TZ },
         colorId: colorId || undefined,
@@ -253,21 +248,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
               )}
             </div>
           </div>
-
-          {/* Location (Event only) */}
-          {mode === "event" && (
-            <div className="flex items-center gap-3">
-              <MapPin size={14} className="text-[var(--text-tertiary)] shrink-0" />
-              <input
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="Lieu"
-                className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
-                style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
-              />
-            </div>
-          )}
 
           {/* Description */}
           <div className="flex items-start gap-3">
