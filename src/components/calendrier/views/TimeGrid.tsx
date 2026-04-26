@@ -17,6 +17,20 @@ interface TimeGridProps {
   onEventColorChange?: (ev: CalendarEvent, colorId: string) => void;
 }
 
+const GOOGLE_COLORS: Record<string, string> = {
+  '1': '#a4bdfc',
+  '2': '#7ae7bf',
+  '3': '#dbadff',
+  '4': '#ff887c',
+  '5': '#fbd75b',
+  '6': '#ffb878',
+  '7': '#46d6db',
+  '8': '#e1e1e1',
+  '9': '#5484ed',
+  '10': '#51b749',
+  '11': '#dc2127',
+};
+
 const HOUR_HEIGHT = 60; // px per hour
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
 const MIN_EVENT_HEIGHT = 18;
@@ -392,11 +406,11 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
               <div className="px-3 py-1.5 text-[11px] text-[var(--text-tertiary)] uppercase font-semibold">Couleur</div>
               <div className="grid grid-cols-4 gap-1 p-1">
-                {['1','2','3','4','5','6','7','8','9','10','11'].map(cId => (
+                {Object.keys(GOOGLE_COLORS).map(cId => (
                   <button
                     key={cId}
                     className="w-6 h-6 rounded-full border border-black/10 hover:scale-110 transition-transform"
-                    style={{ background: `var(--google-color-${cId}, #4285f4)` }}
+                    style={{ background: GOOGLE_COLORS[cId] }}
                     onClick={() => { onEventColorChange?.(contextMenu.ev, cId); setContextMenu(null); }}
                   />
                 ))}

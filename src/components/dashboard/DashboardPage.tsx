@@ -62,21 +62,36 @@ export default function DashboardPage() {
   // Compteurs visu globale
   // Filtrage spécifique demandé par le USER: seulement la liste "Kill la task NOW" (insensible à la casse)
   const killList = googleLists.find(l => l.title?.toLowerCase() === "kill la task now");
-  const filteredGTasks = googleTasks.filter(t => t.listId === killList?.id && t.status !== "completed");
+  const filteredGTasks = killList 
+    ? googleTasks.filter(t => t.listId === killList.id && t.status !== "completed")
+    : [];
   
   // On inclut aussi les tâches locales qui pourraient appartenir à un projet du même nom
   const killProject = projects.find(p => p.name?.toLowerCase() === "kill la task now");
-  const filteredLocalTasks = tasks.filter(t => t.projectId === killProject?.id && t.status !== "done" && t.status !== "completed");
+  const filteredLocalTasks = killProject
+    ? tasks.filter(t => t.projectId === killProject.id && t.status !== "done" && t.status !== "completed")
+    : [];
   
   const pendingTasks = filteredGTasks.length + filteredLocalTasks.length;
   
-  // Stats pour le sous-texte (cumulé)
-  const doneToday = tasks.filter(
+  // Stats pour le sous-texte (uniquement la liste prioritaire)
+  const doneTodayLocal = filteredLocalTasks.filter(
     (t) =>
       (t.status === "done" || t.status === "completed") &&
       t.completedAt &&
       new Date(t.completedAt).toDateString() === new Date().toDateString()
   ).length;
+
+  const doneTodayGoogle = googleTasks.filter(
+    (t) =>
+      t.listId === killList?.id &&
+      t.status === "completed" &&
+      t.updated &&
+      new Date(t.updated).toDateString() === new Date().toDateString()
+  ).length;
+
+  const doneToday = doneTodayLocal + doneTodayGoogle;
+
   const inboxCount = inboxItems.filter((i) => !i.processed).length;
   const activeGoals = objectives.filter((o) => (o.progress ?? 0) < 1).length;
   const activeProjects = projects.filter((p) => p.status === "active").length;
