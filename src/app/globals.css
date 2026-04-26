@@ -69,6 +69,19 @@
   --checkbox-checked-bg: #A893F0;
   --toast-bg: #18181C;
   --toast-shadow: 0 8px 32px rgba(0,0,0,0.6);
+
+  /* Google Calendar Colors */
+  --google-color-1: #a4bdfc;
+  --google-color-2: #7ae7bf;
+  --google-color-3: #dbadff;
+  --google-color-4: #ff887c;
+  --google-color-5: #fbd75b;
+  --google-color-6: #ffb878;
+  --google-color-7: #46d6db;
+  --google-color-8: #e1e1e1;
+  --google-color-9: #5484ed;
+  --google-color-10: #51b749;
+  --google-color-11: #dc2127;
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
