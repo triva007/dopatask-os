@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   Plus, Check, Loader2, Trash2, AlertCircle, RefreshCw, X,
   Calendar as CalendarIcon, Star, ChevronDown, ChevronRight,
-  ListChecks, Eye, EyeOff, Filter,
+  ListChecks, Eye, EyeOff, Filter, FileText,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
@@ -42,7 +42,6 @@ function saveSet(key: string, s: Set<string>) {
   localStorage.setItem(key, JSON.stringify(Array.from(s)));
 }
 
-// Couleur stable basée sur l'ID de la liste pour identifier visuellement les colonnes
 const LIST_COLORS = [
   { hue: "var(--accent-blue)",   light: "var(--accent-blue-light)"   },
   { hue: "var(--accent-purple)", light: "var(--accent-purple-light)" },
@@ -55,6 +54,18 @@ function colorForList(id: string) {
   let h = 0; for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0xffffffff;
   return LIST_COLORS[Math.abs(h) % LIST_COLORS.length];
 }
+
+// ─── Animation variants ──────────────────────────────────────────────────────
+const cardVariants = {
+  initial: { opacity: 0, y: 8, scale: 0.98 },
+  animate: { opacity: 1, y: 0, scale: 1 },
+  exit: { opacity: 0, scale: 0.96, transition: { duration: 0.15 } },
+};
+
+const checkVariants = {
+  unchecked: { scale: 1 },
+  checked: { scale: [1, 1.2, 1], transition: { duration: 0.3 } },
+};
 
 export default function GoogleTasksKanban() {
   const [connected, setConnected] = useState<boolean | null>(null);
@@ -212,18 +223,24 @@ export default function GoogleTasksKanban() {
 
   if (connected === false) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 px-6">
-        <div className="w-14 h-14 rounded-2xl flex items-center justify-center"
-          style={{ background: "var(--accent-blue-light)" }}>
-          <ListChecks size={26} className="text-accent-blue" />
+      <div className="flex flex-col items-center justify-center h-full gap-5 px-6">
+        <div
+          className="w-16 h-16 rounded-2xl flex items-center justify-center"
+          style={{ background: "var(--accent-blue-light)" }}
+        >
+          <ListChecks size={28} style={{ color: "var(--accent-blue)" }} />
         </div>
         <div className="text-center max-w-md">
-          <h2 className="text-lg font-semibold text-[var(--text-primary)]">Connecte Google Tasks</h2>
-          <p className="text-sm text-[var(--text-secondary)] mt-2">
+          <h2 className="text-xl font-semibold text-[var(--text-primary)]">Connecte Google Tasks</h2>
+          <p className="text-[13.5px] text-[var(--text-secondary)] mt-2 leading-relaxed">
             Va dans Reglages pour connecter ton compte Google.
           </p>
         </div>
-        <a href="/reglages" className="inline-flex items-center gap-2 px-4 py-2.5 bg-accent-blue text-white rounded-xl text-[13px] font-semibold hover:opacity-90 transition-all">
+        <a
+          href="/reglages"
+          className="inline-flex items-center gap-2 px-5 py-3 rounded-2xl text-[13.5px] font-semibold hover:opacity-90 transition-all"
+          style={{ background: "var(--accent-blue)", color: "white" }}
+        >
           Aller aux reglages
         </a>
       </div>
@@ -240,37 +257,38 @@ export default function GoogleTasksKanban() {
 
   return (
     <div className="flex flex-col h-full overflow-hidden">
-      {/* Header */}
-      <div className="shrink-0 px-7 pt-6 pb-4 border-b border-b-primary flex items-center justify-between gap-4">
+      {/* ─── Header ─────────────────────────────────────────────────────── */}
+      <div className="shrink-0 px-8 pt-7 pb-5 border-b flex items-center justify-between gap-4" style={{ borderColor: "var(--border-primary)" }}>
         <div>
-          <h1 className="text-2xl font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-2.5">
-            <ListChecks size={18} className="text-accent-blue" />
+          <h1 className="text-[22px] font-semibold text-[var(--text-primary)] tracking-tight flex items-center gap-3">
+            <ListChecks size={20} style={{ color: "var(--accent-blue)" }} />
             Taches
           </h1>
-          <p className="text-xs text-[var(--text-secondary)] mt-1">
+          <p className="text-[12.5px] text-[var(--text-secondary)] mt-1.5">
             {totalOpen} tache{totalOpen > 1 ? "s" : ""} ouverte{totalOpen > 1 ? "s" : ""}
             {hiddenLists.size > 0 && (
-              <span className="ml-1.5 text-[var(--text-secondary)]">- {hiddenLists.size} liste{hiddenLists.size > 1 ? "s" : ""} masquee{hiddenLists.size > 1 ? "s" : ""}</span>
+              <span className="ml-1.5 text-[var(--text-tertiary)]"> · {hiddenLists.size} liste{hiddenLists.size > 1 ? "s" : ""} masquee{hiddenLists.size > 1 ? "s" : ""}</span>
             )}
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          {/* Filtre listes */}
+        <div className="flex items-center gap-2.5">
+          {/* List filter */}
           <div className="relative">
             <button
               onClick={() => setShowListFilter(!showListFilter)}
               className={
-                "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border text-[12px] transition-all " +
+                "inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-[12px] font-medium transition-all " +
                 (hiddenLists.size > 0
-                  ? "bg-accent-blue text-white border-accent-blue"
-                  : "bg-empty-bg border-b-primary text-[var(--text-secondary)] hover:bg-[var(--surface-2)]")
+                  ? "text-white border-transparent"
+                  : "border-[var(--border-secondary)] text-[var(--text-secondary)] hover:bg-[var(--surface-2)]")
               }
+              style={hiddenLists.size > 0 ? { background: "var(--accent-blue)" } : { background: "var(--card-bg)" }}
             >
               <Filter size={12} />
               Listes
               {hiddenLists.size > 0 && (
-                <span className="ml-0.5 text-[10px] px-1 rounded bg-white/20 tabular-nums">
+                <span className="ml-0.5 text-[10px] px-1.5 py-0.5 rounded-full bg-white/20 tabular-nums">
                   {visibleLists.length}/{lists.length}
                 </span>
               )}
@@ -281,16 +299,21 @@ export default function GoogleTasksKanban() {
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowListFilter(false)} />
                   <motion.div
-                    initial={{ opacity: 0, y: -4, scale: 0.96 }}
+                    initial={{ opacity: 0, y: -6, scale: 0.95 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
-                    exit={{ opacity: 0, y: -4, scale: 0.96 }}
-                    transition={{ duration: 0.12 }}
-                    className="absolute right-0 top-full mt-1.5 z-20 min-w-[260px] rounded-2xl bg-surface border border-b-primary shadow-2xl overflow-hidden"
+                    exit={{ opacity: 0, y: -6, scale: 0.95 }}
+                    transition={{ type: "spring", stiffness: 500, damping: 35 }}
+                    className="absolute right-0 top-full mt-2 z-20 min-w-[280px] rounded-2xl border overflow-hidden"
+                    style={{
+                      background: "var(--card-bg)",
+                      borderColor: "var(--card-border)",
+                      boxShadow: "var(--shadow-elevated)",
+                    }}
                   >
-                    <div className="px-3 py-2.5 border-b border-b-primary text-[10.5px] font-semibold uppercase tracking-wider text-[var(--text-secondary)]">
+                    <div className="px-4 py-3 border-b text-[10px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)]" style={{ borderColor: "var(--border-primary)" }}>
                       Afficher / masquer
                     </div>
-                    <div className="max-h-[400px] overflow-y-auto py-1">
+                    <div className="max-h-[400px] overflow-y-auto py-1.5">
                       {lists.map((l) => {
                         const hidden = hiddenLists.has(l.id);
                         const c = colorForList(l.id);
@@ -299,17 +322,17 @@ export default function GoogleTasksKanban() {
                           <button
                             key={l.id}
                             onClick={() => toggleListVisible(l.id)}
-                            className="flex items-center gap-2.5 w-full px-3 py-2 hover:bg-[var(--surface-2)] transition-all text-left"
+                            className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-[var(--surface-2)] transition-all text-left"
                           >
-                            <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.hue }} />
-                            <span className={"flex-1 text-[13px] truncate " + (hidden ? "text-[var(--text-secondary)] line-through" : "text-[var(--text-primary)]")}>
+                            <span className="w-3 h-3 rounded shrink-0 transition-all" style={{ background: hidden ? "var(--text-ghost)" : c.hue, opacity: hidden ? 0.4 : 1 }} />
+                            <span className={"flex-1 text-[13px] truncate " + (hidden ? "text-[var(--text-tertiary)] line-through" : "text-[var(--text-primary)]")}>
                               {l.title || "(sans nom)"}
                             </span>
-                            <span className="text-[10.5px] text-[var(--text-secondary)] tabular-nums">{taskCount}</span>
+                            <span className="text-[10.5px] text-[var(--text-tertiary)] tabular-nums px-1.5 py-0.5 rounded-md" style={{ background: "var(--surface-2)" }}>{taskCount}</span>
                             {hidden ? (
-                              <EyeOff size={13} className="text-[var(--text-secondary)] shrink-0" />
+                              <EyeOff size={13} className="text-[var(--text-tertiary)] shrink-0" />
                             ) : (
-                              <Eye size={13} className="text-accent-blue shrink-0" />
+                              <Eye size={13} className="shrink-0" style={{ color: "var(--accent-blue)" }} />
                             )}
                           </button>
                         );
@@ -324,7 +347,12 @@ export default function GoogleTasksKanban() {
           <button
             onClick={fetchAll}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-empty-bg border border-b-primary text-[12px] text-[var(--text-secondary)] hover:bg-[var(--surface-2)] transition-all disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl border text-[12px] font-medium transition-all disabled:opacity-50"
+            style={{
+              borderColor: "var(--border-secondary)",
+              color: "var(--text-secondary)",
+              background: "var(--card-bg)",
+            }}
           >
             {loading ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
             Actualiser
@@ -332,9 +360,13 @@ export default function GoogleTasksKanban() {
         </div>
       </div>
 
+      {/* ─── Error ─────────────────────────────────────────────────────── */}
       {error && (
-        <div className="shrink-0 px-7 pt-3">
-          <div className="flex items-center justify-between gap-2 p-3 rounded-xl bg-[var(--accent-red-light)] text-[var(--accent-red)] text-[12.5px]">
+        <div className="shrink-0 px-8 pt-3">
+          <div
+            className="flex items-center justify-between gap-2 p-3.5 rounded-2xl text-[12.5px]"
+            style={{ background: "var(--accent-red-light)", color: "var(--accent-red)" }}
+          >
             <div className="flex items-center gap-2">
               <AlertCircle size={14} />
               <span>{error}</span>
@@ -344,14 +376,14 @@ export default function GoogleTasksKanban() {
         </div>
       )}
 
-      {/* Kanban */}
+      {/* ─── Kanban ────────────────────────────────────────────────────── */}
       <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
-        <div className="flex gap-4 px-7 py-5 h-full min-w-min">
+        <div className="flex gap-5 px-8 py-6 h-full min-w-min">
           {visibleLists.length === 0 ? (
             <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
-              <Filter size={28} className="text-[var(--text-secondary)] opacity-50" />
-              <p className="text-[13.5px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquees</p>
-              <p className="text-[12px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
+              <Filter size={28} className="text-[var(--text-tertiary)] opacity-50" />
+              <p className="text-[14px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquees</p>
+              <p className="text-[12.5px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
             </div>
           ) : (
             visibleLists.map((list) => {
@@ -396,6 +428,7 @@ export default function GoogleTasksKanban() {
         </div>
       </div>
 
+      {/* ─── Detail Modal ──────────────────────────────────────────────── */}
       <AnimatePresence>
         {openCardId && (() => {
           const t = tasks.find((x) => x.id === openCardId);
@@ -415,9 +448,9 @@ export default function GoogleTasksKanban() {
   );
 }
 
-/* =============================================================== */
-/* ListColumn                                                       */
-/* =============================================================== */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* ListColumn                                                                 */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 interface ListColumnProps {
   list: GList;
@@ -455,23 +488,40 @@ function ListColumn(p: ListColumnProps) {
   };
 
   return (
-    <div className="shrink-0 w-[330px] h-full flex flex-col rounded-2xl bg-surface border border-b-primary overflow-hidden shadow-sm">
-      {/* Header colonne avec couleur */}
-      <div className="shrink-0 relative px-4 py-3.5 border-b border-b-primary">
-        <div className="absolute top-0 left-0 right-0 h-1" style={{ background: c.hue }} />
-        <div className="flex items-center gap-2 mt-0.5">
-          <div className="w-2 h-2 rounded-full shrink-0" style={{ background: c.hue }} />
-          <h2 className="flex-1 text-[14.5px] font-semibold text-[var(--text-primary)] truncate">
+    <div
+      className="shrink-0 w-[340px] h-full flex flex-col rounded-2xl border overflow-hidden"
+      style={{
+        background: "var(--card-bg)",
+        borderColor: "var(--card-border)",
+        boxShadow: "var(--card-shadow)",
+      }}
+    >
+      {/* Header */}
+      <div className="shrink-0 relative px-5 py-4 border-b" style={{ borderColor: "var(--border-primary)" }}>
+        {/* Subtle color indicator — pill style */}
+        <div
+          className="absolute top-0 left-4 right-4 h-[3px] rounded-b-full"
+          style={{ background: c.hue, opacity: 0.8 }}
+        />
+        <div className="flex items-center gap-2.5 mt-1">
+          <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: c.hue }} />
+          <h2 className="flex-1 text-[15px] font-semibold text-[var(--text-primary)] truncate">
             {p.list.title || "(sans nom)"}
           </h2>
-          <span className="text-[11px] text-[var(--text-secondary)] tabular-nums px-1.5 py-0.5 rounded bg-empty-bg">
+          <span
+            className="text-[11px] tabular-nums px-2 py-0.5 rounded-lg font-medium"
+            style={{
+              background: "var(--surface-2)",
+              color: "var(--text-secondary)",
+            }}
+          >
             {p.open.length}
           </span>
         </div>
       </div>
 
-      {/* Ajouter une tache */}
-      <div className="shrink-0 px-3 py-2.5 border-b border-b-primary">
+      {/* Add task */}
+      <div className="shrink-0 px-4 py-3 border-b" style={{ borderColor: "var(--border-primary)" }}>
         {adding ? (
           <input
             ref={inputRef}
@@ -484,78 +534,88 @@ function ListColumn(p: ListColumnProps) {
             }}
             onBlur={submitNew}
             placeholder="Titre de la nouvelle tache..."
-            className="w-full bg-empty-bg border border-b-primary rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
+            className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
+            style={{
+              background: "var(--surface-2)",
+              borderColor: "var(--border-secondary)",
+              outlineColor: "var(--focus-ring)",
+            }}
           />
         ) : (
           <button
             onClick={() => setAdding(true)}
-            className="flex items-center gap-2 w-full px-2.5 py-2 rounded-lg text-[13px] font-medium transition-all hover:bg-[var(--surface-2)]"
+            className="flex items-center gap-2 w-full px-3 py-2.5 rounded-xl text-[13px] font-medium transition-all hover:bg-[var(--surface-2)]"
             style={{ color: c.hue }}
           >
-            <Plus size={14} />
+            <Plus size={15} />
             Ajouter une tache
           </button>
         )}
       </div>
 
-      {/* Liste */}
-      <div className="flex-1 min-h-0 overflow-y-auto p-2 flex flex-col gap-1">
+      {/* Task list */}
+      <div className="flex-1 min-h-0 overflow-y-auto px-3 py-3 flex flex-col gap-2">
         {p.open.length === 0 && p.done.length === 0 && (
-          <div className="text-center text-[12px] text-[var(--text-secondary)] py-12">
+          <div className="text-center text-[12.5px] text-[var(--text-tertiary)] py-14">
             Aucune tache
           </div>
         )}
 
-        {p.open.map((t) => (
-          <TaskCard
-            key={t.id}
-            t={t}
-            accent={c.hue}
-            starred={p.starred.has(t.id)}
-            isPending={p.pending.has(t.id)}
-            isEditing={p.editingId === t.id}
-            editValue={p.editValue}
-            onCheck={() => p.onCheck(t)}
-            onDelete={() => p.onDelete(t)}
-            onStar={() => p.onToggleStar(t.id)}
-            onStartEdit={() => p.onStartEdit(t)}
-            onChangeEdit={p.onChangeEdit}
-            onSaveEdit={() => p.onSaveEdit(t)}
-            onCancelEdit={p.onCancelEdit}
-            onSetDate={(iso) => p.onUpdate(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
-            onOpenCard={() => p.onOpenCard(t.id)}
-          />
-        ))}
+        <AnimatePresence mode="popLayout">
+          {p.open.map((t) => (
+            <TaskCard
+              key={t.id}
+              t={t}
+              accent={c.hue}
+              starred={p.starred.has(t.id)}
+              isPending={p.pending.has(t.id)}
+              isEditing={p.editingId === t.id}
+              editValue={p.editValue}
+              onCheck={() => p.onCheck(t)}
+              onDelete={() => p.onDelete(t)}
+              onStar={() => p.onToggleStar(t.id)}
+              onStartEdit={() => p.onStartEdit(t)}
+              onChangeEdit={p.onChangeEdit}
+              onSaveEdit={() => p.onSaveEdit(t)}
+              onCancelEdit={p.onCancelEdit}
+              onSetDate={(iso) => p.onUpdate(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
+              onOpenCard={() => p.onOpenCard(t.id)}
+            />
+          ))}
+        </AnimatePresence>
 
+        {/* Completed section */}
         {p.done.length > 0 && (
           <>
             <button
               onClick={p.onToggleCompleted}
-              className="flex items-center gap-2 px-2 py-2 mt-3 text-[11px] font-medium uppercase tracking-wider text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+              className="flex items-center gap-2 px-2.5 py-2.5 mt-4 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-tertiary)] hover:text-[var(--text-secondary)] transition-all rounded-lg hover:bg-[var(--surface-2)]"
             >
               {p.isCompletedOpen ? <ChevronDown size={11} /> : <ChevronRight size={11} />}
               <span>Terminees ({p.done.length})</span>
             </button>
-            {p.isCompletedOpen && p.done.map((t) => (
-              <TaskCard
-                key={t.id}
-                t={t}
-                accent={c.hue}
-                starred={p.starred.has(t.id)}
-                isPending={p.pending.has(t.id)}
-                isEditing={false}
-                editValue=""
-                onCheck={() => p.onCheck(t)}
-                onDelete={() => p.onDelete(t)}
-                onStar={() => p.onToggleStar(t.id)}
-                onStartEdit={() => {}}
-                onChangeEdit={() => {}}
-                onSaveEdit={() => {}}
-                onCancelEdit={() => {}}
-                onSetDate={() => {}}
-                onOpenCard={() => p.onOpenCard(t.id)}
-              />
-            ))}
+            <AnimatePresence>
+              {p.isCompletedOpen && p.done.map((t) => (
+                <TaskCard
+                  key={t.id}
+                  t={t}
+                  accent={c.hue}
+                  starred={p.starred.has(t.id)}
+                  isPending={p.pending.has(t.id)}
+                  isEditing={false}
+                  editValue=""
+                  onCheck={() => p.onCheck(t)}
+                  onDelete={() => p.onDelete(t)}
+                  onStar={() => p.onToggleStar(t.id)}
+                  onStartEdit={() => {}}
+                  onChangeEdit={() => {}}
+                  onSaveEdit={() => {}}
+                  onCancelEdit={() => {}}
+                  onSetDate={() => {}}
+                  onOpenCard={() => p.onOpenCard(t.id)}
+                />
+              ))}
+            </AnimatePresence>
           </>
         )}
       </div>
@@ -563,9 +623,9 @@ function ListColumn(p: ListColumnProps) {
   );
 }
 
-/* =============================================================== */
-/* TaskCard                                                         */
-/* =============================================================== */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* TaskCard                                                                   */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 interface TaskCardProps {
   t: GTask;
@@ -608,34 +668,53 @@ function TaskCard(p: TaskCardProps) {
   return (
     <motion.div
       layout
+      variants={cardVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
+      transition={{ type: "spring", stiffness: 400, damping: 30 }}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest(".no-open")) return;
         p.onOpenCard();
       }}
       className={
-        "group relative px-3 py-2.5 rounded-xl border transition-all cursor-pointer " +
+        "group relative px-4 py-3.5 rounded-2xl border transition-all cursor-pointer " +
         (p.isPending ? "opacity-60 " : "") +
         (completed
-          ? "bg-empty-bg border-transparent "
-          : "bg-surface border-b-primary hover:border-accent-blue/40 hover:shadow-sm ")
+          ? "opacity-60 "
+          : "hover:shadow-sm ")
       }
+      style={{
+        background: completed ? "var(--surface-2)" : "var(--card-bg)",
+        borderColor: completed ? "transparent" : "var(--card-border)",
+      }}
+      whileHover={completed ? undefined : { borderColor: "rgba(79, 70, 229, 0.25)" }}
     >
-      <div className="flex items-start gap-2.5">
-        <button
+      <div className="flex items-start gap-3">
+        {/* Checkbox */}
+        <motion.button
           onClick={(e) => { e.stopPropagation(); p.onCheck(); }}
           disabled={p.isPending}
           className="shrink-0 mt-0.5 no-open"
           aria-label={completed ? "Decocher" : "Cocher"}
+          variants={checkVariants}
+          animate={completed ? "checked" : "unchecked"}
         >
-          <span className={
-            "block w-[18px] h-[18px] rounded-full border-2 transition-all flex items-center justify-center " +
-            (completed
-              ? "bg-accent-blue border-accent-blue"
-              : "border-[var(--text-secondary)] hover:border-accent-blue")
-          }>
-            {completed && <Check size={11} className="text-white" strokeWidth={3} />}
+          <span
+            className={
+              "block w-[20px] h-[20px] rounded-full border-2 transition-all flex items-center justify-center " +
+              (completed
+                ? "border-transparent"
+                : "hover:border-[var(--accent-blue)]")
+            }
+            style={{
+              background: completed ? "var(--accent-blue)" : "transparent",
+              borderColor: completed ? "var(--accent-blue)" : "var(--text-ghost)",
+            }}
+          >
+            {completed && <Check size={12} className="text-white animate-checkmark" strokeWidth={3} />}
           </span>
-        </button>
+        </motion.button>
 
         <div className="flex-1 min-w-0">
           {p.isEditing ? (
@@ -650,43 +729,57 @@ function TaskCard(p: TaskCardProps) {
                 if (e.key === "Enter") p.onSaveEdit();
                 if (e.key === "Escape") p.onCancelEdit();
               }}
-              className="no-open w-full bg-empty-bg border border-b-primary rounded-md px-2 py-1 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
+              className="no-open w-full border rounded-xl px-3 py-1.5 text-[13.5px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
+              style={{
+                background: "var(--surface-2)",
+                borderColor: "var(--border-secondary)",
+                outlineColor: "var(--focus-ring)",
+              }}
             />
           ) : (
             <p
               onDoubleClick={(e) => { e.stopPropagation(); p.onStartEdit(); }}
               className={
-                "text-[13.5px] leading-snug break-words " +
-                (completed ? "line-through text-[var(--text-secondary)]" : "text-[var(--text-primary)]")
+                "text-[14px] leading-snug break-words font-medium " +
+                (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
               }
             >
               {p.t.title || "(sans titre)"}
             </p>
           )}
 
+          {/* Notes preview */}
           {p.t.notes && (
             <p
               className={
-                "text-[11.5px] mt-1 leading-relaxed break-words line-clamp-3 " +
-                (completed ? "text-[var(--text-secondary)] opacity-70" : "text-[var(--text-secondary)]")
+                "text-[12px] mt-1.5 leading-relaxed break-words line-clamp-2 " +
+                (completed ? "text-[var(--text-ghost)]" : "text-[var(--text-tertiary)]")
               }
             >
               {p.t.notes}
             </p>
           )}
 
+          {/* Date badge */}
           {!completed && (
-            <div className="mt-2 flex items-center gap-1 no-open">
+            <div className="mt-2.5 flex items-center gap-1.5 no-open">
               <label
                 onClick={(e) => e.stopPropagation()}
                 className={
-                  "inline-flex items-center gap-1 text-[10.5px] cursor-pointer rounded-md px-1.5 py-0.5 transition-all relative font-medium " +
-                  (overdue ? "bg-[var(--accent-red-light)] text-[var(--accent-red)]" :
-                   p.t.due ? "bg-[var(--accent-blue-light)] text-accent-blue" :
-                   "text-[var(--text-secondary)] hover:bg-empty-bg opacity-0 group-hover:opacity-100")
+                  "inline-flex items-center gap-1.5 text-[11px] cursor-pointer rounded-lg px-2 py-1 transition-all relative font-medium " +
+                  (overdue ? "text-[var(--accent-red)]" :
+                   p.t.due ? "text-[var(--accent-blue)]" :
+                   "text-[var(--text-ghost)] opacity-0 group-hover:opacity-100")
                 }
+                style={{
+                  background: overdue
+                    ? "var(--accent-red-light)"
+                    : p.t.due
+                      ? "var(--accent-blue-light)"
+                      : "transparent",
+                }}
               >
-                <CalendarIcon size={10} />
+                <CalendarIcon size={11} />
                 {p.t.due ? formatDue(p.t.due) : "Date"}
                 <input
                   type="date"
@@ -698,7 +791,7 @@ function TaskCard(p: TaskCardProps) {
               {p.t.due && (
                 <button
                   onClick={(e) => { e.stopPropagation(); p.onSetDate(null); }}
-                  className="text-[10px] text-[var(--text-secondary)] hover:text-[var(--accent-red)] transition-all"
+                  className="text-[10px] text-[var(--text-ghost)] hover:text-[var(--accent-red)] transition-all p-0.5"
                 >
                   ×
                 </button>
@@ -707,26 +800,28 @@ function TaskCard(p: TaskCardProps) {
           )}
         </div>
 
-        <div className="shrink-0 flex flex-col items-end gap-1.5 no-open">
+        {/* Actions */}
+        <div className="shrink-0 flex flex-col items-end gap-2 no-open">
           <button
             onClick={(e) => { e.stopPropagation(); p.onStar(); }}
             className={
-              "transition-all " +
+              "transition-all p-0.5 rounded " +
               (p.starred
-                ? "opacity-100 text-[var(--accent-orange)]"
-                : "opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-[var(--accent-orange)]")
+                ? "opacity-100"
+                : "opacity-0 group-hover:opacity-100 hover:bg-[var(--surface-2)]")
             }
+            style={{ color: p.starred ? "var(--accent-orange)" : "var(--text-ghost)" }}
             aria-label="Favori"
           >
-            <Star size={13} fill={p.starred ? "currentColor" : "none"} />
+            <Star size={14} fill={p.starred ? "currentColor" : "none"} />
           </button>
           <button
             onClick={(e) => { e.stopPropagation(); p.onDelete(); }}
             disabled={p.isPending}
-            className="opacity-0 group-hover:opacity-100 text-[var(--text-secondary)] hover:text-[var(--accent-red)] transition-all"
+            className="opacity-0 group-hover:opacity-100 text-[var(--text-ghost)] hover:text-[var(--accent-red)] transition-all p-0.5 rounded hover:bg-[var(--accent-red-light)]"
             aria-label="Supprimer"
           >
-            <Trash2 size={12} />
+            <Trash2 size={13} />
           </button>
         </div>
       </div>
@@ -734,9 +829,9 @@ function TaskCard(p: TaskCardProps) {
   );
 }
 
-/* =============================================================== */
-/* DetailModal - redesigned                                         */
-/* =============================================================== */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/* DetailModal                                                                */
+/* ═══════════════════════════════════════════════════════════════════════════ */
 
 interface DetailModalProps {
   t: GTask;
@@ -752,7 +847,6 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
   const [saved, setSaved] = useState(false);
   const c = colorForList(t.listId);
-
   const completed = t.status === "completed";
 
   const save = () => {
@@ -764,15 +858,15 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     if (Object.keys(updates).length > 0) {
       onUpdate(updates);
       setSaved(true);
-      setTimeout(() => setSaved(false), 1500);
+      setTimeout(() => setSaved(false), 2000);
     }
   };
 
-  // Save sur Cmd+Enter ou Escape pour fermer
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if (e.key === "Escape") onClose();
       if ((e.metaKey || e.ctrlKey) && e.key === "Enter") { save(); onClose(); }
+      if ((e.metaKey || e.ctrlKey) && e.key === "s") { e.preventDefault(); save(); }
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -784,40 +878,46 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "var(--backdrop-bg)", backdropFilter: "var(--backdrop-blur)" }}
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.97, y: 12 }}
+        initial={{ opacity: 0, scale: 0.96, y: 10 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.97, y: 12 }}
-        transition={{ type: "spring", stiffness: 380, damping: 32 }}
+        exit={{ opacity: 0, scale: 0.96, y: 10 }}
+        transition={{ type: "spring", stiffness: 400, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        className="bg-surface rounded-3xl max-w-xl w-full border border-b-primary shadow-2xl overflow-hidden flex flex-col"
-        style={{ maxHeight: "90vh" }}
+        className="rounded-3xl max-w-lg w-full border overflow-hidden flex flex-col"
+        style={{
+          background: "var(--card-bg)",
+          borderColor: "var(--card-border)",
+          boxShadow: "var(--shadow-elevated)",
+          maxHeight: "90vh",
+        }}
       >
-        {/* Header sticky avec bordure couleur de la liste */}
+        {/* Header */}
         <div className="shrink-0 relative">
-          <div className="absolute top-0 left-0 right-0 h-1" style={{ background: c.hue }} />
-          <div className="flex items-center gap-3 px-6 py-4 border-b border-b-primary">
-            <div className="flex items-center gap-1.5 text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] font-semibold">
-              <span className="w-2 h-2 rounded-full" style={{ background: c.hue }} />
+          <div className="absolute top-0 left-0 right-0 h-[3px] rounded-b-full mx-4" style={{ background: c.hue, opacity: 0.8 }} />
+          <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: "var(--border-primary)" }}>
+            <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.hue }} />
               {t.listTitle}
             </div>
             <div className="flex-1" />
-            <div className="text-[11px] text-[var(--text-secondary)] flex items-center gap-1.5">
+            <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1.5">
               {saved ? (
                 <>
-                  <Check size={12} className="text-accent-green" />
-                  Enregistre
+                  <Check size={12} style={{ color: "var(--accent-green)" }} />
+                  <span style={{ color: "var(--accent-green)" }}>Enregistre</span>
                 </>
               ) : (
-                <span className="opacity-60">Auto-save</span>
+                <span className="opacity-50">Cmd+S pour sauver</span>
               )}
             </div>
             <button
               onClick={onClose}
-              className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-empty-bg p-1.5 rounded-lg transition-all"
+              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] p-2 rounded-xl transition-all"
               aria-label="Fermer"
             >
               <X size={16} />
@@ -825,22 +925,26 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
           </div>
         </div>
 
-        {/* Body scrollable */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-5 space-y-5">
-          {/* Titre + checkbox */}
-          <div className="flex items-start gap-3">
+        {/* Body */}
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-6">
+          {/* Title + checkbox */}
+          <div className="flex items-start gap-3.5">
             <button
               onClick={onCheck}
-              className="shrink-0 mt-1.5"
+              className="shrink-0 mt-2"
               aria-label={completed ? "Decocher" : "Cocher"}
             >
-              <span className={
-                "block w-[22px] h-[22px] rounded-full border-2 transition-all flex items-center justify-center " +
-                (completed
-                  ? "bg-accent-blue border-accent-blue"
-                  : "border-[var(--text-secondary)] hover:border-accent-blue")
-              }>
-                {completed && <Check size={13} className="text-white" strokeWidth={3} />}
+              <span
+                className={
+                  "block w-[24px] h-[24px] rounded-full border-2 transition-all flex items-center justify-center " +
+                  (completed ? "border-transparent" : "hover:border-[var(--accent-blue)]")
+                }
+                style={{
+                  background: completed ? "var(--accent-blue)" : "transparent",
+                  borderColor: completed ? "var(--accent-blue)" : "var(--text-ghost)",
+                }}
+              >
+                {completed && <Check size={14} className="text-white" strokeWidth={3} />}
               </span>
             </button>
             <textarea
@@ -850,31 +954,40 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
               rows={1}
               placeholder="Titre de la tache..."
               className={
-                "flex-1 bg-transparent text-[19px] font-semibold focus:outline-none resize-none leading-tight " +
-                (completed ? "line-through text-[var(--text-secondary)]" : "text-[var(--text-primary)]")
+                "flex-1 bg-transparent text-[20px] font-semibold focus:outline-none resize-none leading-tight placeholder:text-[var(--text-ghost)] " +
+                (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
               }
               style={{ minHeight: "1.5em" }}
             />
           </div>
 
+          {/* Divider */}
+          <div className="divider-soft" />
+
           {/* Date */}
           <div>
-            <label className="block text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] mb-2 font-semibold">
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
+              <CalendarIcon size={12} />
               Date d&apos;echeance
             </label>
-            <div className="flex items-center gap-2">
-              <CalendarIcon size={14} className="text-[var(--text-secondary)] shrink-0" />
+            <div className="flex items-center gap-2.5">
               <input
                 type="date"
                 value={due}
                 onChange={(e) => setDue(e.target.value)}
                 onBlur={save}
-                className="flex-1 bg-empty-bg border border-b-primary rounded-xl px-3 py-2.5 text-[13.5px] focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)]"
+                className="flex-1 border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
+                style={{
+                  background: "var(--surface-2)",
+                  borderColor: "var(--border-primary)",
+                  outlineColor: "var(--focus-ring)",
+                }}
               />
               {due && (
                 <button
                   onClick={() => { setDue(""); setTimeout(save, 0); }}
-                  className="text-[12px] text-[var(--text-secondary)] hover:text-[var(--accent-red)] px-2 py-1 transition-all"
+                  className="text-[12px] font-medium px-3 py-2 rounded-xl transition-all hover:bg-[var(--accent-red-light)]"
+                  style={{ color: "var(--accent-red)" }}
                 >
                   Retirer
                 </button>
@@ -882,30 +995,48 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
             </div>
           </div>
 
+          {/* Divider */}
+          <div className="divider-soft" />
+
           {/* Notes */}
           <div>
-            <label className="block text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] mb-2 font-semibold">
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
+              <FileText size={12} />
               Description
             </label>
             <textarea
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={save}
-              rows={6}
+              rows={5}
               placeholder="Ajouter une description, des notes, un lien..."
-              className="w-full bg-empty-bg border border-b-primary rounded-xl px-4 py-3 text-[13.5px] leading-relaxed focus:outline-none focus:ring-2 focus:ring-accent-blue text-[var(--text-primary)] resize-y placeholder:text-[var(--text-secondary)]"
+              className="w-full border rounded-2xl px-4 py-3.5 text-[13.5px] leading-relaxed focus:outline-none focus:ring-2 resize-y placeholder:text-[var(--text-ghost)]"
+              style={{
+                background: "var(--surface-2)",
+                borderColor: "var(--border-primary)",
+                color: "var(--text-primary)",
+                outlineColor: "var(--focus-ring)",
+                minHeight: "120px",
+              }}
             />
           </div>
 
+          {/* Links */}
           {t.links && t.links.length > 0 && (
             <div>
-              <label className="block text-[10.5px] uppercase tracking-wider text-[var(--text-secondary)] mb-2 font-semibold">
+              <label className="block text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
                 Liens
               </label>
-              <ul className="space-y-1.5">
+              <ul className="space-y-2">
                 {t.links.map((l, i) => (
                   <li key={i}>
-                    <a href={l.link} target="_blank" rel="noopener noreferrer" className="text-[12.5px] text-accent-blue hover:underline break-all">
+                    <a
+                      href={l.link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[13px] hover:underline break-all"
+                      style={{ color: "var(--accent-blue)" }}
+                    >
                       {l.description || l.link}
                     </a>
                   </li>
@@ -916,19 +1047,26 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
         </div>
 
         {/* Footer */}
-        <div className="shrink-0 flex items-center justify-between px-6 py-4 border-t border-b-primary bg-[var(--surface-2)]">
+        <div
+          className="shrink-0 flex items-center justify-between px-6 py-4 border-t"
+          style={{ borderColor: "var(--border-primary)", background: "var(--surface-2)" }}
+        >
           <button
             onClick={onDelete}
-            className="inline-flex items-center gap-1.5 text-[13px] text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] px-3 py-2 rounded-xl transition-all font-medium"
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-xl transition-all"
+            style={{ color: "var(--accent-red)" }}
+            onMouseEnter={(e) => { (e.currentTarget.style.background) = "var(--accent-red-light)"; }}
+            onMouseLeave={(e) => { (e.currentTarget.style.background) = "transparent"; }}
           >
             <Trash2 size={13} />
             Supprimer
           </button>
           <button
             onClick={() => { save(); onClose(); }}
-            className="px-5 py-2 rounded-xl text-[13px] bg-accent-blue text-white hover:opacity-90 transition-all font-semibold"
+            className="px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white hover:opacity-90 transition-all"
+            style={{ background: "var(--accent-blue)" }}
           >
-            Fermer
+            Enregistrer & fermer
           </button>
         </div>
       </motion.div>
