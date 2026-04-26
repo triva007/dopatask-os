@@ -97,6 +97,7 @@ export interface Note {
   pinned: boolean;
   archived: boolean;
   labels: string[];
+  images: string[]; // Base64 strings for now
   createdAt: number;
   updatedAt: number;
 }
@@ -132,11 +133,9 @@ export interface Toast {
   createdAt: number;
 }
 
-// ── AppState Interface ──
 interface AppState {
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (v: boolean) => void;
-
   tasks: Task[];
   addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string, linkedNoteId?: string) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
@@ -152,12 +151,10 @@ interface AppState {
   setMicroSteps: (taskId: string, steps: MicroStep[]) => void;
   newStart: () => void;
   reorderTasks: (taskIds: string[]) => void;
-
   projects: Project[];
   addProject: (name: string, emoji?: string, objectiveId?: string, color?: string) => void;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
-
   objectives: Objective[];
   addObjective: (title: string, horizon: ObjectiveHorizon, color?: string) => void;
   updateObjectiveProgress: (id: string, progress: number) => void;
@@ -165,7 +162,6 @@ interface AppState {
   toggleMilestone: (objId: string, msId: string) => void;
   deleteMilestone: (objId: string, msId: string) => void;
   deleteObjective: (id: string) => void;
-
   lifeGoals: LifeGoal[];
   addLifeGoal: (goal: Omit<LifeGoal, "id" | "createdAt">) => void;
   updateLifeGoal: (id: string, updates: Partial<LifeGoal>) => void;
@@ -173,35 +169,28 @@ interface AppState {
   toggleLifeGoalStep: (goalId: string, stepId: string) => void;
   addLifeGoalStep: (goalId: string, text: string) => void;
   deleteLifeGoalStep: (goalId: string, stepId: string) => void;
-
   journalEntries: JournalEntry[];
   addJournalEntry: (content: string, mood?: JournalEntry["mood"], tags?: string[]) => void;
   updateJournalEntry: (id: string, updates: Partial<JournalEntry>) => void;
   deleteJournalEntry: (id: string) => void;
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
-
   notes: Note[];
-  addNote: (title: string, content: string, color?: string) => void;
+  addNote: (title: string, content: string, color?: string, images?: string[]) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
   toggleArchiveNote: (id: string) => void;
-  convertNoteToTask: (id: string) => void;
-
   inboxItems: InboxItem[];
   addInboxItem: (text: string, type?: InboxItemType) => void;
   processInboxItem: (id: string) => void;
   convertInboxToTask: (id: string, projectId?: string) => void;
   deleteInboxItem: (id: string) => void;
   clearProcessedInbox: () => void;
-
   timelineEvents: TimelineEvent[];
   addTimelineEvent: (event: Omit<TimelineEvent, "id">) => void;
   updateTimelineEvent: (id: string, updates: Partial<TimelineEvent>) => void;
   deleteTimelineEvent: (id: string) => void;
-
-  // ── Gamification ──
   xp: number;
   bossHp: number;
   streak: number;
@@ -217,15 +206,12 @@ interface AppState {
   dailyChallengeCompleted: boolean;
   addXp: (amount: number) => void;
   attackBoss: (damage: number) => void;
-
   toasts: Toast[];
   addToast: (message: string, type?: Toast["type"], duration?: number) => void;
   removeToast: (id: string) => void;
-
   lastActiveAt: number;
   lastActiveTaskId: string | null;
   setLastActive: (taskId?: string) => void;
-
   settings: { enableSounds: boolean };
   updateSettings: (updates: Partial<{ enableSounds: boolean }>) => void;
   theme: "dark" | "light";
@@ -233,7 +219,6 @@ interface AppState {
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
-const GOAL_COLORS = ["#7c3aed", "#06b6d4", "#22c55e", "#f59e0b", "#ef4444", "#ec4899", "#3b82f6", "#10b981"];
 
 export const useAppStore = create<AppState>()(
   persist(
@@ -246,11 +231,7 @@ export const useAppStore = create<AppState>()(
 
         tasks: [],
         addTask: (text, status, projectId, linkedJournalId, linkedNoteId) => {
-          const newTask: Task = {
-            id: uid(), text: text.trim(), status: status ?? "today", projectId,
-            createdAt: Date.now(), tags: [], microSteps: [], expanded: false,
-            linkedJournalId, linkedNoteId
-          };
+          const newTask: Task = { id: uid(), text: text.trim(), status: status ?? "today", projectId, createdAt: Date.now(), tags: [], microSteps: [], expanded: false, linkedJournalId, linkedNoteId };
           set((s) => ({ tasks: [...s.tasks, newTask], lastActiveAt: Date.now(), lastActiveTaskId: newTask.id }));
           get().addToast(`Tâche ajoutée`, "info");
         },
@@ -297,12 +278,11 @@ export const useAppStore = create<AppState>()(
         sendJournalToInbox: (id) => { const entry = get().journalEntries.find(e => e.id === id); if (entry) get().addInboxItem(entry.content.slice(0, 100), "note"); },
 
         notes: [],
-        addNote: (title, content, color) => set((s) => ({ notes: [{ id: uid(), title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] })),
+        addNote: (title, content, color, images) => set((s) => ({ notes: [{ id: uid(), title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] })),
         updateNote: (id, updates) => set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n) })),
         deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
         togglePinNote: (id) => set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned, updatedAt: Date.now() } : n) })),
         toggleArchiveNote: (id) => set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, archived: !n.archived, updatedAt: Date.now() } : n) })),
-        convertNoteToTask: (id) => { const note = get().notes.find(n => n.id === id); if (note) get().addTask(note.title || note.content.slice(0, 50), "today", undefined, undefined, id); },
 
         inboxItems: [],
         addInboxItem: (text, type) => set((s) => ({ inboxItems: [{ id: uid(), text: text.trim(), type: type ?? "task", processed: false, createdAt: Date.now() }, ...s.inboxItems] })),
@@ -334,7 +314,7 @@ export const useAppStore = create<AppState>()(
     ),
     {
       name: "dopatask-storage",
-      version: 5, // REVERT TO 5 to match Supabase and pick up data
+      version: 7, // Increment for Note images field
       storage: createJSONStorage(() => supabaseStorage),
     }
   )
