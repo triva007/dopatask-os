@@ -52,15 +52,17 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/* Focus mode toggle button */}
           <button
             onClick={() => setFocusMode((prev) => !prev)}
-            className="fixed bottom-5 left-5 z-40 w-9 h-9 rounded-xl flex items-center justify-center transition-all hover:scale-105 shadow-sm"
+            className="fixed bottom-8 right-8 z-40 w-12 h-12 rounded-2xl flex items-center justify-center transition-all hover:scale-110 shadow-lg backdrop-blur-xl border border-white/10 group overflow-hidden"
             style={{
-              background: focusMode ? "color-mix(in srgb, var(--accent-blue) 10%, var(--surface-1))" : "var(--surface-1)",
-              border: "1px solid var(--border-primary)",
-              color: focusMode ? "var(--accent-blue)" : "var(--text-secondary)",
+              background: focusMode ? "var(--accent-blue)" : "var(--surface-1)",
+              color: focusMode ? "#fff" : "var(--text-secondary)",
             }}
             title={focusMode ? "Quitter le mode Focus (Ctrl+Shift+F)" : "Mode Focus (Ctrl+Shift+F)"}
           >
-            {focusMode ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
+            <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+            <div className="relative z-10 flex items-center justify-center">
+              {focusMode ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+            </div>
           </button>
         </div>
       </div>
