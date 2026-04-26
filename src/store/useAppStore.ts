@@ -197,6 +197,8 @@ interface AppState {
     enableSounds: boolean;
   };
   updateSettings: (updates: Partial<AppState["settings"]>) => void;
+  theme: "dark" | "light";
+  toggleTheme: () => void;
 }
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -218,7 +220,9 @@ export const useAppStore = create<AppState>()(
     (set, get) => ({
       // ── Onboarding ──────────────────────────────────────────────────────
       hasSeenTutorial: false,
+      theme: "dark",
       setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
+      toggleTheme: () => set((state) => ({ theme: state.theme === "dark" ? "light" : "dark" })),
 
       // ── Tâches ──────────────────────────────────────────────────────────
       tasks: [],

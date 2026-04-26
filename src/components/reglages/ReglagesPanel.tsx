@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings, Download, Upload, Trash2, ChevronRight,
-  Volume2, VolumeX, AlertCircle, Phone
+  Volume2, VolumeX, AlertCircle, Sun, Moon
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import GoogleSyncSection from "./GoogleSyncSection";
@@ -117,7 +117,7 @@ function ConfirmationModal({ title, message, confirmText, onConfirm, onCancel, i
 
 export default function ReglagesPanel() {
   const {
-    tasks, objectives, projects, journalEntries, settings, updateSettings
+    tasks, objectives, projects, journalEntries, settings, updateSettings, theme, toggleTheme
   } = useAppStore();
 
   const [showResetModal, setShowResetModal] = useState(false);
@@ -202,9 +202,20 @@ export default function ReglagesPanel() {
       <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 flex flex-col gap-6">
         <div className="max-w-2xl mx-auto w-full flex flex-col gap-6">
 
-          {/* Sync */}
           <Section title="Synchronisation">
             <GoogleSyncSection />
+          </Section>
+
+          {/* Apparence */}
+          <Section title="Apparence">
+            <SettingRow
+              icon={theme === "dark" ? Moon : Sun}
+              label={theme === "dark" ? "Mode sombre" : "Mode clair"}
+              description="Basculer entre le mode sombre et le mode clair (style Notion)"
+              color="var(--accent-purple)"
+              onClick={toggleTheme}
+              isClickable
+            />
           </Section>
 
           {/* Preferences */}

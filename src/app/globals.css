@@ -84,6 +84,66 @@
   --google-color-11: #dc2127;
 }
 
+.light {
+  --background: #FFFFFF;
+  --foreground: #37352F;
+
+  --surface-0: #FFFFFF;
+  --surface-1: #F7F7F5;
+  --surface-2: #F1F1EF;
+  --surface-3: #E9E9E6;
+  --surface-4: #DFDFDE;
+
+  --border-primary: rgba(55, 53, 47, 0.08);
+  --border-secondary: rgba(55, 53, 47, 0.16);
+  --border-hover: rgba(55, 53, 47, 0.24);
+
+  --text-primary: #37352F;
+  --text-secondary: #787774;
+  --text-tertiary: #91918E;
+  --text-ghost: #B1B1AF;
+
+  --accent-blue: #2383E2;
+  --accent-blue-light: rgba(35, 131, 226, 0.1);
+  --accent-green: #0F7B6C;
+  --accent-green-light: rgba(15, 123, 108, 0.1);
+  --accent-red: #EB5757;
+  --accent-red-light: rgba(235, 87, 87, 0.1);
+  --accent-orange: #D9730D;
+  --accent-orange-light: rgba(217, 115, 13, 0.1);
+  --accent-purple: #6940A5;
+  --accent-purple-light: rgba(105, 64, 165, 0.1);
+  --accent-cyan: #337EA9;
+
+  --sidebar-bg: #F7F7F5;
+  --sidebar-active-bg: rgba(55, 53, 47, 0.08);
+  --sidebar-active-text: #37352F;
+  --sidebar-inactive-text: #787774;
+
+  --card-bg: #FFFFFF;
+  --card-border: rgba(55, 53, 47, 0.08);
+  --card-shadow: 0 1px 2px rgba(15, 15, 15, 0.1);
+  --card-shadow-hover: 0 4px 12px rgba(15, 15, 15, 0.15);
+  --shadow-elevated: 0 8px 24px rgba(15, 15, 15, 0.2);
+
+  --scrollbar-thumb: rgba(55, 53, 47, 0.1);
+  --scrollbar-thumb-hover: rgba(55, 53, 47, 0.2);
+
+  --selection-bg: rgba(35, 131, 226, 0.28);
+  --selection-color: #000000;
+  --focus-ring: rgba(35, 131, 226, 0.4);
+
+  --backdrop-bg: rgba(255, 255, 255, 0.8);
+  --input-bg: #FFFFFF;
+  --input-border: rgba(55, 53, 47, 0.16);
+  --badge-bg: rgba(55, 53, 47, 0.04);
+  --badge-text: #787774;
+  --checkbox-border: rgba(55, 53, 47, 0.3);
+  --checkbox-checked-bg: #2383E2;
+  --toast-bg: #FFFFFF;
+  --toast-shadow: 0 8px 32px rgba(0,0,0,0.15);
+}
+
 /* ═══════════════════════════════════════════════════════════════════════════
    DOPATASK · PREMIUM ADHD THEME
    Design : warm neutrals, soft violet accent, whisper-quiet surfaces
@@ -195,6 +255,10 @@ button, a, input, select { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
   backdrop-filter: blur(40px) saturate(150%);
   -webkit-backdrop-filter: blur(40px) saturate(150%);
 }
+.light .glass-sidebar {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
 
 /* ─── Button ──────────────────────────────────────────────────────────────── */
 .btn-primary {
@@ -261,8 +325,8 @@ button, a, input, select { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
   filter: blur(80px);
   opacity: 0.4;
 }
-:root .ambient-bg::before { background: radial-gradient(circle, rgba(124, 107, 212, 0.04) 0%, transparent 70%); }
-:root .ambient-bg::after  { background: radial-gradient(circle, rgba(95, 168, 125, 0.03) 0%, transparent 70%); }
+.light .ambient-bg::before { background: radial-gradient(circle, rgba(35, 131, 226, 0.04) 0%, transparent 70%); }
+.light .ambient-bg::after  { background: radial-gradient(circle, rgba(15, 123, 108, 0.03) 0%, transparent 70%); }
 .dark .ambient-bg::before { background: radial-gradient(circle, rgba(168,147,240,0.05) 0%, transparent 70%); }
 .dark .ambient-bg::after  { background: radial-gradient(circle, rgba(134,184,204,0.03) 0%, transparent 70%); }
 
