@@ -7,12 +7,15 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import SpotlightSearch from "@/components/spotlight/SpotlightSearch";
 import ToastSystem from "@/components/toast/ToastSystem";
 import { useAppStore } from "@/store/useAppStore";
+import { usePathname } from "next/navigation";
 import { getActiveProfileId } from "@/lib/supabaseStorage";
 import AuthScreen from "@/components/auth/AuthScreen";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [focusMode, setFocusMode] = useState(false);
   const [profileId, setProfileId] = useState<number | null>(null);
+  const pathname = usePathname();
+  const isLandingPage = pathname === "/landing" || pathname.startsWith("/landing/");
 
   useEffect(() => {
     setProfileId(getActiveProfileId());
@@ -31,6 +34,10 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  if (isLandingPage) {
+    return <>{children}</>;
+  }
 
   if (profileId === null) {
     return (
