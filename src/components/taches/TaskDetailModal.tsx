@@ -12,6 +12,7 @@ import type { Task, TaskStatus, IncupTag, RecurrenceType } from "@/store/useAppS
 const STATUS_CONFIG: { id: TaskStatus; label: string; color: string; dot: string }[] = [
   { id: "todo", label: "À faire", color: "var(--accent-red)", dot: "var(--accent-red)" },
   { id: "in_progress", label: "En cours", color: "var(--accent-blue)", dot: "var(--accent-blue)" },
+  { id: "done", label: "Terminé (ancien)", color: "var(--accent-green)", dot: "var(--accent-green)" },
   { id: "completed", label: "Terminé", color: "var(--accent-green)", dot: "var(--accent-green)" },
   { id: "saved", label: "Sauvegarde", color: "var(--accent-orange)", dot: "var(--accent-orange)" },
 ];

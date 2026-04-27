@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect } from "react";
 import { useAppStore } from "@/store/useAppStore";
+import { useLayoutEffect } from "react";
 
 export default function ThemeProvider({ children }: { children: React.ReactNode }) {
   const theme = useAppStore((s) => s.theme);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     const root = document.documentElement;
+    root.classList.remove("light", "dark");
     if (theme === "dark") {
       root.classList.add("dark");
-      root.classList.remove("light");
     } else {
       root.classList.add("light");
-      root.classList.remove("dark");
     }
   }, [theme]);
 

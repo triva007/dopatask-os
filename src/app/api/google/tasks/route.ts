@@ -60,15 +60,16 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { listId, title, notes, due, status } = body as {
+    const { listId, taskListId, title, notes, due, status } = body as {
       listId?: string;
+      taskListId?: string;
       title: string;
       notes?: string;
       due?: string;
       status?: "needsAction" | "completed";
     };
 
-    let targetListId = listId;
+    let targetListId = listId || taskListId;
     if (!targetListId) {
       const listsRes = await googleFetch(`${TASKS_API}/users/@me/lists`);
       const listsData = (await listsRes.json()) as { items?: GoogleTaskList[] };
@@ -106,15 +107,17 @@ export async function POST(request: Request) {
 export async function PATCH(request: Request) {
   try {
     const body = await request.json();
-    const { listId, taskId, updates } = body as {
-      listId: string;
+    const { listId, taskListId, taskId, updates } = body as {
+      listId?: string;
+      taskListId?: string;
       taskId: string;
       updates: Partial<GoogleTask>;
     };
-    if (!listId || !taskId) {
+    const targetListId = listId || taskListId;
+    if (!targetListId || !taskId) {
       return NextResponse.json({ error: "missing_ids" }, { status: 400 });
     }
-    const res = await googleFetch(`${TASKS_API}/lists/${listId}/tasks/${taskId}`, {
+    const res = await googleFetch(`${TASKS_API}/lists/${targetListId}/tasks/${taskId}`, {
       method: "PATCH",
       body: JSON.stringify(updates),
     });
@@ -137,7 +140,7 @@ export async function PATCH(request: Request) {
 export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
-    const listId = searchParams.get("listId");
+    const listId = searchParams.get("listId") || searchParams.get("taskListId");
     const taskId = searchParams.get("taskId");
     if (!listId || !taskId) {
       return NextResponse.json({ error: "missing_ids" }, { status: 400 });

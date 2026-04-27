@@ -439,7 +439,7 @@ export default function KanbanBoard() {
   }, [updateTaskStatus]);
 
   const filteredTasks = useMemo(() => {
-    let filtered = tasks.filter((t) => ["todo", "in_progress", "completed", "saved"].includes(t.status));
+    let filtered = tasks.filter((t) => ["todo", "in_progress", "completed", "done", "saved"].includes(t.status));
     if (searchText) {
       const lower = searchText.toLowerCase();
       filtered = filtered.filter((t) => t.text.toLowerCase().includes(lower));
@@ -763,7 +763,7 @@ export default function KanbanBoard() {
             <KanbanColumnComponent
               key={col.id}
               column={col}
-              tasks={kanbanTasks.filter((t) => t.status === col.id)}
+              tasks={kanbanTasks.filter((t) => col.id === "completed" ? t.status === "completed" || t.status === "done" : t.status === col.id)}
               dragOverCol={dragOverCol}
               onDragOver={(id) => setDragOverCol(id)}
               onDrop={handleDrop}

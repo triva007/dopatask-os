@@ -206,7 +206,7 @@ export default function CalendarApp() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            taskListId: data.taskListId,
+            listId: data.taskListId,
             title: data.summary,
             notes: data.description,
             due: data.start?.date || data.start?.dateTime,
@@ -231,7 +231,7 @@ export default function CalendarApp() {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            taskListId: data.taskListId || modalEvent.taskInfo?.taskListId,
+            listId: data.taskListId || modalEvent.taskInfo?.listId,
             taskId: modalEvent.id.replace("task-", ""),
             updates: {
               title: data.summary,
@@ -259,8 +259,8 @@ export default function CalendarApp() {
 
   const handleDelete = useCallback(async (ev: CalendarEvent) => {
     try {
-      if (ev.type === "task" && ev.taskInfo?.taskListId) {
-        await fetch(`/api/google/tasks?taskListId=${encodeURIComponent(ev.taskInfo.taskListId)}&taskId=${encodeURIComponent(ev.id.replace("task-", ""))}`, {
+      if (ev.type === "task" && ev.taskInfo?.listId) {
+        await fetch(`/api/google/tasks?listId=${encodeURIComponent(ev.taskInfo.listId)}&taskId=${encodeURIComponent(ev.id.replace("task-", ""))}`, {
           method: "DELETE",
         });
         await fetchGoogleTasks();
@@ -275,12 +275,12 @@ export default function CalendarApp() {
 
   const handleEventDrop = useCallback(async (ev: CalendarEvent, newStart: Date, newEnd: Date) => {
     try {
-      if (ev.type === "task" && ev.taskInfo?.taskListId) {
+      if (ev.type === "task" && ev.taskInfo?.listId) {
         await fetch("/api/google/tasks", {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            taskListId: ev.taskInfo.taskListId,
+            listId: ev.taskInfo.listId,
             taskId: ev.id.replace("task-", ""),
             updates: {
               due: newStart.toISOString(),

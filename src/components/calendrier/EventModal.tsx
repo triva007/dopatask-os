@@ -77,7 +77,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         : toLocalISOString(defaultEnd)
   );
   const [calendarId, setCalendarId] = useState(event?.calendarId || calendars.find((c) => c.primary)?.id || calendars[0]?.id || "primary");
-  const [taskListId, setTaskListId] = useState(event?.taskInfo?.taskListId || taskLists[0]?.id || "");
+  const [taskListId, setTaskListId] = useState(event?.taskInfo?.listId || event?.taskInfo?.taskListId || taskLists[0]?.id || "");
   const [colorId, setColorId] = useState(event?.colorId || "");
   const [showColors, setShowColors] = useState(false);
 

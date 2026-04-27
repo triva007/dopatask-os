@@ -198,7 +198,10 @@ export default function GoogleTasksKanban() {
       });
       if (!r.ok) throw new Error("Echec");
       await fetchAll();
-    } catch { setError("Creation impossible"); }
+    } catch {
+      setError("Creation impossible");
+      throw new Error("create_task_failed");
+    }
   };
 
   const handleCreateNewTask = async () => {

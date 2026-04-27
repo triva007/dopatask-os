@@ -141,7 +141,7 @@ export default function DayPanel() {
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.8 }}
                       onClick={() => deleteTimelineEvent(ev.id)}
-                      className="shrink-0 p-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+                      className="shrink-0 p-0.5 rounded hover:bg-[var(--surface-2)] transition-colors"
                       style={{ color: colors.text }}
                     >
                       <X size={11} />

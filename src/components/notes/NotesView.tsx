@@ -130,7 +130,7 @@ export default function NotesView() {
   const activeNote = activeId ? notes.find(n => n.id === activeId) : null;
 
   return (
-    <div className="flex flex-col h-full bg-[var(--bg-primary)]">
+    <div className="flex flex-col h-full bg-[var(--background)]">
       {/* Header */}
       <div className="shrink-0 px-8 pt-8 pb-5 border-b border-[var(--border-primary)] flex items-center justify-between">
         <div>
@@ -180,11 +180,11 @@ export default function NotesView() {
                 style={{ background: selectedColor }}
               >
                 {newImages.length > 0 && (
-                  <div className="flex gap-2 p-4 overflow-x-auto bg-black/10">
+                  <div className="flex gap-2 p-4 overflow-x-auto bg-[var(--surface-2)]/70">
                     {newImages.map((img, i) => (
                       <div key={i} className="relative shrink-0 group">
-                        <img src={img} className="h-32 rounded-lg border border-white/10" />
-                        <button onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 p-1 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                        <img src={img} className="h-32 rounded-lg border border-[var(--border-primary)]" />
+                        <button onClick={() => setNewImages(prev => prev.filter((_, idx) => idx !== i))} className="absolute top-1 right-1 p-1 bg-[var(--surface-3)]/90 rounded-full text-[var(--text-primary)] opacity-0 group-hover:opacity-100 transition-opacity">
                           <X size={12} />
                         </button>
                       </div>
@@ -195,15 +195,15 @@ export default function NotesView() {
                   <input placeholder="Titre" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full bg-transparent text-[18px] font-bold text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-tertiary)]" autoFocus />
                   <textarea placeholder="Écris quelque chose..." value={newContent} onChange={(e) => setNewContent(e.target.value)} rows={4} className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)] leading-relaxed" />
                 </div>
-                <div className="px-5 py-3 flex items-center justify-between border-t border-[rgba(255,255,255,0.05)] bg-[rgba(0,0,0,0.05)]">
+                <div className="px-5 py-3 flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--surface-1)]/80">
                   <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-[60%] scrollbar-none">
                     {COLORS.map(c => (
-                      <button key={c} onClick={() => setSelectedColor(c)} className={`w-5 h-5 shrink-0 rounded-full border transition-transform hover:scale-125 ${selectedColor === c ? "border-white scale-110" : "border-transparent"}`} style={{ background: c }} />
+                      <button key={c} onClick={() => setSelectedColor(c)} className={`w-5 h-5 shrink-0 rounded-full border transition-transform hover:scale-125 ${selectedColor === c ? "border-[var(--text-primary)] scale-110" : "border-transparent"}`} style={{ background: c }} />
                     ))}
                   </div>
                   <div className="flex gap-3">
                     <button onClick={() => setIsAdding(false)} className="px-4 py-2 text-[12px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">Annuler</button>
-                    <button onClick={handleAdd} className="px-5 py-2 rounded-xl bg-white text-black text-[12px] font-bold hover:bg-gray-100 transition-colors shadow-lg">Terminer</button>
+                    <button onClick={handleAdd} className="px-5 py-2 rounded-xl bg-[var(--text-primary)] text-[var(--background)] text-[12px] font-bold hover:opacity-90 transition-colors shadow-lg">Terminer</button>
                   </div>
                 </div>
               </motion.div>
@@ -267,25 +267,25 @@ export default function NotesView() {
       {/* Editor Modal & Context Menu (Same as before but cleaned up) */}
       <AnimatePresence>
         {editingNote && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-md" onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} onPaste={(e) => handlePaste(e, false)} className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-white/10 flex flex-col max-h-[90vh]" style={{ background: editingNote.color }}>
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-6" style={{ background: "var(--backdrop-bg)", backdropFilter: "var(--backdrop-blur)" }} onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }}>
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.95 }} onClick={(e) => e.stopPropagation()} onPaste={(e) => handlePaste(e, false)} className="w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl border border-[var(--border-primary)] flex flex-col max-h-[90vh]" style={{ background: editingNote.color }}>
               {editingNote.images?.length > 0 && (
-                <div className="flex gap-4 p-6 overflow-x-auto bg-black/10 border-b border-white/5">
+                <div className="flex gap-4 p-6 overflow-x-auto bg-[var(--surface-2)]/70 border-b border-[var(--border-primary)]">
                   {editingNote.images.map((img: string, i: number) => (
                     <div key={i} className="relative shrink-0 group">
-                      <img src={img} className="h-48 rounded-xl border border-white/10" />
-                      <button onClick={() => setEditingNote((prev: any) => ({ ...prev, images: prev.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute top-2 right-2 p-2 bg-black/60 rounded-full text-white opacity-0 group-hover:opacity-100 transition-opacity"><X size={16} /></button>
+                      <img src={img} className="h-48 rounded-xl border border-[var(--border-primary)]" />
+                      <button onClick={() => setEditingNote((prev: any) => ({ ...prev, images: prev.images.filter((_: any, idx: number) => idx !== i) }))} className="absolute top-2 right-2 p-2 bg-[var(--surface-3)]/90 rounded-full text-[var(--text-primary)] opacity-0 group-hover:opacity-100 transition-opacity"><X size={16} /></button>
                     </div>
                   ))}
                 </div>
               )}
               <div className="p-8 space-y-6 flex-1 overflow-y-auto">
-                <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[24px] font-bold text-white focus:outline-none" placeholder="Titre" />
-                <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[16px] text-white/80 focus:outline-none min-h-[300px] resize-none leading-relaxed" placeholder="Contenu..." />
+                <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[24px] font-bold text-[var(--text-primary)] focus:outline-none" placeholder="Titre" />
+                <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[16px] text-[var(--text-secondary)] focus:outline-none min-h-[300px] resize-none leading-relaxed" placeholder="Contenu..." />
               </div>
-              <div className="px-8 py-5 flex items-center justify-between border-t border-white/5 bg-black/20">
-                <div className="flex gap-1.5">{COLORS.map(c => <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-5 h-5 rounded-full border ${editingNote.color === c ? "border-white" : "border-transparent"}`} style={{ background: c }} />)}</div>
-                <button onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }} className="px-8 py-3 rounded-2xl bg-white text-black font-bold">Terminé</button>
+              <div className="px-8 py-5 flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--surface-1)]/80">
+                <div className="flex gap-1.5">{COLORS.map(c => <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-5 h-5 rounded-full border ${editingNote.color === c ? "border-[var(--text-primary)]" : "border-transparent"}`} style={{ background: c }} />)}</div>
+                <button onClick={() => { updateNote(editingNote.id, editingNote); setEditingNote(null); }} className="px-8 py-3 rounded-2xl bg-[var(--text-primary)] text-[var(--background)] font-bold">Terminé</button>
               </div>
             </motion.div>
           </div>
@@ -328,12 +328,12 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
 
   return (
     <div 
-      className={`rounded-[22px] border border-white/5 p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-lg ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:y-[-4px]"}`}
+      className={`rounded-[22px] border border-[var(--border-primary)] p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-lg ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:y-[-4px]"}`}
       style={{ background: note.color }}
       onContextMenu={onContextMenu}
       onClick={onEdit}
     >
-      <div {...dragListeners} {...dragAttributes} className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity text-white/30 cursor-grab active:cursor-grabbing p-1">
+      <div {...dragListeners} {...dragAttributes} className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-tertiary)] cursor-grab active:cursor-grabbing p-1">
         <GripVertical size={16} />
       </div>
 
@@ -343,20 +343,20 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
         </div>
       )}
 
-      {note.title && <h3 className="text-[16px] font-bold text-white mb-3 pr-6 leading-tight">{note.title}</h3>}
-      <div className="text-[14px] text-white/80 whitespace-pre-wrap leading-relaxed line-clamp-[12]">
+      {note.title && <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-3 pr-6 leading-tight">{note.title}</h3>}
+      <div className="text-[14px] text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed line-clamp-[12]">
         {note.content.split("\n").map((line: string, i: number) => {
           if (line.startsWith("[ ] ") || line.startsWith("[x] ")) {
             const checked = line.startsWith("[x] ");
             return (
               <div key={i} className="flex items-start gap-2 py-0.5" onClick={(e) => { e.stopPropagation(); toggleCheckbox(i); }}>
-                {checked ? <CheckSquare size={14} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={14} className="mt-1 text-white/30" />}
+                {checked ? <CheckSquare size={14} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={14} className="mt-1 text-[var(--text-tertiary)]" />}
                 <span className={checked ? "line-through opacity-50" : ""}>{line.slice(4)}</span>
               </div>
             );
           }
           if (line.startsWith("- ") || line.startsWith("* ")) {
-            return <div key={i} className="flex items-start gap-2 py-0.5"><span className="mt-2 w-1.5 h-1.5 rounded-full bg-white/30 shrink-0" /><span>{line.slice(2)}</span></div>;
+            return <div key={i} className="flex items-start gap-2 py-0.5"><span className="mt-2 w-1.5 h-1.5 rounded-full bg-[var(--text-tertiary)] shrink-0" /><span>{line.slice(2)}</span></div>;
           }
           return <div key={i} className="min-h-[1.2em]">{line}</div>;
         })}

@@ -12,9 +12,11 @@ const DEBOUNCE_MS = 1500; // write at most every 1.5s
 
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
 let pendingData: string | null = null;
+let flushInFlight = false;
 
 async function flushWrite() {
-  if (pendingData === null) return;
+  if (pendingData === null || flushInFlight) return;
+  flushInFlight = true;
   const payload = pendingData;
   pendingData = null;
   try {
@@ -26,6 +28,9 @@ async function flushWrite() {
       );
   } catch (e) {
     console.error("[supabaseStorage] write failed:", e);
+    pendingData = payload;
+  } finally {
+    flushInFlight = false;
   }
 }
 
@@ -112,19 +117,38 @@ export const supabaseStorage: StateStorage = {
 
 // Flush pending writes before the page unloads
 if (typeof window !== "undefined") {
-  window.addEventListener("beforeunload", () => {
-    if (pendingData !== null) {
-      // Use sendBeacon or sync XHR as a last resort
-      const payload = pendingData;
-      pendingData = null;
-      try {
-        const url = `${process.env.NEXT_PUBLIC_SUPABASE_URL}/rest/v1/${TABLE}?id=eq.${ROW_ID}`;
-        const body = JSON.stringify({ data: JSON.parse(payload), updated_at: new Date().toISOString() });
-        navigator.sendBeacon?.(
-          url,
-          new Blob([body], { type: "application/json" })
-        );
-      } catch {}
+  const flushWithKeepAlive = () => {
+    if (pendingData === null) return;
+    const payload = pendingData;
+    pendingData = null;
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+      if (!supabaseUrl || !anonKey) return;
+
+      const url = `${supabaseUrl}/rest/v1/${TABLE}?id=eq.${ROW_ID}`;
+      const body = JSON.stringify({ data: JSON.parse(payload), updated_at: new Date().toISOString() });
+      void fetch(url, {
+        method: "PATCH",
+        keepalive: true,
+        headers: {
+          "Content-Type": "application/json",
+          apikey: anonKey,
+          Authorization: `Bearer ${anonKey}`,
+          Prefer: "return=minimal",
+        },
+        body,
+      });
+    } catch (e) {
+      console.error("[supabaseStorage] keepalive flush failed:", e);
     }
+  };
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushWithKeepAlive();
+  });
+
+  window.addEventListener("beforeunload", () => {
+    flushWithKeepAlive();
   });
 }

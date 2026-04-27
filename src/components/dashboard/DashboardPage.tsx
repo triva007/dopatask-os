@@ -76,8 +76,9 @@ export default function DashboardPage() {
   const pendingTasks = filteredGTasks.length + filteredLocalTasks.length;
   
   // Stats pour le sous-texte (uniquement la liste prioritaire)
-  const doneTodayLocal = filteredLocalTasks.filter(
+  const doneTodayLocal = tasks.filter(
     (t) =>
+      (!killProject || t.projectId === killProject.id) &&
       (t.status === "done" || t.status === "completed") &&
       t.completedAt &&
       new Date(t.completedAt).toDateString() === new Date().toDateString()
@@ -94,7 +95,7 @@ export default function DashboardPage() {
   const doneToday = doneTodayLocal + doneTodayGoogle;
 
   const inboxCount = inboxItems.filter((i) => !i.processed).length;
-  const activeGoals = objectives.filter((o) => (o.progress ?? 0) < 1).length;
+  const activeGoals = objectives.filter((o) => (o.progress ?? 0) < 100).length;
   const activeProjects = projects.filter((p) => p.status === "active").length;
 
   return (

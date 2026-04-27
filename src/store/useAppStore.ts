@@ -235,13 +235,15 @@ export const useAppStore = create<AppState>()(
 
         tasks: [],
         addTask: (text, status, projectId, linkedJournalId, linkedNoteId) => {
-          const newTask: Task = { id: uid(), text: text.trim(), status: status ?? "today", projectId, createdAt: Date.now(), tags: [], microSteps: [], expanded: false, linkedJournalId, linkedNoteId };
+          const trimmedText = text.trim();
+          if (!trimmedText) return;
+          const newTask: Task = { id: uid(), text: trimmedText, status: status ?? "today", projectId, createdAt: Date.now(), tags: [], microSteps: [], expanded: false, linkedJournalId, linkedNoteId };
           set((s) => ({ tasks: [...s.tasks, newTask], lastActiveAt: Date.now(), lastActiveTaskId: newTask.id }));
           get().addToast(`Tâche ajoutée`, "info");
         },
         updateTask: (id, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...updates } : t) })),
         updateTaskStatus: (id, status) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, status, ...(status === "completed" ? { completedAt: Date.now() } : {}) } : t) })),
-        completeTask: (id) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, status: "done", completedAt: Date.now() } : t), lastActiveAt: Date.now() })),
+        completeTask: (id) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, status: "completed", completedAt: Date.now() } : t), lastActiveAt: Date.now() })),
         deleteTask: (id) => set((s) => ({ tasks: s.tasks.filter((t) => t.id !== id) })),
         toggleExpand: (id) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, expanded: !t.expanded } : t) })),
         addMicroStep: (taskId, text) => set((s) => ({ tasks: s.tasks.map((t) => t.id === taskId ? { ...t, microSteps: [...t.microSteps, { id: uid(), text: text.trim(), done: false }] } : t) })),
@@ -327,8 +329,13 @@ export const useAppStore = create<AppState>()(
     ),
     {
       name: "dopatask-storage",
-      version: 8, // Bump for Note order field
+      version: 9, // Normalize done -> completed and guard empty tasks
       migrate: (persistedState: any, version: number) => {
+        if (version < 9 && persistedState?.state?.tasks) {
+          persistedState.state.tasks = persistedState.state.tasks.map((task: Task) =>
+            task.status === "done" ? { ...task, status: "completed" } : task
+          );
+        }
         return persistedState;
       },
       storage: createJSONStorage(() => supabaseStorage),
