@@ -58,7 +58,7 @@ function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: bool
         <Icon
           size={20}
           className={`shrink-0 transition-colors duration-150 ${
-            isActive ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-white"
+            isActive ? "text-sidebar-active-text" : "text-sidebar-inactive group-hover:text-sidebar-active-text"
           }`}
           strokeWidth={1.75}
         />
@@ -66,7 +66,7 @@ function NavLink({ item, isActive, badgeCount }: { item: NavItem; isActive: bool
           className={`text-[15px] transition-colors duration-150 leading-none flex-1 ${
             isActive
               ? "text-sidebar-active-text font-semibold"
-              : "text-sidebar-inactive font-medium group-hover:text-white"
+              : "text-sidebar-inactive font-medium group-hover:text-sidebar-active-text"
           }`}
         >
           {label}
@@ -119,10 +119,10 @@ export default function Sidebar() {
           <span className="text-[18px] text-white font-bold">A</span>
         </div>
         <div>
-          <p className="text-[16px] font-bold leading-none tracking-tight text-white">
+          <p className="text-[16px] font-bold leading-none tracking-tight text-sidebar-active-text">
             Aaron-OS
           </p>
-          <p className="text-[10px] leading-none mt-1.5 font-bold text-t-tertiary tracking-widest uppercase opacity-60">
+          <p className="text-[10px] leading-none mt-1.5 font-bold text-sidebar-inactive tracking-widest uppercase opacity-60">
             v5.0 · Ultra PC
           </p>
         </div>
@@ -174,7 +174,7 @@ export default function Sidebar() {
       <div className="flex-1" />
 
       {/* Settings */}
-      <div className="px-1 mt-6 pt-6 border-t border-white/5">
+      <div className="px-1 mt-6 pt-6 border-t border-b-primary">
         <NavLink
           item={{ href: "/reglages", label: "Réglages", Icon: Settings }}
           isActive={pathname === "/reglages"}

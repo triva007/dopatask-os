@@ -114,6 +114,7 @@
   --accent-purple: #6940A5;
   --accent-purple-light: rgba(105, 64, 165, 0.1);
   --accent-cyan: #337EA9;
+  --accent-cyan-light: rgba(51, 126, 169, 0.1);
 
   --sidebar-bg: #F7F7F5;
   --sidebar-active-bg: rgba(55, 53, 47, 0.08);
@@ -126,6 +127,11 @@
   --card-shadow-hover: 0 4px 12px rgba(15, 15, 15, 0.15);
   --shadow-elevated: 0 8px 24px rgba(15, 15, 15, 0.2);
 
+  --shadow-glow-green: 0 0 24px rgba(15, 123, 108, 0.08);
+  --shadow-glow-violet: 0 0 24px rgba(105, 64, 165, 0.08);
+  --shadow-glow-cyan: 0 0 24px rgba(51, 126, 169, 0.08);
+  --shadow-glow-amber: 0 0 24px rgba(217, 115, 13, 0.08);
+
   --scrollbar-thumb: rgba(55, 53, 47, 0.1);
   --scrollbar-thumb-hover: rgba(55, 53, 47, 0.2);
 
@@ -134,6 +140,8 @@
   --focus-ring: rgba(35, 131, 226, 0.4);
 
   --backdrop-bg: rgba(255, 255, 255, 0.8);
+  --backdrop-blur: blur(18px);
+  --empty-bg: #F1F1EF;
   --input-bg: #FFFFFF;
   --input-border: rgba(55, 53, 47, 0.16);
   --badge-bg: rgba(55, 53, 47, 0.04);
