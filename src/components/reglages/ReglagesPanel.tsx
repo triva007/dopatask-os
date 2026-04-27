@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Settings, Download, Upload, Trash2, ChevronRight,
-  Volume2, VolumeX, AlertCircle, Sun, Moon
+  Volume2, VolumeX, AlertCircle, Sun, Moon, User
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import GoogleSyncSection from "./GoogleSyncSection";
@@ -205,6 +205,21 @@ export default function ReglagesPanel() {
 
           <Section title="Synchronisation">
             <GoogleSyncSection />
+          </Section>
+
+          {/* Profil */}
+          <Section title="Compte">
+            <SettingRow
+              icon={User}
+              label="Se déconnecter"
+              description="Fermer la session actuelle"
+              color="var(--brand-primary)"
+              onClick={() => {
+                localStorage.removeItem("dopatask_user_id");
+                window.location.reload();
+              }}
+              isClickable
+            />
           </Section>
 
           {/* Apparence */}

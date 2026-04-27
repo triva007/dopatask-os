@@ -7,7 +7,16 @@ import { type StateStorage } from "zustand/middleware";
 import { supabase } from "./supabase";
 
 const TABLE = "app_state";
-const ROW_ID = 1;
+
+export function getActiveProfileId(): number {
+  if (typeof window !== "undefined") {
+    const stored = localStorage.getItem("dopatask_user_id");
+    if (stored) return parseInt(stored, 10);
+    return -1; // Aucun utilisateur connecté
+  }
+  return -1;
+}
+
 const DEBOUNCE_MS = 1500; // write at most every 1.5s
 
 let writeTimer: ReturnType<typeof setTimeout> | null = null;
@@ -19,11 +28,17 @@ async function flushWrite() {
   flushInFlight = true;
   const payload = pendingData;
   pendingData = null;
+  const rowId = getActiveProfileId();
+  if (rowId === -1) {
+    flushInFlight = false;
+    return;
+  }
+
   try {
     await supabase
       .from(TABLE)
       .upsert(
-        { id: ROW_ID, data: JSON.parse(payload), updated_at: new Date().toISOString() },
+        { id: rowId, data: JSON.parse(payload), updated_at: new Date().toISOString() },
         { onConflict: "id" }
       );
   } catch (e) {
@@ -36,11 +51,14 @@ async function flushWrite() {
 
 export const supabaseStorage: StateStorage = {
   getItem: async (name: string): Promise<string | null> => {
+    const rowId = getActiveProfileId();
+    if (rowId === -1) return null;
+
     try {
       const { data, error } = await supabase
         .from(TABLE)
         .select("data")
-        .eq("id", ROW_ID)
+        .eq("id", rowId)
         .maybeSingle();
 
       if (error) {
@@ -63,7 +81,7 @@ export const supabaseStorage: StateStorage = {
               await supabase
                 .from(TABLE)
                 .upsert(
-                  { id: ROW_ID, data: JSON.parse(local), updated_at: new Date().toISOString() },
+                  { id: rowId, data: JSON.parse(local), updated_at: new Date().toISOString() },
                   { onConflict: "id" }
                 );
             } catch {}
@@ -101,14 +119,16 @@ export const supabaseStorage: StateStorage = {
   },
 
   removeItem: async (name: string): Promise<void> => {
+    const rowId = getActiveProfileId();
     if (typeof window !== "undefined") {
       try { localStorage.removeItem(name); } catch {}
     }
+    if (rowId === -1) return;
     try {
       await supabase
         .from(TABLE)
         .update({ data: {}, updated_at: new Date().toISOString() })
-        .eq("id", ROW_ID);
+        .eq("id", rowId);
     } catch (e) {
       console.error("[supabaseStorage] removeItem error:", e);
     }
@@ -126,7 +146,10 @@ if (typeof window !== "undefined") {
       const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
       if (!supabaseUrl || !anonKey) return;
 
-      const url = `${supabaseUrl}/rest/v1/${TABLE}?id=eq.${ROW_ID}`;
+      const rowId = getActiveProfileId();
+      if (rowId === -1) return;
+
+      const url = `${supabaseUrl}/rest/v1/${TABLE}?id=eq.${rowId}`;
       const body = JSON.stringify({ data: JSON.parse(payload), updated_at: new Date().toISOString() });
       void fetch(url, {
         method: "PATCH",

@@ -7,9 +7,16 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import SpotlightSearch from "@/components/spotlight/SpotlightSearch";
 import ToastSystem from "@/components/toast/ToastSystem";
 import { useAppStore } from "@/store/useAppStore";
+import { getActiveProfileId } from "@/lib/supabaseStorage";
+import AuthScreen from "@/components/auth/AuthScreen";
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [focusMode, setFocusMode] = useState(false);
+  const [profileId, setProfileId] = useState<number | null>(null);
+
+  useEffect(() => {
+    setProfileId(getActiveProfileId());
+  }, []);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -24,6 +31,18 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, []);
+
+  if (profileId === null) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[var(--surface-0)]">
+        <div className="w-8 h-8 rounded-full border-2 border-[var(--brand-primary)] border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (profileId === -1) {
+    return <AuthScreen onLogin={() => window.location.reload()} />;
+  }
 
   return (
     <>
