@@ -11,6 +11,7 @@ import { buildFeedbackLine, statutFromResultat, shouldArchive, resultatCompteMis
 import { extractStatutFromNotes } from "@/lib/csvParser";
 import { celebrate } from "@/lib/dopamineFeedback";
 import { useAppStore } from "@/store/useAppStore";
+import { getActiveProfileId } from "@/lib/supabaseStorage";
 
 type CrmState = {
   prospects: Prospect[];
@@ -48,11 +49,14 @@ export const useCrmStore = create<CrmState>((set, get) => ({
 
   loadAll: async () => {
     set({ loading: true, error: null });
+    const userId = getActiveProfileId();
+    if (userId === -1) return;
+
     try {
       const [pRes, cRes, rRes, cfRes, scRes] = await Promise.all([
-        supabase.from("prospects").select("*").order("created_at", { ascending: false }),
-        supabase.from("calls").select("*").order("date", { ascending: false }).limit(5000),
-        supabase.from("revenus").select("*").order("date_signature", { ascending: false }),
+        supabase.from("prospects").select("*").eq("app_user_id", userId).order("created_at", { ascending: false }),
+        supabase.from("calls").select("*").eq("app_user_id", userId).order("date", { ascending: false }).limit(5000),
+        supabase.from("revenus").select("*").eq("app_user_id", userId).order("date_signature", { ascending: false }),
         supabase.from("config").select("*").eq("id", 1).maybeSingle(),
         supabase.from("scripts").select("*").order("updated_at", { ascending: false }),
       ]);
@@ -79,9 +83,11 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   },
 
   createProspect: async (data) => {
+    const userId = getActiveProfileId();
     const { data: inserted, error } = await supabase
       .from("prospects")
       .insert({
+        app_user_id: userId,
         entreprise: data.entreprise,
         telephone: data.telephone ?? null,
         gmb_url: data.gmb_url ?? null,
@@ -118,7 +124,9 @@ export const useCrmStore = create<CrmState>((set, get) => ({
 
   importProspects: async (rows) => {
     if (rows.length === 0) return 0;
+    const userId = getActiveProfileId();
     const payload = rows.map((r) => ({
+      app_user_id: userId,
       entreprise: r.entreprise,
       telephone: r.telephone ?? null,
       gmb_url: r.gmb_url ?? null,
@@ -142,11 +150,13 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   logCall: async (prospectId, resultat, notes) => {
     const prospect = get().prospects.find((p) => p.id === prospectId);
     if (!prospect) return;
+    const userId = getActiveProfileId();
 
     // 1. Insert call
     const { data: callRow, error: cErr } = await supabase
       .from("calls")
       .insert({
+        app_user_id: userId,
         prospect_id: prospectId,
         resultat,
         notes: notes || null,
@@ -202,9 +212,10 @@ export const useCrmStore = create<CrmState>((set, get) => ({
   },
 
   addRevenu: async (prospectId, montant, notes) => {
+    const userId = getActiveProfileId();
     const { data, error } = await supabase
       .from("revenus")
-      .insert({ prospect_id: prospectId, montant, notes: notes || null })
+      .insert({ app_user_id: userId, prospect_id: prospectId, montant, notes: notes || null })
       .select("*")
       .single();
     if (error) {

@@ -9,6 +9,7 @@ import { useCrmStore } from "@/store/useCrmStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
 import VisionWidget from "@/components/dashboard/VisionWidget";
+import { getActiveProfileId } from "@/lib/supabaseStorage";
 
 function businessDaysUntil(target: Date, from: Date = new Date()): number {
   let count = 0;
@@ -136,6 +137,8 @@ export default function DashboardPage() {
   const manque = Math.max(0, objectif - stats.revenuTotal);
   const ventesNecessaires = Math.ceil(manque / prixSite);
 
+  const activeProfileId = getActiveProfileId();
+
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-[1700px] mx-auto px-10 py-8 space-y-6">
@@ -150,6 +153,7 @@ export default function DashboardPage() {
         </div>
 
         {/* ═══ CHALLENGE RASAGE — compact ═══ */}
+        {activeProfileId === 1 && (
         <motion.div
           initial={{ opacity: 0, y: 8 }}
           animate={{ opacity: 1, y: 0 }}
@@ -244,12 +248,13 @@ export default function DashboardPage() {
             </div>
           </div>
         </motion.div>
+        )}
 
         {/* ═══ Prochains événements Google ═══ */}
         <UpcomingEventsWidget />
 
         {/* ═══ VISION LONG TERME (Time Stripe style) ═══ */}
-        <VisionWidget />
+        {activeProfileId === 1 && <VisionWidget />}
 
         {/* ═══ KPI grid (productivité globale) ═══ */}
         <div className="grid grid-cols-4 gap-3">
