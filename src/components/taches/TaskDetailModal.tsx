@@ -387,8 +387,15 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
                   <Calendar size={10} className="text-t-tertiary shrink-0" />
                   <input
                     type="date"
-                    value={task.dueDate || ""}
-                    onChange={(e) => updateTask(task.id, { dueDate: e.target.value || undefined })}
+                    value={task.dueDate ? new Date(task.dueDate).toISOString().split('T')[0] : ""}
+                    onChange={(e) => {
+                      const newDate = e.target.value;
+                      if (!newDate) {
+                        updateTask(task.id, { dueDate: undefined });
+                      } else {
+                        updateTask(task.id, { dueDate: new Date(newDate).toISOString() });
+                      }
+                    }}
                     className="text-[10px] px-2.5 py-1 rounded-lg font-medium bg-transparent focus:outline-none"
                     style={{
                       color: "var(--text-secondary)",

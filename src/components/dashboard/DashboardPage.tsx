@@ -1,12 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Target, ListChecks, FolderKanban, Inbox } from "lucide-react";
+import { Target, ListChecks, FolderKanban, Inbox, Skull } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useCrmStore } from "@/store/useCrmStore";
+import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
 import VisionWidget from "@/components/dashboard/VisionWidget";
+
+function businessDaysUntil(target: Date, from: Date = new Date()): number {
+  let count = 0;
+  const cur = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+  cur.setDate(cur.getDate() + 1);
+  const end = new Date(target.getFullYear(), target.getMonth(), target.getDate());
+  while (cur < end) {
+    const d = cur.getDay();
+    if (d !== 0 && d !== 6) count++;
+    cur.setDate(cur.getDate() + 1);
+  }
+  return count;
+}
 
 export default function DashboardPage() {
   const tasks = useAppStore((s) => s.tasks);
@@ -14,14 +29,25 @@ export default function DashboardPage() {
   const objectives = useAppStore((s) => s.objectives);
   const projects = useAppStore((s) => s.projects);
 
+  const calls = useCrmStore((s) => s.calls);
+  const revenus = useCrmStore((s) => s.revenus);
+  const config = useCrmStore((s) => s.config);
+  const loadCrm = useCrmStore((s) => s.loadAll);
+  const crmLoaded = useCrmStore((s) => s.loaded);
+
   const [, setTick] = useState(0);
   const [googleTasks, setGoogleTasks] = useState<any[]>([]);
   const [googleLists, setGoogleLists] = useState<any[]>([]);
   const [loadingTasks, setLoadingTasks] = useState(true);
 
   useEffect(() => {
+    if (!crmLoaded) loadCrm();
+  }, [crmLoaded, loadCrm]);
+
+  useEffect(() => {
     const refreshAll = () => {
       if (document.visibilityState !== "visible") return;
+      loadCrm();
       try {
         if ((useAppStore as any).persist?.rehydrate) (useAppStore as any).persist.rehydrate();
       } catch {}
@@ -98,6 +124,18 @@ export default function DashboardPage() {
   const activeGoals = objectives.filter((o) => (o.progress ?? 0) < 100).length;
   const activeProjects = projects.filter((p) => p.status === "active").length;
 
+  const stats = useMemo(() => computeStatsMois(calls, revenus), [calls, revenus]);
+  const objectif = config?.objectif_mensuel ?? 3000;
+  const deadlineStr = config?.deadline_date ?? "2026-06-01";
+  const deadline = useMemo(() => new Date(deadlineStr + "T00:00:00"), [deadlineStr]);
+  const prixSite = config?.prix_site ?? 980;
+
+  const joursOuvres = useMemo(() => businessDaysUntil(deadline), [deadline]);
+  const pct = Math.min(100, Math.round((stats.revenuTotal / objectif) * 100));
+  const thermoColor = thermometreColor(stats.revenuTotal, objectif);
+  const manque = Math.max(0, objectif - stats.revenuTotal);
+  const ventesNecessaires = Math.ceil(manque / prixSite);
+
   return (
     <div className="h-full overflow-auto">
       <div className="max-w-[1700px] mx-auto px-10 py-8 space-y-6">
@@ -110,6 +148,102 @@ export default function DashboardPage() {
             Vue d&apos;ensemble
           </h1>
         </div>
+
+        {/* ═══ CHALLENGE RASAGE — compact ═══ */}
+        <motion.div
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-xl overflow-hidden"
+          style={{
+            background: "var(--accent-red-light)",
+            border: "1px solid color-mix(in srgb, var(--accent-red) 30%, transparent)",
+          }}
+        >
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto] gap-0">
+            <div className="p-6 flex flex-col gap-4">
+              <div className="flex items-center gap-2">
+                <Skull size={13} style={{ color: "var(--accent-red)" }} />
+                <span className="text-[10px] font-semibold tracking-[0.18em] uppercase"
+                  style={{ color: "var(--accent-red)" }}>
+                  Challenge · enjeu personnel
+                </span>
+              </div>
+
+              <h2 className="text-[22px] font-semibold leading-tight text-[var(--text-primary)]">
+                Si le 1<sup className="text-[14px]">er</sup> juin je n&apos;ai pas fait{" "}
+                <span style={{ color: "var(--accent-red)" }}>3 000 € / mois</span>, je me rase la tête.
+              </h2>
+
+              <div className="flex items-end gap-6 flex-wrap">
+                <div>
+                  <p className="text-[10px] font-semibold tracking-[0.16em] uppercase text-[var(--text-tertiary)] mb-1">
+                    Jours ouvrés restants
+                  </p>
+                  <div className="flex items-baseline gap-2">
+                    <span className="text-[48px] font-bold leading-none tabular-nums tracking-tight"
+                      style={{ color: "var(--accent-red)" }}>
+                      {joursOuvres}
+                    </span>
+                    <span className="text-[12px] font-medium text-[var(--text-secondary)]">jours</span>
+                  </div>
+                  <p className="text-[10.5px] text-[var(--text-tertiary)] mt-1">
+                    deadline · 1<sup>er</sup> juin 2026
+                  </p>
+                </div>
+
+                <div className="flex-1 min-w-[240px]">
+                  <div className="flex items-center justify-between mb-1.5 text-[12px]">
+                    <span className="text-[var(--text-secondary)] font-semibold tabular-nums">
+                      {stats.revenuTotal.toLocaleString("fr-FR")} €
+                      <span className="text-[var(--text-tertiary)] font-normal"> / {objectif.toLocaleString("fr-FR")} €</span>
+                    </span>
+                    <span className="font-semibold tabular-nums" style={{ color: thermoColor }}>{pct}%</span>
+                  </div>
+                  <div className="relative h-[5px] rounded-full overflow-hidden"
+                    style={{ background: "color-mix(in srgb, var(--accent-red) 12%, transparent)" }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{ width: `${pct}%` }}
+                      transition={{ duration: 0.8, ease: "easeOut" }}
+                      className="absolute inset-y-0 left-0 rounded-full"
+                      style={{ background: thermoColor }}
+                    />
+                  </div>
+                  {manque > 0 && (
+                    <p className="mt-2 text-[11.5px] text-[var(--text-secondary)]">
+                      Manque{" "}
+                      <span className="font-semibold text-[var(--text-primary)] tabular-nums">
+                        {manque.toLocaleString("fr-FR")} €
+                      </span>
+                      {" "}·{" "}
+                      <span className="font-semibold text-[var(--text-primary)] tabular-nums">
+                        {ventesNecessaires}
+                      </span>{" "}
+                      vente{ventesNecessaires > 1 ? "s" : ""} à {prixSite}€
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <div className="relative w-full lg:w-[260px] h-[180px] lg:h-auto"
+              style={{ background: "color-mix(in srgb, var(--accent-red) 8%, transparent)" }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src="https://i.postimg.cc/PqtQLZDj/Whats-App-Image-2026-04-20-at-17-02-51.jpg"
+                alt="Aaron chauve — motivation"
+                className="absolute inset-0 w-full h-full object-cover"
+                style={{ filter: "grayscale(0.05) contrast(1.02)" }}
+              />
+              <div className="absolute inset-0"
+                style={{ background: "linear-gradient(90deg, var(--accent-red-light) 0%, transparent 30%)" }} />
+              <div className="absolute bottom-3 right-3 px-2 py-[3px] rounded-md text-[10px] font-semibold tracking-wide uppercase"
+                style={{ background: "rgba(0,0,0,0.55)", color: "#fff", backdropFilter: "blur(4px)" }}>
+                si t&apos;échoues
+              </div>
+            </div>
+          </div>
+        </motion.div>
 
         {/* ═══ Prochains événements Google ═══ */}
         <UpcomingEventsWidget />

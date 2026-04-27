@@ -237,11 +237,44 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
     };
   }, [dragEvent, selection, days, onEventDrop, onSlotClick, onSlotSelect]);
 
-  const allDayRows = days.map((day) => getAllDayEventsForDay(events, day));
+  const allDayRows = days.map((day) => getAllDayEventsForDay(events, day).filter(ev => ev.type !== "task"));
   const hasAllDay = allDayRows.some((r) => r.length > 0);
+
+  const tasksRows = days.map((day) => events.filter(ev => ev.type === "task" && isSameDay(getEventStart(ev), day)));
+  const hasTasksRows = tasksRows.some(r => r.length > 0);
 
   return (
     <div className="flex flex-col h-full overflow-hidden select-none" onContextMenu={e => e.preventDefault()}>
+      {hasTasksRows && (
+        <div className="shrink-0 flex border-b bg-[var(--surface-1)]" style={{ borderColor: "var(--border-primary)" }}>
+          <div className="shrink-0 w-[52px] text-right pr-2 py-1.5">
+            <span className="text-[10px] text-[var(--text-tertiary)] uppercase font-semibold">Tâches</span>
+          </div>
+          {days.map((day, di) => (
+            <div key={di} className="flex-1 min-w-0 flex flex-col gap-1 p-1 border-l" style={{ borderColor: "var(--border-primary)" }}>
+              {tasksRows[di].map((ev) => {
+                const color = getEventColor(ev, calendars);
+                return (
+                  <button
+                    key={`task-top-${ev.id}`}
+                    onClick={(e) => {
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      onEventClick(ev, { top: rect.top, left: rect.right });
+                    }}
+                    onContextMenu={(e) => handleContextMenu(ev, e)}
+                    className="flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90 border"
+                    style={{ background: "var(--card-bg)", color: "var(--text-primary)", borderColor: color }}
+                  >
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                    <span className="truncate">{ev.summary || "(sans titre)"}</span>
+                  </button>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      )}
+
       {hasAllDay && (
         <div className="shrink-0 flex border-b" style={{ borderColor: "var(--border-primary)" }}>
           <div className="shrink-0 w-[52px] text-right pr-2 py-1">
@@ -251,7 +284,6 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
             <div key={di} className="flex-1 min-w-0 flex flex-wrap gap-1 p-1 border-l" style={{ borderColor: "var(--border-primary)" }}>
               {allDayRows[di].map((ev) => {
                 const color = getEventColor(ev, calendars);
-                const isTask = ev.type === "task";
                 return (
                   <button
                     key={ev.id}
@@ -261,9 +293,8 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                     }}
                     onContextMenu={(e) => handleContextMenu(ev, e)}
                     className="cal-event flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90"
-                    style={{ background: isTask ? color : `${color}30`, color: isTask ? "#fff" : color }}
+                    style={{ background: `${color}30`, color: color }}
                   >
-                    {isTask && <span className="w-2.5 h-2.5 rounded-full shrink-0 border-2" style={{ borderColor: 'currentColor' }} />}
                     <span className="truncate">{ev.summary || "(sans titre)"}</span>
                   </button>
                 );
@@ -315,6 +346,12 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                 {HOURS.map((h) => (
                   <div key={`half-${h}`} className="absolute left-0 right-0 border-t pointer-events-none" style={{ top: h * HOUR_HEIGHT + HOUR_HEIGHT / 2, borderColor: "var(--border-primary)", opacity: 0.4 }} />
                 ))}
+
+                {/* Bloc Sleep */}
+                <div className="absolute left-0 right-0 pointer-events-none z-10" style={{ top: 23 * HOUR_HEIGHT, height: HOUR_HEIGHT, background: "rgba(253, 224, 71, 0.3)" }}>
+                  <span className="absolute top-1 left-1.5 text-[10px] font-bold text-yellow-600/70">SLEEP</span>
+                </div>
+                <div className="absolute left-0 right-0 pointer-events-none z-10" style={{ top: 0, height: 7.5 * HOUR_HEIGHT, background: "rgba(253, 224, 71, 0.3)" }} />
                 {isToday && (
                   <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: nowY }}>
                     <div className="flex items-center">
