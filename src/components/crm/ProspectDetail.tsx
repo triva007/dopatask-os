@@ -127,33 +127,73 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     }
   };
 
-  const onScheduleRDV = async () => {
+  const [schedulingEvent, setSchedulingEvent] = useState<Partial<TimelineEvent> | null>(null);
+
+  const onScheduleRDV = () => {
     if (!prospect) return;
     
-    // Par défaut : RDV dans 2 jours à 10h
+    // Valeurs par défaut
     const d = new Date();
     d.setDate(d.getDate() + 2);
     d.setHours(10, 0, 0, 0);
     
-    const day = d.toISOString().slice(0, 10);
-    const hour = 10;
-    
-    addTimelineEvent({
+    setSchedulingEvent({
       label: `RDV : ${prospect.entreprise}`,
-      day,
-      hour,
+      day: d.toISOString().slice(0, 10),
+      hour: 10,
       duration: 1,
       color: "blue",
       linkedProspectId: id
     });
+  };
 
-    // Trigger sync
-    try {
-      const { syncCalendar } = await import("@/lib/googleSync");
-      await syncCalendar();
-    } catch (e) {
-      console.error(e);
+  const onSaveRDV = async () => {
+    if (!schedulingEvent || !schedulingEvent.label) return;
+
+    if (schedulingEvent.id) {
+      // Update existing
+      useAppStore.getState().updateTimelineEvent(schedulingEvent.id, schedulingEvent);
+      
+      // Sync update to Google
+      if (schedulingEvent.googleEventId) {
+        try {
+          const { day, hour, duration, label } = schedulingEvent;
+          const startHour = Math.floor(hour!);
+          const startMin = Math.round((hour! - startHour) * 60);
+          const start = new Date(`${day}T${String(startHour).padStart(2, "0")}:${String(startMin).padStart(2, "0")}:00`);
+          const end = new Date(start.getTime() + duration! * 60 * 60 * 1000);
+
+          await fetch("/api/google/calendar/events", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              calendarId: schedulingEvent.googleCalendarId || "primary",
+              eventId: schedulingEvent.googleEventId,
+              updates: {
+                summary: label,
+                start: { dateTime: start.toISOString() },
+                end: { dateTime: end.toISOString() }
+              }
+            })
+          });
+        } catch (e) {
+          console.error("Failed to sync event update", e);
+        }
+      }
+    } else {
+      // Create new
+      addTimelineEvent(schedulingEvent as Omit<TimelineEvent, "id">);
+      
+      // Trigger sync
+      try {
+        const { syncCalendar } = await import("@/lib/googleSync");
+        await syncCalendar();
+      } catch (e) {
+        console.error(e);
+      }
     }
+
+    setSchedulingEvent(null);
   };
 
   const onStartEdit = (task: any) => {
@@ -536,24 +576,119 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
         </div>
 
         {/* ─── RDVS PLANIFIÉS ─── */}
-        {relatedEvents.length > 0 && (
-          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-3.5">
-            <div className="flex items-center gap-1.5 mb-3">
+        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
               <Calendar size={13} className="text-accent-blue" />
               <h4 className="text-[12px] font-bold tracking-tight">RDVs planifiés</h4>
             </div>
+            {!schedulingEvent && (
+              <button
+                onClick={onScheduleRDV}
+                className="inline-flex items-center gap-1 px-2 py-1 bg-accent-blue/15 text-accent-blue rounded-md text-[10.5px] font-semibold hover:bg-accent-blue/25 transition-colors"
+              >
+                <Plus size={11} /> Planifier
+              </button>
+            )}
+          </div>
+
+          {schedulingEvent && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-[var(--surface-2)] border border-accent-blue/30 rounded-xl p-3 space-y-3 shadow-sm"
+            >
+              <div className="space-y-1">
+                <label className="text-[10px] uppercase font-bold text-[var(--text-tertiary)]">Objet du RDV</label>
+                <input
+                  autoFocus
+                  value={schedulingEvent.label || ""}
+                  onChange={(e) => setSchedulingEvent({ ...schedulingEvent, label: e.target.value })}
+                  className="w-full bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none focus:border-accent-blue/50"
+                  placeholder="ex: Présentation maquette"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-[var(--text-tertiary)]">Date</label>
+                  <input
+                    type="date"
+                    value={schedulingEvent.day || ""}
+                    onChange={(e) => setSchedulingEvent({ ...schedulingEvent, day: e.target.value })}
+                    className="w-full bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[10px] uppercase font-bold text-[var(--text-tertiary)]">Heure</label>
+                  <input
+                    type="time"
+                    value={schedulingEvent.hour !== undefined ? `${String(Math.floor(schedulingEvent.hour)).padStart(2, "0")}:${String(Math.round((schedulingEvent.hour % 1) * 60)).padStart(2, "0")}` : "10:00"}
+                    onChange={(e) => {
+                      const [h, m] = e.target.value.split(":").map(Number);
+                      setSchedulingEvent({ ...schedulingEvent, hour: h + m / 60 });
+                    }}
+                    className="w-full bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-2.5 py-1.5 text-[12px] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-1">
+                <div className="flex gap-2">
+                  {[0.5, 1, 1.5, 2].map(d => (
+                    <button
+                      key={d}
+                      onClick={() => setSchedulingEvent({ ...schedulingEvent, duration: d })}
+                      className={`px-2 py-1 rounded text-[10px] font-medium transition-colors ${schedulingEvent.duration === d ? "bg-accent-blue text-white" : "bg-[var(--surface-1)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"}`}
+                    >
+                      {d === 0.5 ? "30m" : d + "h"}
+                    </button>
+                  ))}
+                </div>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setSchedulingEvent(null)}
+                    className="px-3 py-1.5 text-[11px] font-medium text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                  >
+                    Annuler
+                  </button>
+                  <button
+                    onClick={onSaveRDV}
+                    className="px-3 py-1.5 bg-accent-blue text-white rounded-lg text-[11px] font-bold hover:brightness-110 shadow-sm shadow-accent-blue/20"
+                  >
+                    Confirmer
+                  </button>
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {relatedEvents.length === 0 && !schedulingEvent ? (
+            <p className="text-[11px] text-[var(--text-tertiary)] italic py-1">
+              Aucun RDV planifié.
+            </p>
+          ) : (
             <div className="space-y-2">
               {relatedEvents.map(e => (
-                <div key={e.id} className="flex items-center justify-between gap-3 px-3 py-2 bg-[var(--surface-2)] rounded-lg border border-[var(--border-primary)]">
+                <div
+                  key={e.id}
+                  onClick={() => setSchedulingEvent(e)}
+                  className="group flex items-center justify-between gap-3 px-3 py-2 bg-[var(--surface-2)] rounded-lg border border-[var(--border-primary)] hover:border-accent-blue/40 cursor-pointer transition-all"
+                >
                   <div className="min-w-0">
                     <p className="text-[12px] font-medium text-[var(--text-primary)] truncate">{e.label}</p>
-                    <p className="text-[10px] text-[var(--text-tertiary)] tabular-nums">
-                      {e.day ? new Date(e.day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "long" }) : "Pas de date"}
-                      {e.hour !== undefined && ` à ${Math.floor(e.hour)}h${String(Math.round((e.hour % 1) * 60)).padStart(2, "0")}`}
+                    <p className="text-[10px] text-[var(--text-tertiary)] tabular-nums flex items-center gap-1.5">
+                      <Calendar size={10} />
+                      {e.day ? new Date(e.day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short" }) : "Pas de date"}
+                      <span className="opacity-40">|</span>
+                      {e.hour !== undefined ? `${Math.floor(e.hour)}h${String(Math.round((e.hour % 1) * 60)).padStart(2, "0")}` : "10h00"}
+                      <span className="opacity-40">|</span>
+                      {e.duration === 0.5 ? "30m" : e.duration + "h"}
                     </p>
                   </div>
                   <button
-                    onClick={() => {
+                    onClick={(evt) => {
+                      evt.stopPropagation();
                       const { deleteTimelineEvent } = useAppStore.getState();
                       deleteTimelineEvent(e.id);
                       if (e.googleEventId) {
@@ -562,15 +697,15 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                         });
                       }
                     }}
-                    className="p-1 text-[var(--text-tertiary)] hover:text-[var(--accent-red)]"
+                    className="p-1.5 opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[var(--accent-red)] transition-all"
                   >
                     <Trash2 size={12} />
                   </button>
                 </div>
               ))}
             </div>
-          </div>
-        )}
+          )}
+        </div>
 
         {/* Historique appels (déroulé en bas) */}
         {prospectCalls.length > 0 && (
