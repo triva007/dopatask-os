@@ -1,10 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, MapPin, FileText, Clock, Palette, ListChecks, Flag } from "lucide-react";
+import { X, MapPin, FileText, Clock, Palette } from "lucide-react";
 import { motion } from "framer-motion";
 import type { CalendarEvent, CalendarInfo } from "./useCalendarEvents";
-import { useAppStore, type TaskStatus, type Project } from "@/store/useAppStore";
 
 interface EventModalProps {
   event?: CalendarEvent | null;
@@ -13,7 +12,7 @@ interface EventModalProps {
   calendars: CalendarInfo[];
   taskLists?: { id: string; title: string }[];
   onSave: (data: {
-    type: "event" | "task" | "dopatask";
+    type: "event" | "task";
     calendarId?: string;
     taskListId?: string;
     summary: string;
@@ -21,10 +20,6 @@ interface EventModalProps {
     start: { dateTime?: string; date?: string; timeZone?: string };
     end: { dateTime?: string; date?: string; timeZone?: string };
     colorId?: string;
-    // DopaTask-specific
-    projectId?: string;
-    priority?: "low" | "medium" | "high";
-    taskStatus?: TaskStatus;
   }) => void;
   onClose: () => void;
 }
@@ -60,13 +55,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
   const now = defaultDate || new Date();
   const defaultEnd = defaultEndDate || new Date(now.getTime() + 60 * 60 * 1000);
 
-  const [mode, setMode] = useState<"event" | "task" | "dopatask">(event?.type === "task" ? "task" : "event");
-
-  // DopaTask state
-  const projects = useAppStore((s) => s.projects).filter((p) => p.status === "active");
-  const [dopaProjectId, setDopaProjectId] = useState<string | undefined>(undefined);
-  const [dopaPriority, setDopaPriority] = useState<"low" | "medium" | "high">("medium");
-  const [dopaStatus, setDopaStatus] = useState<TaskStatus>("today");
+  const [mode, setMode] = useState<"event" | "task">(event?.type === "task" ? "task" : "event");
 
   const existingAllDay = event?.start?.date && !event?.start?.dateTime;
 
@@ -104,21 +93,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
 
   const handleSave = () => {
     if (!summary.trim()) return;
-
-    if (mode === "dopatask") {
-      const d = startStr.slice(0, 10);
-      onSave({
-        type: "dopatask",
-        summary: summary.trim(),
-        description,
-        start: { date: d },
-        end: { date: d },
-        projectId: dopaProjectId,
-        priority: dopaPriority,
-        taskStatus: dopaStatus,
-      });
-      return;
-    }
 
     if (mode === "task") {
       const d = startStr.slice(0, 10) + "T00:00:00.000Z";
@@ -193,7 +167,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         <div className="flex flex-col border-b" style={{ borderColor: "var(--border-primary)" }}>
           <div className="flex items-center justify-between px-6 pt-4 pb-2">
             <h2 className="text-[16px] font-semibold text-[var(--text-primary)]">
-              {isEdit ? "Modifier" : "Creer"}
+              {isEdit ? "Modifier" : "Créer"}
             </h2>
             <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-3)] text-[var(--text-secondary)] transition-all">
               <X size={16} />
@@ -211,14 +185,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
                 className={`pb-2 text-[13px] font-semibold transition-all border-b-2 ${mode === "task" ? "border-[var(--accent-blue)] text-[var(--accent-blue)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
                 onClick={() => setMode("task")}
               >
-                Google Task
-              </button>
-              <button
-                className={`pb-2 text-[13px] font-semibold transition-all border-b-2 flex items-center gap-1.5 ${mode === "dopatask" ? "border-[var(--accent-purple)] text-[var(--accent-purple)]" : "border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)]"}`}
-                onClick={() => setMode("dopatask")}
-              >
-                <ListChecks size={13} />
-                Tâche DopaTask
+                Tâche
               </button>
             </div>
           )}
@@ -232,7 +199,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
             type="text"
             value={summary}
             onChange={(e) => setSummary(e.target.value)}
-            placeholder={mode === "event" ? "Titre de l'evenement" : "Titre de la tache"}
+            placeholder={mode === "event" ? "Titre de l'événement" : "Titre de la tâche"}
             className="w-full text-[18px] font-semibold bg-transparent focus:outline-none text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
           />
 
@@ -282,70 +249,6 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
             </div>
           </div>
 
-          {/* DopaTask-specific fields */}
-          {mode === "dopatask" && (
-            <div className="space-y-3">
-              {/* Project selector */}
-              {projects.length > 0 && (
-                <div className="flex items-center gap-3">
-                  <ListChecks size={14} className="text-[var(--text-tertiary)] shrink-0" />
-                  <select
-                    value={dopaProjectId || ""}
-                    onChange={(e) => setDopaProjectId(e.target.value || undefined)}
-                    className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
-                    style={{ borderColor: "var(--border-primary)" }}
-                  >
-                    <option value="">Aucun projet</option>
-                    {projects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {/* Priority */}
-              <div className="flex items-center gap-3">
-                <Flag size={14} className="text-[var(--text-tertiary)] shrink-0" />
-                <div className="flex gap-2">
-                  {(["low", "medium", "high"] as const).map((p) => (
-                    <button
-                      key={p}
-                      type="button"
-                      onClick={() => setDopaPriority(p)}
-                      className={`px-3 py-1.5 rounded-lg text-[12px] font-semibold transition-all border ${
-                        dopaPriority === p
-                          ? p === "high"
-                            ? "bg-[var(--accent-red-light)] text-[var(--accent-red)] border-[var(--accent-red)]"
-                            : p === "medium"
-                              ? "bg-[var(--accent-orange-light)] text-[var(--accent-orange)] border-[var(--accent-orange)]"
-                              : "bg-[var(--accent-green-light)] text-[var(--accent-green)] border-[var(--accent-green)]"
-                          : "bg-[var(--surface-2)] text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--surface-3)]"
-                      }`}
-                    >
-                      {p === "high" ? "🔴 Haute" : p === "medium" ? "🟡 Moyenne" : "🟢 Basse"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Status */}
-              <div className="flex items-center gap-3">
-                <Clock size={14} className="text-[var(--text-tertiary)] shrink-0" />
-                <select
-                  value={dopaStatus}
-                  onChange={(e) => setDopaStatus(e.target.value as TaskStatus)}
-                  className="bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
-                  style={{ borderColor: "var(--border-primary)" }}
-                >
-                  <option value="today">📌 Aujourd&apos;hui</option>
-                  <option value="todo">📋 À faire</option>
-                  <option value="in_progress">🔧 En cours</option>
-                  <option value="inbox">📥 Inbox</option>
-                </select>
-              </div>
-            </div>
-          )}
-
           {/* Description */}
           <div className="flex items-start gap-3">
             <FileText size={14} className="text-[var(--text-tertiary)] shrink-0 mt-2.5" />
@@ -359,35 +262,33 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
             />
           </div>
 
-          {/* Calendar selector or Task list selector (not for DopaTask mode) */}
-          {mode !== "dopatask" && (
-            <div className="flex items-center gap-3">
-              <span className="w-3.5 h-3.5 rounded shrink-0" style={{ background: mode === "event" ? calColor : "transparent", border: mode === "event" ? "none" : "2px solid currentColor", color: "var(--text-tertiary)" }} />
-              {mode === "event" ? (
-                <select
-                  value={calendarId}
-                  onChange={(e) => setCalendarId(e.target.value)}
-                  className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
-                  style={{ borderColor: "var(--border-primary)" }}
-                >
-                  {calendars.filter((c) => c.accessRole === "owner" || c.accessRole === "writer").map((c) => (
-                    <option key={c.id} value={c.id}>{c.summary}</option>
-                  ))}
-                </select>
-              ) : (
-                <select
-                  value={taskListId}
-                  onChange={(e) => setTaskListId(e.target.value)}
-                  className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
-                  style={{ borderColor: "var(--border-primary)" }}
-                >
-                  {taskLists.map((l) => (
-                    <option key={l.id} value={l.id}>{l.title}</option>
-                  ))}
-                </select>
-              )}
-            </div>
-          )}
+          {/* Calendar selector or Task list selector */}
+          <div className="flex items-center gap-3">
+            <span className="w-3.5 h-3.5 rounded shrink-0" style={{ background: mode === "event" ? calColor : "transparent", border: mode === "event" ? "none" : "2px solid currentColor", color: "var(--text-tertiary)" }} />
+            {mode === "event" ? (
+              <select
+                value={calendarId}
+                onChange={(e) => setCalendarId(e.target.value)}
+                className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
+                style={{ borderColor: "var(--border-primary)" }}
+              >
+                {calendars.filter((c) => c.accessRole === "owner" || c.accessRole === "writer").map((c) => (
+                  <option key={c.id} value={c.id}>{c.summary}</option>
+                ))}
+              </select>
+            ) : (
+              <select
+                value={taskListId}
+                onChange={(e) => setTaskListId(e.target.value)}
+                className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none text-[var(--text-primary)] cursor-pointer"
+                style={{ borderColor: "var(--border-primary)" }}
+              >
+                {taskLists.map((l) => (
+                  <option key={l.id} value={l.id}>{l.title}</option>
+                ))}
+              </select>
+            )}
+          </div>
 
           {/* Color (Event only) */}
           {mode === "event" && (
@@ -441,9 +342,9 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
             onClick={handleSave}
             disabled={!summary.trim()}
             className="px-5 py-2 rounded-xl text-[13px] font-semibold text-white transition-all disabled:opacity-40"
-            style={{ background: mode === "dopatask" ? "var(--accent-purple)" : "var(--accent-blue)" }}
+            style={{ background: "var(--accent-blue)" }}
           >
-            {isEdit ? "Enregistrer" : mode === "dopatask" ? "Créer la tâche" : "Créer"}
+            {isEdit ? "Enregistrer" : "Créer"}
           </button>
         </div>
       </motion.div>

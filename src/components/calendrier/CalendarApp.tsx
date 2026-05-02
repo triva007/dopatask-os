@@ -77,11 +77,9 @@ export default function CalendarApp() {
     }
   }, []);
 
-  // DopaTask local tasks
+  // DopaTask local tasks (read-only for calendar display)
   const dopaTasks = useAppStore((s) => s.tasks);
   const dopaProjects = useAppStore((s) => s.projects);
-  const addDopaTask = useAppStore((s) => s.addTask);
-  const updateDopaTask = useAppStore((s) => s.updateTask);
 
   // Visible events
   const visibleEvents = useMemo(() => {
@@ -225,25 +223,9 @@ export default function CalendarApp() {
     setShowCreateModal(true);
   }, []);
 
-  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task" | "dopatask"; taskListId?: string; projectId?: string; priority?: "low" | "medium" | "high"; taskStatus?: any }) => {
+  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
     try {
-      if (data.type === "dopatask") {
-        // Create a local DopaTask task
-        addDopaTask(data.summary, data.taskStatus || "today", data.projectId);
-        // Also update the task with dueDate and priority after creation
-        const tasks = useAppStore.getState().tasks;
-        const newTask = tasks[tasks.length - 1];
-        if (newTask) {
-          const dueDate = data.start?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
-          updateDopaTask(newTask.id, {
-            dueDate,
-            priority: data.priority || "medium",
-            description: data.description || "",
-          });
-        }
-        setShowCreateModal(false);
-        setCreateDefaultDate(null);
-      } else if (data.type === "task" && data.taskListId) {
+      if (data.type === "task" && data.taskListId) {
         await fetch("/api/google/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -263,7 +245,24 @@ export default function CalendarApp() {
     } catch {
       setError("Creation echouee");
     }
-  }, [createEvent, fetchGoogleTasks, setError, addDopaTask, updateDopaTask]);
+  }, [createEvent, fetchGoogleTasks, setError]);
+
+  // Handle task drag-drop from sidebar → create a calendar event as time block
+  const handleTaskDrop = useCallback(async (taskText: string, start: Date, end: Date) => {
+    try {
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "Europe/Paris";
+      const primaryCal = calendars.find((c) => c.primary)?.id || calendars[0]?.id || "primary";
+      await createEvent({
+        calendarId: primaryCal,
+        summary: taskText,
+        description: "",
+        start: { dateTime: start.toISOString(), timeZone: tz },
+        end: { dateTime: end.toISOString(), timeZone: tz },
+      });
+    } catch {
+      setError("Échec du time-block");
+    }
+  }, [calendars, createEvent, setError]);
 
   const handleUpdate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
     if (!modalEvent) return;
@@ -440,6 +439,7 @@ export default function CalendarApp() {
               onEventDrop={handleEventDrop}
               onEventDelete={handleDelete}
               onEventColorChange={handleEventColorChange}
+              onTaskDrop={handleTaskDrop}
             />
           )}
           {view === "4day" && (
@@ -453,6 +453,7 @@ export default function CalendarApp() {
               onEventDrop={handleEventDrop}
               onEventDelete={handleDelete}
               onEventColorChange={handleEventColorChange}
+              onTaskDrop={handleTaskDrop}
             />
           )}
           {view === "week" && (
@@ -466,6 +467,7 @@ export default function CalendarApp() {
               onEventDrop={handleEventDrop}
               onEventDelete={handleDelete}
               onEventColorChange={handleEventColorChange}
+              onTaskDrop={handleTaskDrop}
             />
           )}
           {view === "month" && (

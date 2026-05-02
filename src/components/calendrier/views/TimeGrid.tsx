@@ -15,6 +15,7 @@ interface TimeGridProps {
   onEventDrop?: (ev: CalendarEvent, newStart: Date, newEnd: Date) => void;
   onEventDelete?: (ev: CalendarEvent) => void;
   onEventColorChange?: (ev: CalendarEvent, colorId: string) => void;
+  onTaskDrop?: (taskText: string, start: Date, end: Date) => void;
 }
 
 const GOOGLE_COLORS: Record<string, string> = {
@@ -111,7 +112,7 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
   return layouts;
 }
 
-export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop, onEventDelete, onEventColorChange }: TimeGridProps) {
+export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop, onEventDelete, onEventColorChange, onTaskDrop }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; startY: number; startX: number; origTop: number; currentY: number; currentX: number } | null>(null);
   const [selection, setSelection] = useState<{ startY: number; currentY: number; dayIndex: number; startTop: number } | null>(null);
@@ -339,7 +340,23 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
             const isToday = isSameDay(day, today);
 
             return (
-              <div key={di} className="flex-1 min-w-0 relative border-l" style={{ borderColor: "var(--border-primary)" }} onMouseDown={(e) => handleGridMouseDown(di, e)}>
+              <div key={di} className="flex-1 min-w-0 relative border-l" style={{ borderColor: "var(--border-primary)" }}
+                onMouseDown={(e) => handleGridMouseDown(di, e)}
+                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
+                onDrop={(e) => {
+                  e.preventDefault();
+                  const taskText = e.dataTransfer.getData("text/dopatask-name");
+                  if (!taskText || !onTaskDrop) return;
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const y = e.clientY - rect.top + (gridRef.current?.scrollTop || 0);
+                  const hour = Math.floor(y / HOUR_HEIGHT);
+                  const minutes = Math.round(((y % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+                  const start = new Date(day);
+                  start.setHours(hour, minutes, 0, 0);
+                  const end = new Date(start.getTime() + 60 * 60 * 1000); // 1h default
+                  onTaskDrop(taskText, start, end);
+                }}
+              >
                 {HOURS.map((h) => (
                   <div key={h} className="absolute left-0 right-0 border-t pointer-events-none" style={{ top: h * HOUR_HEIGHT, borderColor: "var(--border-primary)" }} />
                 ))}
