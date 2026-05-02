@@ -5,12 +5,14 @@ import { ArrowLeft, CheckCircle2, Circle, FileText, CalendarDays, Loader2, Calen
 import type { Project } from "@/store/useAppStore";
 import { useEffect, useState, useMemo } from "react";
 
+const EMPTY_OBJ: Record<string, string> = {};
+
 export default function ProjectDetailView({ project, onBack }: { project: Project; onBack: () => void }) {
   const localTasks = useAppStore(s => (s.tasks || []).filter(t => t && t.projectId === project?.id));
   const notes = useAppStore(s => (s.notes || []).filter(n => n && n.projectId === project?.id));
   const toggleTask = useAppStore(s => s.updateTaskStatus);
-  const googleEventProjects = useAppStore(s => s.googleEventProjects || {});
-  const googleTaskProjects = useAppStore(s => s.googleTaskProjects || {});
+  const googleEventProjects = useAppStore(s => s.googleEventProjects ?? EMPTY_OBJ);
+  const googleTaskProjects = useAppStore(s => s.googleTaskProjects ?? EMPTY_OBJ);
 
   const [googleTasks, setGoogleTasks] = useState<any[]>([]);
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
