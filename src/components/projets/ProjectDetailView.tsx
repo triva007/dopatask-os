@@ -6,9 +6,9 @@ import { ArrowLeft, CheckCircle2, Circle, FileText, CalendarDays } from "lucide-
 import type { Project } from "@/store/useAppStore";
 
 export default function ProjectDetailView({ project, onBack }: { project: Project; onBack: () => void }) {
-  const tasks = useAppStore(s => s.tasks.filter(t => t.projectId === project.id));
-  const notes = useAppStore(s => s.notes.filter(n => n.projectId === project.id));
-  const events = useAppStore(s => s.timelineEvents.filter(e => e.linkedProjectId === project.id));
+  const tasks = useAppStore(s => (s.tasks || []).filter(t => t.projectId === project.id));
+  const notes = useAppStore(s => (s.notes || []).filter(n => n.projectId === project.id));
+  const events = useAppStore(s => (s.timelineEvents || []).filter(e => e.linkedProjectId === project.id));
   const toggleTask = useAppStore(s => s.updateTaskStatus);
 
   const activeTasks = tasks.filter(t => t.status !== "done" && t.status !== "completed");
