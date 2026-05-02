@@ -216,7 +216,15 @@ export async function syncTasks(): Promise<{ pulled: number; pushed: number; upd
 export async function syncCalendar(): Promise<{ pulled: number; pushed: number }> {
   let pulled = 0, pushed = 0;
 
-  const res = await fetch("/api/google/calendar/events", { cache: "no-store" });
+  // 0) Récupérer les calendriers pour savoir lesquels synchroniser
+  const calRes = await fetch("/api/google/calendar/calendars", { cache: "no-store" });
+  if (!calRes.ok) throw new Error("Échec récupération calendriers");
+  const { calendars } = (await calRes.json()) as { calendars: { id: string; summary: string }[] };
+  const calendarIds = calendars.map(c => c.id);
+
+  if (calendarIds.length === 0) return { pulled: 0, pushed: 0 };
+
+  const res = await fetch(`/api/google/calendar/events?calendarIds=${encodeURIComponent(calendarIds.join(","))}`, { cache: "no-store" });
   if (!res.ok) {
     if (res.status === 401) throw new Error("UNAUTHENTICATED");
     throw new Error("Échec récupération Google Calendar");
@@ -276,7 +284,18 @@ export async function syncCalendar(): Promise<{ pulled: number; pushed: number }
     }
   }
 
-  // Push : envoyer les events locaux sans googleEventId vers Google
+  // 1.1) DELETE LOCALLY : si un event local a un googleEventId mais n'est plus chez Google, on le supprime
+  const googleEventIds = new Set(events.map(ge => ge.id));
+  for (const e of currentEvents) {
+    if (e.googleEventId && !googleEventIds.has(e.googleEventId)) {
+      useAppStore.setState((s) => ({
+        timelineEvents: s.timelineEvents.filter(ee => ee.id !== e.id)
+      }));
+      // deleted++; (can add deleted count if needed)
+    }
+  }
+
+  // 2) PUSH : envoyer les events locaux sans googleEventId vers Google
   const eventsAfterPull = useAppStore.getState().timelineEvents;
   for (const e of eventsAfterPull) {
     if (e.googleEventId) continue;

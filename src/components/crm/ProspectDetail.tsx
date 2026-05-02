@@ -136,6 +136,10 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     const d = new Date();
     d.setDate(d.getDate() + 2);
     d.setHours(10, 0, 0, 0);
+
+    // Auto-categorisation : Agence Bizz
+    const projects = useAppStore.getState().projects;
+    const agenceProject = projects.find(p => p.name.toLowerCase().includes("agence bizz"));
     
     setSchedulingEvent({
       label: `RDV : ${prospect.entreprise}`,
@@ -143,12 +147,28 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
       hour: 10,
       duration: 1,
       color: "blue",
-      linkedProspectId: id
+      linkedProspectId: id,
+      linkedProjectId: agenceProject?.id
     });
   };
 
   const onSaveRDV = async () => {
     if (!schedulingEvent || !schedulingEvent.label) return;
+
+    // Détection calendrier Business
+    let targetCalendarId = schedulingEvent.googleCalendarId || "primary";
+    if (!schedulingEvent.id) { // Seulement pour les nouveaux
+      try {
+        const res = await fetch("/api/google/calendar/calendars");
+        if (res.ok) {
+          const { calendars } = await res.json() as { calendars: any[] };
+          const businessCal = calendars.find(c => c.summary?.toLowerCase() === "business");
+          if (businessCal) targetCalendarId = businessCal.id;
+        }
+      } catch (e) {
+        console.error("Failed to fetch calendars", e);
+      }
+    }
 
     if (schedulingEvent.id) {
       // Update existing
@@ -182,7 +202,8 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
       }
     } else {
       // Create new
-      addTimelineEvent(schedulingEvent as Omit<TimelineEvent, "id">);
+      const eventToCreate = { ...schedulingEvent, googleCalendarId: targetCalendarId };
+      addTimelineEvent(eventToCreate as Omit<TimelineEvent, "id">);
       
       // Trigger sync
       try {
