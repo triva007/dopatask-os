@@ -133,7 +133,7 @@ export default function CrmHub() {
           <div>
             <h1 className="text-[26px] font-bold tracking-tight">CRM</h1>
             <p className="text-[12.5px] text-t-tertiary mt-1">
-              Vue globale {prospects.length} prospects &middot; {actifs.length} actifs &middot; {archives.length} archives
+              Vue globale {actifs.length} prospects actifs &middot; {archives.length} archivés
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -233,7 +233,7 @@ export default function CrmHub() {
             show: { opacity: 1, transition: { staggerChildren: 0.05, delayChildren: 0.05 } },
           }}
         >
-          <MiniStat icon={<Users size={14} />} label="Total" value={prospects.length} color="#64748b" />
+          <MiniStat icon={<Users size={14} />} label="Total" value={actifs.length} color="#64748b" />
           <MiniStat icon={<Phone size={14} />} label="A appeler" value={aAppeler.length} color="#F97316" highlight />
           <MiniStat icon={<Calendar size={14} />} label="RDV en stock" value={rdvEnStock.length} color="#3B82F6" />
           <MiniStat icon={<Trophy size={14} />} label="Vendus" value={vendus.length} color="#10B981" />

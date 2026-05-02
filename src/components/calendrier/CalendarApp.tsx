@@ -17,6 +17,7 @@ import MonthView from "./views/MonthView";
 import AgendaView from "./views/AgendaView";
 import EventPopover from "./EventPopover";
 import EventModal from "./EventModal";
+import { useAppStore } from "@/store/useAppStore";
 
 const HIDDEN_CAL_KEY = "dopatask-hidden-calendars";
 
@@ -76,13 +77,19 @@ export default function CalendarApp() {
     }
   }, []);
 
+  // DopaTask local tasks
+  const dopaTasks = useAppStore((s) => s.tasks);
+  const dopaProjects = useAppStore((s) => s.projects);
+  const addDopaTask = useAppStore((s) => s.addTask);
+  const updateDopaTask = useAppStore((s) => s.updateTask);
+
   // Visible events
   const visibleEvents = useMemo(() => {
     const evs = events
       .filter((ev) => !hiddenCalendarIds.has(ev.calendarId))
       .map((ev) => ({ ...ev, type: "event" as const }));
     
-    // Map tasks to calendar events
+    // Map Google tasks to calendar events
     const taskEvs = googleTasks
       .filter((t) => t.due && t.status !== "completed")
       .map((t) => {
@@ -98,8 +105,27 @@ export default function CalendarApp() {
         };
       });
 
-    return [...evs, ...taskEvs];
-  }, [events, hiddenCalendarIds, googleTasks]);
+    // Map DopaTask local tasks to calendar events
+    const dopaEvs = dopaTasks
+      .filter((t) => t.dueDate && t.status !== "completed" && t.status !== "done")
+      .map((t) => {
+        const project = dopaProjects.find((p) => p.id === t.projectId);
+        const emoji = project ? project.emoji + " " : "";
+        return {
+          id: `dopa-${t.id}`,
+          calendarId: "dopatask",
+          summary: `${emoji}${t.text}`,
+          description: t.description || "",
+          start: { date: t.dueDate },
+          end: { date: t.dueDate },
+          type: "task" as const,
+          backgroundColor: t.priority === "high" ? "#ef4444" : t.priority === "medium" ? "#f59e0b" : "#10b981",
+          taskInfo: { ...t, isDopaTask: true },
+        };
+      });
+
+    return [...evs, ...taskEvs, ...dopaEvs];
+  }, [events, hiddenCalendarIds, googleTasks, dopaTasks, dopaProjects]);
 
   // Load data
   const loadData = useCallback(async () => {
@@ -199,9 +225,25 @@ export default function CalendarApp() {
     setShowCreateModal(true);
   }, []);
 
-  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
+  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task" | "dopatask"; taskListId?: string; projectId?: string; priority?: "low" | "medium" | "high"; taskStatus?: any }) => {
     try {
-      if (data.type === "task" && data.taskListId) {
+      if (data.type === "dopatask") {
+        // Create a local DopaTask task
+        addDopaTask(data.summary, data.taskStatus || "today", data.projectId);
+        // Also update the task with dueDate and priority after creation
+        const tasks = useAppStore.getState().tasks;
+        const newTask = tasks[tasks.length - 1];
+        if (newTask) {
+          const dueDate = data.start?.date?.slice(0, 10) || new Date().toISOString().slice(0, 10);
+          updateDopaTask(newTask.id, {
+            dueDate,
+            priority: data.priority || "medium",
+            description: data.description || "",
+          });
+        }
+        setShowCreateModal(false);
+        setCreateDefaultDate(null);
+      } else if (data.type === "task" && data.taskListId) {
         await fetch("/api/google/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -221,7 +263,7 @@ export default function CalendarApp() {
     } catch {
       setError("Creation echouee");
     }
-  }, [createEvent, fetchGoogleTasks, setError]);
+  }, [createEvent, fetchGoogleTasks, setError, addDopaTask, updateDopaTask]);
 
   const handleUpdate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
     if (!modalEvent) return;
