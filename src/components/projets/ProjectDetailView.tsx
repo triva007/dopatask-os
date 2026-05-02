@@ -8,8 +8,10 @@ import { useEffect, useState, useMemo } from "react";
 const EMPTY_OBJ: Record<string, string> = {};
 
 export default function ProjectDetailView({ project, onBack }: { project: Project; onBack: () => void }) {
-  const localTasks = useAppStore(s => (s.tasks || []).filter(t => t && t.projectId === project?.id));
-  const notes = useAppStore(s => (s.notes || []).filter(n => n && n.projectId === project?.id));
+  const allTasks = useAppStore(s => s.tasks);
+  const allNotes = useAppStore(s => s.notes);
+  const localTasks = useMemo(() => (allTasks || []).filter(t => t && t.projectId === project?.id), [allTasks, project?.id]);
+  const notes = useMemo(() => (allNotes || []).filter(n => n && n.projectId === project?.id), [allNotes, project?.id]);
   const toggleTask = useAppStore(s => s.updateTaskStatus);
   const googleEventProjects = useAppStore(s => s.googleEventProjects ?? EMPTY_OBJ);
   const googleTaskProjects = useAppStore(s => s.googleTaskProjects ?? EMPTY_OBJ);
