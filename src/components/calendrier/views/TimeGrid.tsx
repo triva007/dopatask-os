@@ -4,6 +4,7 @@ import { useMemo, useRef, useCallback, useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { CalendarEvent, CalendarInfo } from "../useCalendarEvents";
 import { getEventStart, getEventEnd, isAllDay, formatTime, getEventColor, isSameDay, addDays } from "../useCalendarEvents";
+import { useAppStore } from "@/store/useAppStore";
 
 interface TimeGridProps {
   days: Date[];
@@ -267,24 +268,30 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
           </div>
           {days.map((day, di) => (
             <div key={di} className="flex-1 min-w-0 flex flex-col gap-1 p-1 border-l" style={{ borderColor: "var(--border-primary)" }}>
-              {tasksRows[di].map((ev) => {
-                const color = getEventColor(ev, calendars);
-                return (
-                  <button
-                    key={`task-top-${ev.id}`}
-                    onClick={(e) => {
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      onEventClick(ev, { top: rect.top, left: rect.right });
-                    }}
-                    onContextMenu={(e) => handleContextMenu(ev, e)}
-                    className="flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90 border"
-                    style={{ background: "var(--card-bg)", color: "var(--text-primary)", borderColor: color }}
-                  >
-                    <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
-                    <span className="truncate">{ev.summary || "(sans titre)"}</span>
-                  </button>
-                );
-              })}
+                {tasksRows[di].map((ev) => {
+                  const color = getEventColor(ev, calendars);
+                  const projectId = useAppStore.getState().googleTaskProjects[ev.id];
+                  const project = projectId ? useAppStore.getState().projects.find(p => p.id === projectId) : null;
+                  return (
+                    <button
+                      key={`task-top-${ev.id}`}
+                      onClick={(e) => {
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        onEventClick(ev, { top: rect.top, left: rect.right });
+                      }}
+                      onContextMenu={(e) => handleContextMenu(ev, e)}
+                      className="flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90 border"
+                      style={{ background: "var(--card-bg)", color: "var(--text-primary)", borderColor: color }}
+                    >
+                      {project ? (
+                        <span className="text-[10px] shrink-0">{project.emoji}</span>
+                      ) : (
+                        <span className="w-2 h-2 rounded-full shrink-0" style={{ background: color }} />
+                      )}
+                      <span className="truncate">{ev.summary || "(sans titre)"}</span>
+                    </button>
+                  );
+                })}
             </div>
           ))}
         </div>
@@ -299,6 +306,8 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
             <div key={di} className="flex-1 min-w-0 flex flex-wrap gap-1 p-1 border-l" style={{ borderColor: "var(--border-primary)" }}>
               {allDayRows[di].map((ev) => {
                 const color = getEventColor(ev, calendars);
+                const projectId = useAppStore.getState().googleEventProjects[ev.id];
+                const project = projectId ? useAppStore.getState().projects.find(p => p.id === projectId) : null;
                 return (
                   <button
                     key={ev.id}
@@ -310,6 +319,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                     className="cal-event flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90"
                     style={{ background: `${color}30`, color: color }}
                   >
+                    {project && <span className="text-[10px] shrink-0">{project.emoji}</span>}
                     <span className="truncate">{ev.summary || "(sans titre)"}</span>
                   </button>
                 );
@@ -470,6 +480,13 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                     >
                       <div className="px-1.5 py-0.5 h-full flex flex-col justify-start min-h-0">
                         <div className="flex items-start gap-1">
+                          {(() => {
+                            const projectId = l.ev.type === "task" 
+                              ? useAppStore.getState().googleTaskProjects[l.ev.id] 
+                              : useAppStore.getState().googleEventProjects[l.ev.id];
+                            const project = projectId ? useAppStore.getState().projects.find(p => p.id === projectId) : null;
+                            return project && <span className="text-[11px] shrink-0">{project.emoji}</span>;
+                          })()}
                           <span className="text-[11.5px] font-semibold leading-tight truncate" style={{ color: isTask ? "var(--text-primary)" : color }}>{l.ev.summary || "(sans titre)"}</span>
                         </div>
                         {l.height > 25 && <span className="text-[10px] opacity-80 mt-0.5 leading-none" style={{ color: isTask ? "var(--text-secondary)" : color }}>{formatTime(getEventStart(l.ev))} – {formatTime(getEventEnd(l.ev))}</span>}

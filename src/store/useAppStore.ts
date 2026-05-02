@@ -178,7 +178,7 @@ interface AppState {
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
   notes: Note[];
-  addNote: (title: string, content: string, color?: string, images?: string[]) => void;
+  addNote: (title: string, content: string, color?: string, images?: string[], projectId?: string) => void;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
@@ -221,6 +221,10 @@ interface AppState {
   updateSettings: (updates: Partial<{ enableSounds: boolean }>) => void;
   theme: "dark" | "light";
   toggleTheme: () => void;
+  googleEventProjects: Record<string, string>;
+  setGoogleEventProject: (eventId: string, projectId: string | null) => void;
+  googleTaskProjects: Record<string, string>;
+  setGoogleTaskProject: (taskId: string, projectId: string | null) => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
@@ -233,6 +237,22 @@ export const useAppStore = create<AppState>()(
         theme: "dark",
         setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
         toggleTheme: () => set((state) => ({ theme: state.theme === "dark" ? "light" : "dark" })),
+
+        googleEventProjects: {},
+        setGoogleEventProject: (eventId, projectId) => set((s) => {
+          const newMap = { ...s.googleEventProjects };
+          if (projectId) newMap[eventId] = projectId;
+          else delete newMap[eventId];
+          return { googleEventProjects: newMap };
+        }),
+
+        googleTaskProjects: {},
+        setGoogleTaskProject: (taskId, projectId) => set((s) => {
+          const newMap = { ...s.googleTaskProjects };
+          if (projectId) newMap[taskId] = projectId;
+          else delete newMap[taskId];
+          return { googleTaskProjects: newMap };
+        }),
 
         tasks: [],
         addTask: (text, status, projectId, linkedJournalId, linkedNoteId) => {
@@ -285,9 +305,9 @@ export const useAppStore = create<AppState>()(
         sendJournalToInbox: (id) => { const entry = get().journalEntries.find(e => e.id === id); if (entry) get().addInboxItem(entry.content.slice(0, 100), "note"); },
 
         notes: [],
-        addNote: (title, content, color, images) => set((s) => {
+        addNote: (title, content, color, images, projectId) => set((s) => {
           const maxOrder = s.notes.length > 0 ? Math.max(...s.notes.map(n => n.order || 0)) : -1;
-          return { notes: [{ id: uid(), title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], order: maxOrder + 1, createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] };
+          return { notes: [{ id: uid(), title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], order: maxOrder + 1, projectId, createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] };
         }),
         updateNote: (id, updates) => set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n) })),
         deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),

@@ -20,6 +20,7 @@ interface EventModalProps {
     start: { dateTime?: string; date?: string; timeZone?: string };
     end: { dateTime?: string; date?: string; timeZone?: string };
     colorId?: string;
+    projectId?: string;
   }) => void;
   onClose: () => void;
 }
@@ -79,7 +80,19 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
   const [calendarId, setCalendarId] = useState(event?.calendarId || calendars.find((c) => c.primary)?.id || calendars[0]?.id || "primary");
   const [taskListId, setTaskListId] = useState(event?.taskInfo?.listId || event?.taskInfo?.taskListId || taskLists[0]?.id || "");
   const [colorId, setColorId] = useState(event?.colorId || "");
+  const [projectId, setProjectId] = useState<string>("");
   const [showColors, setShowColors] = useState(false);
+
+  // Initialize projectId if editing an existing event/task
+  useEffect(() => {
+    if (event) {
+      if (event.type === "task") {
+        setProjectId(useAppStore.getState().googleTaskProjects[event.id] || "");
+      } else {
+        setProjectId(useAppStore.getState().googleEventProjects[event.id] || "");
+      }
+    }
+  }, [event]);
 
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
@@ -103,6 +116,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         description,
         start: { date: d },
         end: { date: d },
+        projectId: projectId || undefined,
       });
       return;
     }
@@ -123,6 +137,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         start: { date: startDate, dateTime: null as any, timeZone: null as any },
         end: { date: endDate, dateTime: null as any, timeZone: null as any },
         colorId: colorId || undefined,
+        projectId: projectId || undefined,
       });
     } else {
       onSave({
@@ -133,6 +148,7 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
         start: { dateTime: new Date(startStr).toISOString(), timeZone: TZ, date: null as any },
         end: { dateTime: new Date(endStr).toISOString(), timeZone: TZ, date: null as any },
         colorId: colorId || undefined,
+        projectId: projectId || undefined,
       });
     }
   };
@@ -260,6 +276,22 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
               className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] resize-y leading-relaxed placeholder:text-[var(--text-ghost)]"
               style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
             />
+          </div>
+
+          {/* Project Selector */}
+          <div className="flex items-center gap-3">
+            <Palette size={14} className="text-[var(--text-tertiary)] shrink-0" />
+            <select
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="flex-1 bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] cursor-pointer"
+              style={{ borderColor: "var(--border-primary)", outlineColor: "var(--focus-ring)" }}
+            >
+              <option value="">Lier à un projet DopaTask...</option>
+              {useAppStore.getState().projects.filter(p => p.status !== "archived" || p.id === projectId).map(p => (
+                <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Calendar selector or Task list selector */}

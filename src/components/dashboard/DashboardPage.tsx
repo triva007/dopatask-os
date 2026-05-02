@@ -268,39 +268,58 @@ export default function DashboardPage() {
             value={activeProjects} sub="actifs" accent="cyan" />
         </div>
 
-        {/* ═══ SYNERGIE PROJETS DE VIE ═══ */}
+        {/* ═══ CATÉGORIES / PROJETS ═══ */}
         {projects.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="rounded-xl p-5"
+            className="rounded-2xl p-6"
             style={{
               background: "var(--surface-1)",
               border: "1px solid var(--border-primary)",
             }}
           >
-            <div className="flex items-center gap-2 mb-4">
-              <FolderKanban size={14} className="text-[var(--accent-blue)]" />
-              <h3 className="text-[13px] font-semibold tracking-tight">Projets de Vie</h3>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-2.5">
+                <FolderKanban size={18} className="text-[var(--accent-blue)]" />
+                <h3 className="text-[16px] font-bold tracking-tight">Espaces de Vie & Catégories</h3>
+              </div>
+              <Link href="/projets" className="text-[12px] font-semibold text-[var(--accent-blue)] hover:underline">
+                Voir tout
+              </Link>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {projects.filter(p => p.status === "active").slice(0, 3).map((project) => {
-                const projectTasks = tasks.filter((t) => t.projectId === project.id);
-                const doneTasks = projectTasks.filter((t) => t.status === "done" || t.status === "completed").length;
-                const pct = projectTasks.length > 0 ? Math.round((doneTasks / projectTasks.length) * 100) : 0;
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+              {projects.filter(p => p.status === "active").slice(0, 4).map((project) => {
+                const projectTasks = tasks.filter((t) => t.projectId === project.id && t.status !== "completed" && t.status !== "done").length;
+                const projectNotes = useAppStore.getState().notes.filter((n) => n.projectId === project.id).length;
                 
                 return (
                   <Link href="/projets" key={project.id} className="block group">
-                    <div className="p-4 rounded-xl border transition-all group-hover:bg-[var(--surface-2)] flex flex-col gap-2" style={{ borderColor: "var(--border-primary)", background: "var(--card-bg)" }}>
-                      <div className="flex items-center gap-3">
-                        <span className="text-[20px] leading-none">{project.emoji}</span>
+                    <motion.div 
+                      whileHover={{ y: -4 }}
+                      className="p-5 rounded-2xl border transition-all group-hover:bg-[var(--surface-2)] flex flex-col gap-4 shadow-sm" 
+                      style={{ borderColor: "var(--border-primary)", background: "var(--card-bg)" }}
+                    >
+                      <div className="flex items-center gap-3.5">
+                        <span className="text-[28px] leading-none drop-shadow-sm">{project.emoji}</span>
                         <div className="flex flex-col">
-                          <span className="text-[14px] font-semibold text-[var(--text-primary)] leading-tight">{project.name}</span>
-                          <span className="text-[11px] text-[var(--text-tertiary)]">Espace projet</span>
+                          <span className="text-[15px] font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-blue)] transition-colors">{project.name}</span>
+                          <span className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-0.5">Catégorie</span>
                         </div>
                       </div>
-                    </div>
+                      
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="flex items-center gap-1.5">
+                          <ListChecks size={12} className="text-[var(--text-tertiary)]" />
+                          <span className="text-[12px] font-semibold text-[var(--text-secondary)]">{projectTasks}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          <FileText size={12} className="text-[var(--text-tertiary)]" />
+                          <span className="text-[12px] font-semibold text-[var(--text-secondary)]">{projectNotes}</span>
+                        </div>
+                      </div>
+                    </motion.div>
                   </Link>
                 );
               })}

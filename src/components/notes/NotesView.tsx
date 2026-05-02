@@ -7,7 +7,7 @@ import {
   Trash2, Pin, PinOff, X, Palette,
   Archive, ArchiveRestore, MoreVertical, Edit3,
   Calendar, Check, CheckCircle2, Image as ImageIcon,
-  Square, CheckSquare, List, GripVertical
+  Square, CheckSquare, List, GripVertical, Folder
 } from "lucide-react";
 import { useState, useMemo, useCallback } from "react";
 import ContextMenu from "@/components/ui/ContextMenu";
@@ -48,6 +48,7 @@ export default function NotesView() {
   const [newContent, setNewContent] = useState("");
   const [selectedColor, setSelectedColor] = useState(COLORS[0]);
   const [newImages, setNewImages] = useState<string[]>([]);
+  const [newProjectId, setNewProjectId] = useState<string>("");
   const [showArchived, setShowArchived] = useState(false);
   
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -65,8 +66,8 @@ export default function NotesView() {
       setIsAdding(false);
       return;
     }
-    addNote(newTitle, newContent, selectedColor, newImages);
-    setNewTitle(""); setNewContent(""); setSelectedColor(COLORS[0]); setNewImages([]);
+    addNote(newTitle, newContent, selectedColor, newImages, newProjectId || undefined);
+    setNewTitle(""); setNewContent(""); setSelectedColor(COLORS[0]); setNewImages([]); setNewProjectId("");
     setIsAdding(false);
   };
 
@@ -194,6 +195,19 @@ export default function NotesView() {
                 <div className="p-5 space-y-4">
                   <input placeholder="Titre" value={newTitle} onChange={(e) => setNewTitle(e.target.value)} className="w-full bg-transparent text-[18px] font-bold text-[var(--text-primary)] focus:outline-none placeholder:text-[var(--text-tertiary)]" autoFocus />
                   <textarea placeholder="Écris quelque chose..." value={newContent} onChange={(e) => setNewContent(e.target.value)} rows={4} className="w-full bg-transparent text-[14px] text-[var(--text-secondary)] focus:outline-none resize-none placeholder:text-[var(--text-tertiary)] leading-relaxed" />
+                  <div className="flex items-center gap-2 mt-2">
+                    <Folder size={14} className="text-[var(--text-tertiary)]" />
+                    <select
+                      value={newProjectId}
+                      onChange={(e) => setNewProjectId(e.target.value)}
+                      className="bg-[var(--surface-2)] text-[12px] text-[var(--text-secondary)] border-none rounded-lg px-2 py-1 focus:outline-none cursor-pointer hover:text-[var(--text-primary)] transition-colors max-w-[150px] truncate"
+                    >
+                      <option value="">Lier à un projet...</option>
+                      {useAppStore.getState().projects.filter(p => p.status !== "archived").map(p => (
+                        <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
                 <div className="px-5 py-3 flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--surface-1)]/80">
                   <div className="flex gap-1.5 overflow-x-auto pb-1 max-w-[60%] scrollbar-none">
@@ -282,6 +296,19 @@ export default function NotesView() {
               <div className="p-8 space-y-6 flex-1 overflow-y-auto">
                 <input value={editingNote.title} onChange={(e) => setEditingNote({ ...editingNote, title: e.target.value })} className="w-full bg-transparent text-[24px] font-bold text-[var(--text-primary)] focus:outline-none" placeholder="Titre" />
                 <textarea value={editingNote.content} onChange={(e) => setEditingNote({ ...editingNote, content: e.target.value })} className="w-full bg-transparent text-[16px] text-[var(--text-secondary)] focus:outline-none min-h-[300px] resize-none leading-relaxed" placeholder="Contenu..." />
+                <div className="flex items-center gap-2 mt-4 pt-4 border-t border-[var(--border-primary)]/30">
+                  <Folder size={16} className="text-[var(--text-tertiary)]" />
+                  <select
+                    value={editingNote.projectId || ""}
+                    onChange={(e) => setEditingNote({ ...editingNote, projectId: e.target.value || undefined })}
+                    className="bg-[var(--surface-2)] text-[13px] text-[var(--text-secondary)] border-none rounded-lg px-3 py-1.5 focus:outline-none cursor-pointer hover:text-[var(--text-primary)] transition-colors"
+                  >
+                    <option value="">Lier à un projet...</option>
+                    {useAppStore.getState().projects.filter(p => p.status !== "archived" || p.id === editingNote.projectId).map(p => (
+                      <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
               <div className="px-8 py-5 flex items-center justify-between border-t border-[var(--border-primary)] bg-[var(--surface-1)]/80">
                 <div className="flex gap-1.5">{COLORS.map(c => <button key={c} onClick={() => setEditingNote({ ...editingNote, color: c })} className={`w-5 h-5 rounded-full border ${editingNote.color === c ? "border-[var(--text-primary)]" : "border-transparent"}`} style={{ background: c }} />)}</div>
@@ -344,6 +371,14 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
       )}
 
       {note.title && <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-3 pr-6 leading-tight">{note.title}</h3>}
+      {note.projectId && (
+        <div className="mb-3">
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-[var(--surface-1)]/50 rounded-md text-[11px] font-medium text-[var(--text-secondary)] border border-[var(--border-primary)]/50">
+            {useAppStore.getState().projects.find(p => p.id === note.projectId)?.emoji}
+            {useAppStore.getState().projects.find(p => p.id === note.projectId)?.name}
+          </span>
+        </div>
+      )}
       <div className="text-[14px] text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed line-clamp-[12]">
         {note.content.split("\n").map((line: string, i: number) => {
           if (line.startsWith("[ ] ") || line.startsWith("[x] ")) {

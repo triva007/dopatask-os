@@ -223,10 +223,10 @@ export default function CalendarApp() {
     setShowCreateModal(true);
   }, []);
 
-  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
+  const handleCreate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string; projectId?: string }) => {
     try {
       if (data.type === "task" && data.taskListId) {
-        await fetch("/api/google/tasks", {
+        const res = await fetch("/api/google/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -236,9 +236,16 @@ export default function CalendarApp() {
             due: data.start?.date || data.start?.dateTime,
           }),
         });
+        const json = await res.json();
+        if (json.task?.id) {
+          useAppStore.getState().setGoogleTaskProject(`task-${json.task.id}`, data.projectId || null);
+        }
         await fetchGoogleTasks();
       } else {
-        await createEvent(data);
+        const ev = await createEvent(data);
+        if (ev && ev.id) {
+          useAppStore.getState().setGoogleEventProject(ev.id, data.projectId || null);
+        }
       }
       setShowCreateModal(false);
       setCreateDefaultDate(null);
@@ -264,7 +271,7 @@ export default function CalendarApp() {
     }
   }, [calendars, createEvent, setError]);
 
-  const handleUpdate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string }) => {
+  const handleUpdate = useCallback(async (data: Parameters<typeof createEvent>[0] & { type?: "event" | "task"; taskListId?: string; projectId?: string }) => {
     if (!modalEvent) return;
     try {
       if (modalEvent.type === "task") {
@@ -281,6 +288,7 @@ export default function CalendarApp() {
             },
           }),
         });
+        useAppStore.getState().setGoogleTaskProject(modalEvent.id, data.projectId || null);
         await fetchGoogleTasks();
       } else {
         await updateEvent(modalEvent.calendarId, modalEvent.id, {
@@ -291,6 +299,7 @@ export default function CalendarApp() {
           end: data.end,
           colorId: data.colorId,
         });
+        useAppStore.getState().setGoogleEventProject(modalEvent.id, data.projectId || null);
       }
       setModalEvent(null);
     } catch {

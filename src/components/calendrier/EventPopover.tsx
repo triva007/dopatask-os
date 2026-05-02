@@ -5,6 +5,7 @@ import { X, MapPin, Clock, Trash2, Edit3 } from "lucide-react";
 import { motion } from "framer-motion";
 import type { CalendarEvent, CalendarInfo } from "./useCalendarEvents";
 import { getEventStart, getEventEnd, isAllDay, formatTime, getEventColor } from "./useCalendarEvents";
+import { useAppStore } from "@/store/useAppStore";
 
 interface EventPopoverProps {
   event: CalendarEvent;
@@ -125,6 +126,24 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
                 Ouvrir dans Google Agenda ↗
               </a>
             )}
+
+            {/* Project Tag */}
+            {(() => {
+              const projectId = event.type === "task" 
+                ? useAppStore.getState().googleTaskProjects[event.id] 
+                : useAppStore.getState().googleEventProjects[event.id];
+              if (!projectId) return null;
+              const project = useAppStore.getState().projects.find(p => p.id === projectId);
+              if (!project) return null;
+              return (
+                <div className="mb-2">
+                  <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-[var(--surface-1)]/50 rounded-md text-[11px] font-medium text-[var(--text-secondary)] border border-[var(--border-primary)]/50">
+                    {project.emoji} {project.name}
+                  </span>
+                </div>
+              );
+            })()}
+
             {/* Description preview */}
             {event.description && (
               <div className="mt-3 bg-[var(--surface-2)] rounded-xl p-3 border" style={{ borderColor: "var(--border-secondary)" }}>

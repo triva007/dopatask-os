@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import {
   Plus, Check, Loader2, Trash2, AlertCircle, RefreshCw, X,
   Calendar as CalendarIcon, Star, ChevronDown, ChevronRight,
-  ListChecks, Eye, EyeOff, Filter, FileText,
+  ListChecks, Eye, EyeOff, Filter, FileText, Folder,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
@@ -87,6 +87,7 @@ export default function GoogleTasksKanban() {
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState("");
   const [newTaskListId, setNewTaskListId] = useState<string>("");
+  const [newTaskProjectId, setNewTaskProjectId] = useState<string>("");
   const [creating, setCreating] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; t: GTask } | null>(null);
 
@@ -189,7 +190,7 @@ export default function GoogleTasksKanban() {
   };
 
   const createTask = async (listId: string, title: string) => {
-    if (!title.trim()) return;
+    if (!title.trim()) return null;
     try {
       const r = await fetch("/api/google/tasks", {
         method: "POST",
@@ -197,7 +198,9 @@ export default function GoogleTasksKanban() {
         body: JSON.stringify({ listId, title: title.trim() }),
       });
       if (!r.ok) throw new Error("Echec");
+      const d = await r.json();
       await fetchAll();
+      return d.task as GTask;
     } catch {
       setError("Creation impossible");
       throw new Error("create_task_failed");
@@ -208,10 +211,14 @@ export default function GoogleTasksKanban() {
     if (!newTaskTitle.trim() || !newTaskListId) return;
     setCreating(true);
     try {
-      await createTask(newTaskListId, newTaskTitle.trim());
+      const task = await createTask(newTaskListId, newTaskTitle.trim());
+      if (task && newTaskProjectId) {
+        useAppStore.getState().setGoogleTaskProject(`task-${task.id}`, newTaskProjectId);
+      }
       addToast("Tâche créée avec succès !", "success");
       setIsNewTaskModalOpen(false);
       setNewTaskTitle("");
+      setNewTaskProjectId("");
     } catch (e) {
       console.error(e);
       addToast("Erreur lors de la création", "error");
@@ -612,6 +619,22 @@ export default function GoogleTasksKanban() {
                     ))}
                   </select>
                 </div>
+
+                <div className="space-y-1.5">
+                  <label className="text-[12px] font-semibold text-t-secondary">
+                    Projet DopaTask
+                  </label>
+                  <select
+                    value={newTaskProjectId}
+                    onChange={(e) => setNewTaskProjectId(e.target.value)}
+                    className="w-full px-4 py-2.5 bg-surface-2 border border-surface-3 rounded-xl text-[14px] focus:outline-none focus:border-dopa-cyan transition-colors"
+                  >
+                    <option value="">Aucun projet</option>
+                    {useAppStore.getState().projects.filter(p => p.status !== "archived").map(p => (
+                      <option key={p.id} value={p.id}>{p.emoji} {p.name}</option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
               <div className="px-6 py-4 bg-surface-2/50 border-t border-surface-2 flex items-center justify-end gap-3">
@@ -981,6 +1004,11 @@ function TaskCard(p: TaskCardProps) {
                 (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
               }
             >
+              {(() => {
+                const projectId = useAppStore.getState().googleTaskProjects[p.t.id];
+                const project = projectId ? useAppStore.getState().projects.find(pj => pj.id === projectId) : null;
+                return project && <span className="mr-1.5">{project.emoji}</span>;
+              })()}
               {(p.t.title || "(sans titre)").split(/(\s+)/).map((word, i) => {
                 if (word.match(/^#[\w-]+/)) {
                   return <span key={i} className="text-[var(--accent-blue)]">{word}</span>;
@@ -1090,6 +1118,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
   const [title, setTitle] = useState(t.title || "");
   const [notes, setNotes] = useState(t.notes || "");
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
+  const [projectId, setProjectId] = useState(useAppStore.getState().googleTaskProjects[t.id] || "");
   const [saved, setSaved] = useState(false);
   const c = colorForList(t.listId);
   const completed = t.status === "completed";
@@ -1100,6 +1129,9 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     if (notes !== (t.notes || "")) updates.notes = notes;
     const newDueIso = due ? due + "T00:00:00.000Z" : undefined;
     if (newDueIso !== t.due) updates.due = newDueIso;
+    
+    useAppStore.getState().setGoogleTaskProject(t.id, projectId || null);
+
     if (Object.keys(updates).length > 0) {
       onUpdate(updates);
       setSaved(true);
@@ -1238,6 +1270,29 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
                 </button>
               )}
             </div>
+          </div>
+
+          {/* Project Selector */}
+          <div>
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
+              <Folder size={12} />
+              Projet DopaTask
+            </label>
+            <select
+              value={projectId}
+              onChange={(e) => { setProjectId(e.target.value); setTimeout(save, 0); }}
+              className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
+              style={{
+                background: "var(--surface-2)",
+                borderColor: "var(--border-primary)",
+                outlineColor: "var(--focus-ring)",
+              }}
+            >
+              <option value="">Aucun projet</option>
+              {useAppStore.getState().projects.filter(p => p.status !== "archived" || p.id === projectId).map(pj => (
+                <option key={pj.id} value={pj.id}>{pj.emoji} {pj.name}</option>
+              ))}
+            </select>
           </div>
 
           {/* Divider */}

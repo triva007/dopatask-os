@@ -2,122 +2,256 @@
 
 import { useAppStore } from "@/store/useAppStore";
 import { motion } from "framer-motion";
-import { ArrowLeft, CheckCircle2, Circle, FileText, CalendarDays } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, FileText, CalendarDays, Loader2, Calendar, Layout, ListChecks } from "lucide-react";
 import type { Project } from "@/store/useAppStore";
+import { useEffect, useState } from "react";
 
 export default function ProjectDetailView({ project, onBack }: { project: Project; onBack: () => void }) {
-  const tasks = useAppStore(s => (s.tasks || []).filter(t => t.projectId === project.id));
+  const localTasks = useAppStore(s => (s.tasks || []).filter(t => t.projectId === project.id));
   const notes = useAppStore(s => (s.notes || []).filter(n => n.projectId === project.id));
-  const events = useAppStore(s => (s.timelineEvents || []).filter(e => e.linkedProjectId === project.id));
   const toggleTask = useAppStore(s => s.updateTaskStatus);
+  const googleEventProjects = useAppStore(s => s.googleEventProjects);
+  const googleTaskProjects = useAppStore(s => s.googleTaskProjects);
 
-  const activeTasks = tasks.filter(t => t.status !== "done" && t.status !== "completed");
-  const completedTasks = tasks.filter(t => t.status === "done" || t.status === "completed");
+  const [googleTasks, setGoogleTasks] = useState<any[]>([]);
+  const [googleEvents, setGoogleEvents] = useState<any[]>([]);
+  const [loadingGoogle, setLoadingGoogle] = useState(false);
+
+  useEffect(() => {
+    async function fetchData() {
+      setLoadingGoogle(true);
+      try {
+        const [tRes, eRes] = await Promise.all([
+          fetch("/api/google/tasks"),
+          fetch("/api/google/calendar/events?calendarIds=primary")
+        ]);
+        if (tRes.ok) {
+          const d = await tRes.json();
+          setGoogleTasks(d.tasks || []);
+        }
+        if (eRes.ok) {
+          const d = await eRes.json();
+          setGoogleEvents(d.events || []);
+        }
+      } catch (e) {
+        console.error(e);
+      } finally {
+        setLoadingGoogle(false);
+      }
+    }
+    fetchData();
+  }, [project.id]);
+
+  const linkedGoogleTasks = googleTasks.filter(t => {
+    const pid = googleTaskProjects[t.id] || googleTaskProjects[`task-${t.id}`];
+    return pid === project.id;
+  });
+  const linkedGoogleEvents = googleEvents.filter(e => googleEventProjects[e.id] === project.id);
+
+  const activeLocalTasks = localTasks.filter(t => t.status !== "done" && t.status !== "completed");
+  const completedLocalTasks = localTasks.filter(t => t.status === "done" || t.status === "completed");
 
   return (
     <motion.div 
       initial={{ opacity: 0, x: 20 }}
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
-      className="flex flex-col h-full overflow-hidden"
+      className="flex flex-col h-full overflow-hidden bg-[var(--card-bg)]"
     >
-      <div className="shrink-0 px-8 pt-8 pb-5 border-b border-[var(--border-primary)]">
+      <div className="shrink-0 px-8 pt-8 pb-5 border-b border-[var(--border-primary)] bg-[var(--surface-1)]">
         <button onClick={onBack} className="flex items-center gap-2 text-[13px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] mb-4 transition-colors">
           <ArrowLeft size={14} /> Retour aux projets
         </button>
         <div className="flex items-center gap-4">
-          <span className="text-4xl">{project.emoji}</span>
+          <span className="text-4xl drop-shadow-sm">{project.emoji}</span>
           <div>
-            <h1 className="text-[28px] font-semibold text-[var(--text-primary)] tracking-tight leading-none">
+            <h1 className="text-[32px] font-bold text-[var(--text-primary)] tracking-tight leading-none">
               {project.name}
             </h1>
-            <p className="text-[13px] text-[var(--text-secondary)] mt-2">
-              Espace projet
+            <p className="text-[13px] text-[var(--text-secondary)] mt-1.5 flex items-center gap-1.5 font-medium">
+              <Layout size={13} className="text-[var(--text-tertiary)]" />
+              Espace projet consolidé
             </p>
           </div>
         </div>
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto px-8 py-6 space-y-8">
+      <div className="flex-1 min-h-0 overflow-y-auto px-8 py-8 space-y-10 custom-scrollbar">
         
-        {/* Tâches */}
-        <section>
-          <h2 className="text-[14px] font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-            <CheckCircle2 size={16} className="text-[var(--accent-blue)]" /> 
-            Tâches ({activeTasks.length})
-          </h2>
-          {activeTasks.length > 0 ? (
-            <div className="space-y-2">
-              {activeTasks.map(task => (
-                <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)]">
-                  <button onClick={() => toggleTask(task.id, "completed")} className="mt-0.5 text-[var(--text-tertiary)] hover:text-[var(--accent-blue)] transition-colors">
-                    <Circle size={16} />
+        {/* Résumé section */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-primary)]">
+            <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Tâches locales</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{activeLocalTasks.length}</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-primary)]">
+            <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Google Tasks</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{linkedGoogleTasks.length}</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-primary)]">
+            <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Événements</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{linkedGoogleEvents.length}</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-[var(--surface-2)] border border-[var(--border-primary)]">
+            <p className="text-[11px] font-semibold text-[var(--text-tertiary)] uppercase tracking-wider mb-1">Notes</p>
+            <p className="text-2xl font-bold text-[var(--text-primary)]">{notes.length}</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+          <div className="space-y-10">
+            {/* Tâches Locales */}
+            <section>
+              <h2 className="text-[15px] font-bold text-[var(--text-primary)] mb-5 flex items-center gap-2.5">
+                <CheckCircle2 size={18} className="text-[var(--accent-blue)]" /> 
+                Tâches DopaTask ({activeLocalTasks.length})
+              </h2>
+              {activeLocalTasks.length > 0 ? (
+                <div className="space-y-2.5">
+                  {activeLocalTasks.map(task => (
+                    <motion.div 
+                      key={task.id} 
+                      whileHover={{ scale: 1.01 }}
+                      className="flex items-start gap-3 p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm transition-all"
+                    >
+                      <button onClick={() => toggleTask(task.id, "completed")} className="mt-0.5 text-[var(--text-tertiary)] hover:text-[var(--accent-blue)] transition-colors">
+                        <Circle size={18} />
+                      </button>
+                      <div className="flex-1">
+                        <p className="text-[14.5px] font-medium text-[var(--text-primary)]">{task.text}</p>
+                        {task.description && <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{task.description}</p>}
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center rounded-2xl border border-dashed border-[var(--border-primary)]">
+                  <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucune tâche locale en cours.</p>
+                </div>
+              )}
+
+              {completedLocalTasks.length > 0 && (
+                <div className="mt-6">
+                  <button className="text-[12px] font-semibold text-[var(--text-tertiary)] mb-3 flex items-center gap-2">
+                    <CheckCircle2 size={12} /> Terminées ({completedLocalTasks.length})
                   </button>
-                  <span className="text-[14px] text-[var(--text-primary)]">{task.text}</span>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucune tâche en cours.</p>
-          )}
-
-          {completedTasks.length > 0 && (
-            <div className="mt-4 opacity-60">
-              <h3 className="text-[12px] font-medium text-[var(--text-secondary)] mb-2">Terminées ({completedTasks.length})</h3>
-              <div className="space-y-2">
-                {completedTasks.map(task => (
-                  <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] opacity-70">
-                    <button onClick={() => toggleTask(task.id, "today")} className="mt-0.5 text-[var(--accent-green)]">
-                      <CheckCircle2 size={16} />
-                    </button>
-                    <span className="text-[14px] text-[var(--text-primary)] line-through">{task.text}</span>
+                  <div className="space-y-2 opacity-50">
+                    {completedLocalTasks.map(task => (
+                      <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-2)]">
+                        <CheckCircle2 size={16} className="text-[var(--accent-green)] mt-0.5" />
+                        <span className="text-[13.5px] text-[var(--text-primary)] line-through">{task.text}</span>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </section>
-
-        {/* Notes */}
-        <section>
-          <h2 className="text-[14px] font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-            <FileText size={16} className="text-[var(--accent-purple)]" /> 
-            Notes ({notes.length})
-          </h2>
-          {notes.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {notes.map(note => (
-                <div key={note.id} className="p-4 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)]">
-                  <h3 className="text-[14px] font-semibold text-[var(--text-primary)] mb-2">{note.title}</h3>
-                  <p className="text-[13px] text-[var(--text-secondary)] line-clamp-3">{note.content}</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucune note liée à ce projet.</p>
-          )}
-        </section>
+              )}
+            </section>
 
-        {/* Agenda / Events */}
-        <section>
-          <h2 className="text-[14px] font-semibold text-[var(--text-primary)] mb-4 flex items-center gap-2">
-            <CalendarDays size={16} className="text-[var(--accent-red)]" /> 
-            Agenda ({events.length})
-          </h2>
-          {events.length > 0 ? (
-            <div className="space-y-2">
-              {events.map(ev => (
-                <div key={ev.id} className="flex items-center gap-3 p-3 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)]">
-                  <div className="w-2 h-2 rounded-full" style={{ background: ev.color }} />
-                  <span className="text-[14px] text-[var(--text-primary)]">{ev.label}</span>
+            {/* Google Tasks */}
+            <section>
+              <h2 className="text-[15px] font-bold text-[var(--text-primary)] mb-5 flex items-center gap-2.5">
+                <ListChecks size={18} className="text-[var(--accent-cyan)]" /> 
+                Google Tasks ({linkedGoogleTasks.length})
+              </h2>
+              {loadingGoogle ? (
+                <div className="flex items-center gap-2 text-[13px] text-[var(--text-tertiary)] py-4">
+                  <Loader2 size={14} className="animate-spin" /> Chargement des tâches Google...
                 </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucun événement lié à ce projet.</p>
-          )}
-        </section>
+              ) : linkedGoogleTasks.length > 0 ? (
+                <div className="space-y-2.5">
+                  {linkedGoogleTasks.map(task => (
+                    <div key={task.id} className="flex items-start gap-3 p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm">
+                      <div className="mt-1 w-4 h-4 rounded-full border-2 border-[var(--accent-cyan)] opacity-50" />
+                      <div className="flex-1">
+                        <p className="text-[14.5px] font-medium text-[var(--text-primary)]">{task.title}</p>
+                        {task.notes && <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{task.notes}</p>}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center rounded-2xl border border-dashed border-[var(--border-primary)]">
+                  <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucune tâche Google liée.</p>
+                </div>
+              )}
+            </section>
+          </div>
 
+          <div className="space-y-10">
+            {/* Calendar Events */}
+            <section>
+              <h2 className="text-[15px] font-bold text-[var(--text-primary)] mb-5 flex items-center gap-2.5">
+                <CalendarDays size={18} className="text-[var(--accent-red)]" /> 
+                Événements ({linkedGoogleEvents.length})
+              </h2>
+              {loadingGoogle ? (
+                <div className="flex items-center gap-2 text-[13px] text-[var(--text-tertiary)] py-4">
+                  <Loader2 size={14} className="animate-spin" /> Chargement des événements...
+                </div>
+              ) : linkedGoogleEvents.length > 0 ? (
+                <div className="space-y-3">
+                  {linkedGoogleEvents.map(event => {
+                    const start = event.start?.dateTime ? new Date(event.start.dateTime) : (event.start?.date ? new Date(event.start.date) : null);
+                    return (
+                      <div key={event.id} className="p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm">
+                        <div className="flex items-center justify-between mb-2">
+                          <p className="text-[14.5px] font-bold text-[var(--text-primary)]">{event.summary}</p>
+                          {start && (
+                            <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[var(--accent-red-light)] text-[var(--accent-red)] uppercase tracking-tight">
+                              {start.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 text-[12px] text-[var(--text-secondary)]">
+                          <Calendar size={12} className="text-[var(--text-tertiary)]" />
+                          {start ? start.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }) : "Toute la journée"}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="py-8 text-center rounded-2xl border border-dashed border-[var(--border-primary)]">
+                  <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucun événement lié.</p>
+                </div>
+              )}
+            </section>
+
+            {/* Notes */}
+            <section>
+              <h2 className="text-[15px] font-bold text-[var(--text-primary)] mb-5 flex items-center gap-2.5">
+                <FileText size={18} className="text-[var(--accent-purple)]" /> 
+                Notes ({notes.length})
+              </h2>
+              {notes.length > 0 ? (
+                <div className="grid grid-cols-1 gap-4">
+                  {notes.map(note => (
+                    <motion.div 
+                      key={note.id} 
+                      whileHover={{ y: -2 }}
+                      className="p-5 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm"
+                    >
+                      <h3 className="text-[15px] font-bold text-[var(--text-primary)] mb-2.5">{note.title}</h3>
+                      <p className="text-[13px] text-[var(--text-secondary)] line-clamp-4 leading-relaxed">{note.content}</p>
+                      <div className="mt-4 pt-4 border-t border-[var(--border-primary)] flex items-center justify-between">
+                        <span className="text-[11px] text-[var(--text-tertiary)]">
+                          Modifié le {new Date(note.createdAt).toLocaleDateString("fr-FR")}
+                        </span>
+                        <button className="text-[11px] font-bold text-[var(--accent-blue)] hover:underline">
+                          Ouvrir la note
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              ) : (
+                <div className="py-8 text-center rounded-2xl border border-dashed border-[var(--border-primary)]">
+                  <p className="text-[13px] text-[var(--text-tertiary)] italic">Aucune note liée.</p>
+                </div>
+              )}
+            </section>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
