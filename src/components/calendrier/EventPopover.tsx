@@ -112,13 +112,26 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
             </div>
 
             {/* Location */}
+            {event.location && (
+              <div className="flex items-start gap-2 text-[12.5px] text-[var(--text-secondary)] mb-2">
+                <MapPin size={13} className="text-[var(--text-tertiary)] mt-0.5 shrink-0" />
+                <span className="leading-snug break-words">{event.location}</span>
+              </div>
+            )}
 
-
+            {/* Google Calendar Link */}
+            {event.htmlLink && event.type !== "task" && (
+              <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="inline-block text-[11.5px] text-[var(--accent-blue)] hover:underline mt-1 mb-2 font-medium">
+                Ouvrir dans Google Agenda ↗
+              </a>
+            )}
             {/* Description preview */}
             {event.description && (
-              <p className="text-[12px] text-[var(--text-tertiary)] mt-2 line-clamp-3 leading-relaxed">
-                {event.description}
-              </p>
+              <div className="mt-3 bg-[var(--surface-2)] rounded-xl p-3 border" style={{ borderColor: "var(--border-secondary)" }}>
+                <p className="text-[12px] text-[var(--text-secondary)] whitespace-pre-wrap max-h-[140px] overflow-y-auto leading-relaxed custom-scrollbar">
+                  {event.description}
+                </p>
+              </div>
             )}
 
             {/* Actions */}

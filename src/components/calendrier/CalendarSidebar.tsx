@@ -12,6 +12,8 @@ interface CalendarSidebarProps {
   hiddenCalendarIds: Set<string>;
   onSelectDate: (d: Date) => void;
   onToggleCalendar: (id: string) => void;
+  googleTasks?: any[];
+  googleLists?: any[];
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -33,15 +35,32 @@ export default function CalendarSidebar({
   hiddenCalendarIds,
   onSelectDate,
   onToggleCalendar,
+  googleTasks = [],
+  googleLists = [],
 }: CalendarSidebarProps) {
   const tasks = useAppStore((s) => s.tasks);
   const projects = useAppStore((s) => s.projects);
   const [tasksOpen, setTasksOpen] = useState(true);
 
-  // Only "today" (Kill la task NOW)
+  // Combinaison des tâches locales et Google qui appartiennent à "Kill la task now"
   const activeTasks = useMemo(() => {
-    return tasks.filter((t) => t.status === "today").slice(0, 30); // limit for perf
-  }, [tasks]);
+    const killList = googleLists.find(l => l.title?.toLowerCase() === "kill la task now");
+    const filteredGTasks = killList 
+      ? googleTasks.filter(t => t.listId === killList.id && t.status !== "completed")
+      : [];
+    
+    const killProject = projects.find(p => p.name?.toLowerCase() === "kill la task now");
+    const filteredLocalTasks = killProject
+      ? tasks.filter(t => t.projectId === killProject.id && t.status !== "done" && t.status !== "completed")
+      : [];
+      
+    // Format unifié pour l'affichage (avec un flag isGoogle pour l'emoji ou l'icône)
+    const combined = [
+      ...filteredLocalTasks.map(t => ({ id: t.id, text: t.text, priority: t.priority, projectId: t.projectId, isGoogle: false })),
+      ...filteredGTasks.map(t => ({ id: t.id, text: t.title, priority: "medium", projectId: undefined, isGoogle: true }))
+    ];
+    return combined.slice(0, 30);
+  }, [tasks, projects, googleTasks, googleLists]);
 
   const getProjectEmoji = (projectId?: string) => {
     if (!projectId) return "";
@@ -118,9 +137,9 @@ export default function CalendarSidebar({
           ) : (
             <ChevronRight size={11} className="text-[var(--text-tertiary)]" />
           )}
-          <ListChecks size={12} className="text-[var(--accent-red)]" />
-          <h3 className="text-[10px] uppercase tracking-wider font-bold text-[var(--accent-red)] flex-1">
-            KILL LA TASK NOW
+          <ListChecks size={12} className="text-[var(--accent-purple)]" />
+          <h3 className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)] flex-1">
+            Tâches
           </h3>
           <span className="text-[10px] tabular-nums text-[var(--text-ghost)] font-semibold">
             {activeTasks.length}
@@ -138,7 +157,7 @@ export default function CalendarSidebar({
               ) : (
                 activeTasks.map((task) => {
                   const priorityColor = PRIORITY_COLORS[task.priority || "medium"];
-                  const emoji = getProjectEmoji(task.projectId);
+                  const emoji = task.isGoogle ? "📋 " : getProjectEmoji(task.projectId);
                   return (
                     <div
                       key={task.id}

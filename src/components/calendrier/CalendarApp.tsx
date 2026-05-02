@@ -424,6 +424,8 @@ export default function CalendarApp() {
           hiddenCalendarIds={hiddenCalendarIds}
           onSelectDate={(d) => { setCurrentDate(d); setView("day"); }}
           onToggleCalendar={handleToggleCalendar}
+          googleTasks={googleTasks}
+          googleLists={googleTaskLists}
         />
 
         {/* Calendar view */}
