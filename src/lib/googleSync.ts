@@ -109,6 +109,17 @@ export async function syncTasks(): Promise<{ pulled: number; pushed: number; upd
     }
   }
 
+  // 1.1) DELETE LOCALLY : si une tâche locale a un googleTaskId mais n'est plus chez Google, on la supprime
+  const googleTaskIds = new Set(googleTasks.map(gt => gt.id));
+  for (const t of currentTasks) {
+    if (t.googleTaskId && !googleTaskIds.has(t.googleTaskId)) {
+      useAppStore.setState((s) => ({
+        tasks: s.tasks.filter(tt => tt.id !== t.id)
+      }));
+      deleted++;
+    }
+  }
+
   // 2) PUSH : pour chaque tâche locale sans googleTaskId, créer côté Google
   const tasksAfterPull = useAppStore.getState().tasks;
   for (const t of tasksAfterPull) {
@@ -307,4 +318,20 @@ export async function syncAll() {
   const tasksResult = await syncTasks();
   const calResult   = await syncCalendar();
   return { tasks: tasksResult, calendar: calResult };
+}
+
+// ─── Helpers CRUD API ────────────────────────────────────────────────────────
+
+export async function deleteTaskFromGoogle(listId: string, taskId: string) {
+  const r = await fetch(`/api/google/tasks?listId=${encodeURIComponent(listId)}&taskId=${encodeURIComponent(taskId)}`, {
+    method: "DELETE",
+  });
+  return r.ok;
+}
+
+export async function deleteEventFromGoogle(calendarId: string, eventId: string) {
+  const r = await fetch(`/api/google/calendar/events?calendarId=${encodeURIComponent(calendarId)}&eventId=${encodeURIComponent(eventId)}`, {
+    method: "DELETE",
+  });
+  return r.ok;
 }

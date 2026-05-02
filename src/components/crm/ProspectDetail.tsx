@@ -103,6 +103,58 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
 
   const deleteTask = useAppStore(s => s.deleteTask);
   const updateTask = useAppStore(s => s.updateTask);
+  const timelineEvents = useAppStore(s => s.timelineEvents);
+  const addTimelineEvent = useAppStore(s => s.addTimelineEvent);
+
+  // Événements liés (RDV planifiés)
+  const relatedEvents = useMemo(() => {
+    if (!prospect) return [];
+    return timelineEvents.filter(e => e.linkedProspectId === id);
+  }, [timelineEvents, id, prospect]);
+
+  const onDeleteTaskSynced = async (task: any) => {
+    // Delete locally
+    deleteTask(task.id);
+
+    // Delete from Google if linked
+    if (task.googleTaskId && task.googleTaskListId) {
+      try {
+        const { deleteTaskFromGoogle } = await import("@/lib/googleSync");
+        await deleteTaskFromGoogle(task.googleTaskListId, task.googleTaskId);
+      } catch (e) {
+        console.error("Failed to delete from Google", e);
+      }
+    }
+  };
+
+  const onScheduleRDV = async () => {
+    if (!prospect) return;
+    
+    // Par défaut : RDV dans 2 jours à 10h
+    const d = new Date();
+    d.setDate(d.getDate() + 2);
+    d.setHours(10, 0, 0, 0);
+    
+    const day = d.toISOString().slice(0, 10);
+    const hour = 10;
+    
+    addTimelineEvent({
+      label: `RDV : ${prospect.entreprise}`,
+      day,
+      hour,
+      duration: 1,
+      color: "blue",
+      linkedProspectId: id
+    });
+
+    // Trigger sync
+    try {
+      const { syncCalendar } = await import("@/lib/googleSync");
+      await syncCalendar();
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const onStartEdit = (task: any) => {
     setEditingTaskId(task.id);
@@ -386,6 +438,12 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                 </span>
               )}
             </div>
+            <button
+              onClick={onScheduleRDV}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-accent-blue/15 text-accent-blue rounded-md text-[10.5px] font-semibold hover:bg-accent-blue/25 transition-colors"
+            >
+              <Calendar size={11} /> Planifier RDV
+            </button>
           </div>
 
           {/* Add task input */}
@@ -464,7 +522,7 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                       </div>
 
                       <button
-                        onClick={() => deleteTask(t.id)}
+                        onClick={() => onDeleteTaskSynced(t)}
                         className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-tertiary)] hover:text-[var(--accent-red)] transition-opacity"
                       >
                         <Trash2 size={12} />
@@ -476,6 +534,43 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
             </ul>
           )}
         </div>
+
+        {/* ─── RDVS PLANIFIÉS ─── */}
+        {relatedEvents.length > 0 && (
+          <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-3.5">
+            <div className="flex items-center gap-1.5 mb-3">
+              <Calendar size={13} className="text-accent-blue" />
+              <h4 className="text-[12px] font-bold tracking-tight">RDVs planifiés</h4>
+            </div>
+            <div className="space-y-2">
+              {relatedEvents.map(e => (
+                <div key={e.id} className="flex items-center justify-between gap-3 px-3 py-2 bg-[var(--surface-2)] rounded-lg border border-[var(--border-primary)]">
+                  <div className="min-w-0">
+                    <p className="text-[12px] font-medium text-[var(--text-primary)] truncate">{e.label}</p>
+                    <p className="text-[10px] text-[var(--text-tertiary)] tabular-nums">
+                      {e.day ? new Date(e.day).toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "long" }) : "Pas de date"}
+                      {e.hour !== undefined && ` à ${Math.floor(e.hour)}h${String(Math.round((e.hour % 1) * 60)).padStart(2, "0")}`}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => {
+                      const { deleteTimelineEvent } = useAppStore.getState();
+                      deleteTimelineEvent(e.id);
+                      if (e.googleEventId) {
+                        import("@/lib/googleSync").then(({ deleteEventFromGoogle }) => {
+                          deleteEventFromGoogle("primary", e.googleEventId!);
+                        });
+                      }
+                    }}
+                    className="p-1 text-[var(--text-tertiary)] hover:text-[var(--accent-red)]"
+                  >
+                    <Trash2 size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Historique appels (déroulé en bas) */}
         {prospectCalls.length > 0 && (

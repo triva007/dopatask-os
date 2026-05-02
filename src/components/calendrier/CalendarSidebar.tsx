@@ -50,19 +50,28 @@ export default function CalendarSidebar({
       : [];
     
     const killProject = projects.find(p => p.name?.toLowerCase() === "kill la task now");
-    const filteredLocalTasks = killProject
-      ? tasks.filter(t => t.projectId === killProject.id && t.status !== "done" && t.status !== "completed")
-      : [];
+    const filteredLocalTasks = tasks.filter(t => 
+      (t.projectId === killProject?.id || t.linkedProspectId) && 
+      t.status !== "done" && t.status !== "completed"
+    );
       
     // Format unifié pour l'affichage (avec un flag isGoogle pour l'emoji ou l'icône)
     const combined = [
-      ...filteredLocalTasks.map(t => ({ id: t.id, text: t.text, priority: t.priority, projectId: t.projectId, isGoogle: false })),
-      ...filteredGTasks.map(t => ({ id: t.id, text: t.title, priority: "medium", projectId: undefined, isGoogle: true }))
+      ...filteredLocalTasks.map(t => ({ 
+        id: t.id, 
+        text: t.text, 
+        priority: t.priority, 
+        projectId: t.projectId, 
+        isGoogle: false,
+        isCrm: !!t.linkedProspectId 
+      })),
+      ...filteredGTasks.map(t => ({ id: t.id, text: t.title, priority: "medium", projectId: undefined, isGoogle: true, isCrm: false }))
     ];
-    return combined.slice(0, 30);
+    return combined.slice(0, 50); // Increased limit to 50
   }, [tasks, projects, googleTasks, googleLists]);
 
-  const getProjectEmoji = (projectId?: string) => {
+  const getProjectEmoji = (projectId?: string, isCrm?: boolean) => {
+    if (isCrm) return "💼 ";
     if (!projectId) return "";
     const p = projects.find((pr) => pr.id === projectId);
     return p ? p.emoji + " " : "";
@@ -157,7 +166,7 @@ export default function CalendarSidebar({
               ) : (
                 activeTasks.map((task) => {
                   const priorityColor = PRIORITY_COLORS[task.priority || "medium"];
-                  const emoji = task.isGoogle ? "📋 " : getProjectEmoji(task.projectId);
+                  const emoji = task.isGoogle ? "📋 " : getProjectEmoji(task.projectId, task.isCrm);
                   return (
                     <div
                       key={task.id}

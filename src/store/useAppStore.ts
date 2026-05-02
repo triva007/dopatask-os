@@ -126,6 +126,7 @@ export interface TimelineEvent {
   linkedTaskId?: string;
   linkedProjectId?: string;
   linkedJournalId?: string;
+  linkedProspectId?: string;
 }
 
 export interface Toast {
