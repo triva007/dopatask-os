@@ -53,7 +53,7 @@ export async function syncTasks(): Promise<{ pulled: number; pushed: number; upd
   const data = (await res.json()) as { tasks: ApiGoogleTask[]; lists: { id: string; title?: string }[] };
   const googleTasks = data.tasks || [];
   const defaultListId = data.lists?.[0]?.id;
-  const crmList = data.lists?.find(l => l.title?.toUpperCase() === "CRM");
+  const crmList = data.lists?.find(l => l.title?.trim().toUpperCase() === "CRM");
   const crmListId = crmList?.id;
 
   // Pour chaque Google Task : si elle existe en local (par googleTaskId), update si plus récente. Sinon, importe.

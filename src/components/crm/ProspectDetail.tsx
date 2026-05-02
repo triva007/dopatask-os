@@ -81,14 +81,24 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const [editingText, setEditingText] = useState("");
 
   const onAddTaskForProspect = () => {
-    if (!prospect || !newTaskText.trim()) return;
+    if (!newTaskText.trim()) return;
     addTask(newTaskText.trim(), "todo", undefined, undefined, undefined, id);
     setNewTaskText("");
+    
+    // Trigger background sync
+    import("@/lib/googleSync").then(({ syncTasks }) => {
+      syncTasks().catch(console.error);
+    });
   };
 
   const onToggleTask = (taskId: string, isDone: boolean) => {
     if (isDone) updateTaskStatus(taskId, "todo");
     else completeTask(taskId);
+
+    // Trigger background sync
+    import("@/lib/googleSync").then(({ syncTasks }) => {
+      syncTasks().catch(console.error);
+    });
   };
 
   const deleteTask = useAppStore(s => s.deleteTask);
