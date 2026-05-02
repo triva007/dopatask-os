@@ -42,18 +42,22 @@ export default function CalendarSidebar({
   const projects = useAppStore((s) => s.projects);
   const [tasksOpen, setTasksOpen] = useState(true);
 
-  // Combinaison des tâches locales et Google qui appartiennent à "Kill la task now"
+  // Combinaison des tâches locales et Google qui appartiennent à "Kill la task now" ou "CRM"
   const activeTasks = useMemo(() => {
-    const killList = googleLists.find(l => l.title?.toLowerCase() === "kill la task now");
-    const filteredGTasks = killList 
-      ? googleTasks.filter(t => t.listId === killList.id && t.status !== "completed")
-      : [];
+    const killList = googleLists.find(l => l.title?.trim().toLowerCase() === "kill la task now");
+    const crmList = googleLists.find(l => l.title?.trim().toLowerCase() === "crm");
     
-    const killProject = projects.find(p => p.name?.toLowerCase() === "kill la task now");
-    const filteredLocalTasks = tasks.filter(t => 
-      (t.projectId === killProject?.id || t.linkedProspectId) && 
-      t.status !== "done" && t.status !== "completed"
+    const filteredGTasks = googleTasks.filter(t => 
+      (t.listId === killList?.id || t.listId === crmList?.id) && 
+      t.status !== "completed"
     );
+    
+    const killProject = projects.find(p => p.name?.trim().toLowerCase() === "kill la task now");
+    const filteredLocalTasks = tasks.filter(t => {
+      const isKill = killProject && t.projectId === killProject.id;
+      const isCrm = !!t.linkedProspectId;
+      return (isKill || isCrm) && t.status !== "done" && t.status !== "completed";
+    });
       
     // Format unifié pour l'affichage (avec un flag isGoogle pour l'emoji ou l'icône)
     const combined = [
@@ -67,7 +71,7 @@ export default function CalendarSidebar({
       })),
       ...filteredGTasks.map(t => ({ id: t.id, text: t.title, priority: "medium", projectId: undefined, isGoogle: true, isCrm: false }))
     ];
-    return combined.slice(0, 50); // Increased limit to 50
+    return combined.slice(0, 100); 
   }, [tasks, projects, googleTasks, googleLists]);
 
   const getProjectEmoji = (projectId?: string, isCrm?: boolean) => {
