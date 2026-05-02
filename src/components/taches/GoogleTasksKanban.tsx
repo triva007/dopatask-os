@@ -1003,10 +1003,9 @@ function TaskCard(p: TaskCardProps) {
                 "text-[14px] leading-snug break-words font-medium " +
                 (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
               }
-            >
               {(() => {
-                const projectId = useAppStore.getState().googleTaskProjects[p.t.id];
-                const project = projectId ? useAppStore.getState().projects.find(pj => pj.id === projectId) : null;
+                const projectId = (useAppStore.getState().googleTaskProjects || {})[p.t.id];
+                const project = projectId ? (useAppStore.getState().projects || []).find(pj => pj.id === projectId) : null;
                 return project && <span className="mr-1.5">{project.emoji}</span>;
               })()}
               {(p.t.title || "(sans titre)").split(/(\s+)/).map((word, i) => {
@@ -1118,7 +1117,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
   const [title, setTitle] = useState(t.title || "");
   const [notes, setNotes] = useState(t.notes || "");
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
-  const [projectId, setProjectId] = useState(useAppStore.getState().googleTaskProjects[t.id] || "");
+  const [projectId, setProjectId] = useState((useAppStore.getState().googleTaskProjects || {})[t.id] || "");
   const [saved, setSaved] = useState(false);
   const c = colorForList(t.listId);
   const completed = t.status === "completed";

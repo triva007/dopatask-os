@@ -352,7 +352,11 @@ export const useAppStore = create<AppState>()(
       name: "dopatask-storage",
       version: 9, // Normalize done -> completed and guard empty tasks
       migrate: (persistedState: any, version: number) => {
-        if (version < 9 && persistedState?.state?.tasks) {
+        if (!persistedState.state) persistedState.state = {};
+        if (!persistedState.state.googleEventProjects) persistedState.state.googleEventProjects = {};
+        if (!persistedState.state.googleTaskProjects) persistedState.state.googleTaskProjects = {};
+        
+        if (version < 9 && persistedState.state.tasks) {
           persistedState.state.tasks = persistedState.state.tasks.map((task: Task) =>
             task.status === "done" ? { ...task, status: "completed" } : task
           );

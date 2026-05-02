@@ -127,13 +127,15 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
               </a>
             )}
 
-            {/* Project Tag */}
             {(() => {
+              const state = useAppStore.getState();
+              const googleTaskProjects = state.googleTaskProjects || {};
+              const googleEventProjects = state.googleEventProjects || {};
               const projectId = event.type === "task" 
-                ? useAppStore.getState().googleTaskProjects[event.id] 
-                : useAppStore.getState().googleEventProjects[event.id];
+                ? googleTaskProjects[event.id] 
+                : googleEventProjects[event.id];
               if (!projectId) return null;
-              const project = useAppStore.getState().projects.find(p => p.id === projectId);
+              const project = (state.projects || []).find(p => p.id === projectId);
               if (!project) return null;
               return (
                 <div className="mb-2">

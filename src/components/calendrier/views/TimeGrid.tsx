@@ -481,10 +481,13 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                       <div className="px-1.5 py-0.5 h-full flex flex-col justify-start min-h-0">
                         <div className="flex items-start gap-1">
                           {(() => {
+                            const state = useAppStore.getState();
+                            const googleTaskProjects = state.googleTaskProjects || {};
+                            const googleEventProjects = state.googleEventProjects || {};
                             const projectId = l.ev.type === "task" 
-                              ? useAppStore.getState().googleTaskProjects[l.ev.id] 
-                              : useAppStore.getState().googleEventProjects[l.ev.id];
-                            const project = projectId ? useAppStore.getState().projects.find(p => p.id === projectId) : null;
+                              ? googleTaskProjects[l.ev.id] 
+                              : googleEventProjects[l.ev.id];
+                            const project = projectId ? (state.projects || []).find(p => p.id === projectId) : null;
                             return project && <span className="text-[11px] shrink-0">{project.emoji}</span>;
                           })()}
                           <span className="text-[11.5px] font-semibold leading-tight truncate" style={{ color: isTask ? "var(--text-primary)" : color }}>{l.ev.summary || "(sans titre)"}</span>

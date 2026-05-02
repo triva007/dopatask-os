@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { X, MapPin, FileText, Clock, Palette } from "lucide-react";
 import { motion } from "framer-motion";
+import { useAppStore } from "@/store/useAppStore";
 import type { CalendarEvent, CalendarInfo } from "./useCalendarEvents";
 
 interface EventModalProps {
@@ -87,9 +88,9 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
   useEffect(() => {
     if (event) {
       if (event.type === "task") {
-        setProjectId(useAppStore.getState().googleTaskProjects[event.id] || "");
+        setProjectId((useAppStore.getState().googleTaskProjects || {})[event.id] || "");
       } else {
-        setProjectId(useAppStore.getState().googleEventProjects[event.id] || "");
+        setProjectId((useAppStore.getState().googleEventProjects || {})[event.id] || "");
       }
     }
   }, [event]);

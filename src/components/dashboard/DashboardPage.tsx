@@ -3,8 +3,8 @@
 import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Target, ListChecks, FolderKanban, Inbox, Skull } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
