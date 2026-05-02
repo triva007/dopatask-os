@@ -292,20 +292,13 @@ export default function DashboardPage() {
                 
                 return (
                   <Link href="/projets" key={project.id} className="block group">
-                    <div className="p-4 rounded-xl border transition-all group-hover:bg-[var(--surface-2)]" style={{ borderColor: "var(--border-primary)", background: "var(--card-bg)" }}>
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center gap-2.5">
-                          <span className="text-[18px] leading-none">{project.emoji}</span>
-                          <span className="text-[14px] font-semibold text-[var(--text-primary)] leading-none">{project.name}</span>
+                    <div className="p-4 rounded-xl border transition-all group-hover:bg-[var(--surface-2)] flex flex-col gap-2" style={{ borderColor: "var(--border-primary)", background: "var(--card-bg)" }}>
+                      <div className="flex items-center gap-3">
+                        <span className="text-[20px] leading-none">{project.emoji}</span>
+                        <div className="flex flex-col">
+                          <span className="text-[14px] font-semibold text-[var(--text-primary)] leading-tight">{project.name}</span>
+                          <span className="text-[11px] text-[var(--text-tertiary)]">Espace projet</span>
                         </div>
-                        <span className="text-[11px] font-bold tabular-nums" style={{ color: project.color }}>{pct}%</span>
-                      </div>
-                      <div className="h-[4px] rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
-                        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: project.color }} />
-                      </div>
-                      <div className="flex items-center justify-between mt-3">
-                        <p className="text-[11px] text-[var(--text-tertiary)]">{projectTasks.length} tâches totales</p>
-                        <p className="text-[11px] font-medium" style={{ color: project.color }}>{doneTasks} complétées</p>
                       </div>
                     </div>
                   </Link>

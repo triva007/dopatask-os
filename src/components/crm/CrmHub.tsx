@@ -32,11 +32,8 @@ export default function CrmHub() {
   const calls = useCrmStore((s) => s.calls);
   const revenus = useCrmStore((s) => s.revenus);
   const loadAll = useCrmStore((s) => s.loadAll);
-  const repair = useCrmStore((s) => s.repairProspectsFromNotes);
 
   const [showImport, setShowImport] = useState(false);
-  const [repairing, setRepairing] = useState(false);
-  const [repairResult, setRepairResult] = useState<{ fixed: number; scanned: number } | null>(null);
   const [coldCallMode, setColdCallMode] = useState(false);
 
   useEffect(() => {
@@ -97,19 +94,6 @@ export default function CrmHub() {
   // Stats mois (reutilisable sur home)
   const stats = useMemo(() => computeStatsMois(calls, revenus), [calls, revenus]);
 
-  // Nombre de prospects susceptibles d'avoir un statut dans leurs notes
-  const suspectsNotes = useMemo(() => {
-    return actifs.filter((p) => p.statut === "A_APPELER" && p.notes && p.notes.length > 3).length;
-  }, [actifs]);
-
-  const runRepair = async () => {
-    setRepairing(true);
-    const r = await repair();
-    setRepairResult(r);
-    if (r.fixed > 0) celebrate("task-complete");
-    setRepairing(false);
-    setTimeout(() => setRepairResult(null), 6000);
-  };
 
   if (!loaded && loading) {
     return (
@@ -150,15 +134,6 @@ export default function CrmHub() {
               <Users size={14} /> Tous les prospects
             </Link>
             <button
-              onClick={runRepair}
-              disabled={repairing || suspectsNotes === 0}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-violet/10 text-dopa-violet rounded-lg text-[13px] font-semibold hover:bg-dopa-violet/20 disabled:opacity-40 disabled:cursor-not-allowed"
-              title={suspectsNotes === 0 ? "Aucune note suspecte" : `${suspectsNotes} prospect(s) a verifier`}
-            >
-              <Wrench size={14} />
-              {repairing ? "Analyse..." : `Reparer notes${suspectsNotes > 0 ? ` (${suspectsNotes})` : ""}`}
-            </button>
-            <button
               onClick={() => setShowImport(true)}
               className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/20"
             >
@@ -170,15 +145,6 @@ export default function CrmHub() {
         {error && (
           <div className="px-4 py-3 bg-dopa-red/10 border border-dopa-red/30 rounded-lg text-[12px] text-dopa-red flex items-center gap-2">
             <AlertTriangle size={14} /> {error}
-          </div>
-        )}
-
-        {repairResult && (
-          <div className="px-4 py-3 bg-dopa-violet/10 border border-dopa-violet/30 rounded-lg text-[12.5px] text-dopa-violet flex items-center gap-2">
-            <Wrench size={14} />
-            {repairResult.fixed > 0
-              ? `${repairResult.fixed} prospect(s) reparesur ${repairResult.scanned}.`
-              : `Aucun statut cache dans les notes (${repairResult.scanned} prospect(s) scannes).`}
           </div>
         )}
 

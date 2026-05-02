@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Plus, MoreVertical, Trash2, RotateCcw } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import type { ProjectStatus } from "@/store/useAppStore";
+import ProjectDetailView from "./ProjectDetailView";
 
 const STATUS_LABELS: Record<ProjectStatus, string> = {
   active: "Actifs",
@@ -25,6 +26,13 @@ export default function ProjectsView() {
   const [newName, setNewName] = useState("");
   const [newEmoji, setNewEmoji] = useState("📁");
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+
+  const selectedProject = projects.find(p => p.id === selectedProjectId);
+
+  if (selectedProject) {
+    return <ProjectDetailView project={selectedProject} onBack={() => setSelectedProjectId(null)} />;
+  }
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
@@ -139,8 +147,9 @@ export default function ProjectsView() {
                           initial={{ opacity: 0, y: 10 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, scale: 0.9 }}
-                          className="p-4 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-primary)] shadow-sm relative group"
+                          className="p-4 rounded-2xl bg-[var(--card-bg)] border border-[var(--border-primary)] shadow-sm relative group cursor-pointer hover:bg-[var(--surface-2)] transition-colors"
                           onMouseLeave={() => setActiveMenuId(null)}
+                          onClick={() => setSelectedProjectId(project.id)}
                         >
                           <div className="flex items-start justify-between mb-3">
                             <div className="flex items-center gap-3">
@@ -150,22 +159,14 @@ export default function ProjectsView() {
                                 {project.status === "archived" && <span className="text-[10px] text-[var(--text-tertiary)] uppercase mt-0.5 block">Archivé</span>}
                               </div>
                             </div>
-                            <button
-                              onClick={() => setActiveMenuId(isMenuOpen ? null : project.id)}
-                              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors p-1 -mr-2 -mt-1 rounded-md hover:bg-[var(--surface-2)]"
-                            >
-                              <MoreVertical size={16} />
-                            </button>
-                          </div>
-
-                          <div className="h-[4px] rounded-full overflow-hidden mb-3" style={{ background: "var(--surface-3)" }}>
-                            <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: project.color || "var(--accent-blue)" }} />
-                          </div>
-                          
-                          <div className="flex items-center justify-between text-[11px]">
-                            <span className="text-[var(--text-tertiary)]">{projectTasks.length} tâches</span>
-                            <span className="font-medium" style={{ color: project.color || "var(--accent-blue)" }}>{pct}%</span>
-                          </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setActiveMenuId(isMenuOpen ? null : project.id); }}
+                                className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-colors p-1 -mr-2 -mt-1 rounded-md hover:bg-[var(--surface-2)]"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                            </div>
+                            <span className="text-[12px] text-[var(--text-tertiary)] mt-2 block">Espace projet</span>
 
                           <AnimatePresence>
                             {isMenuOpen && (
@@ -179,7 +180,8 @@ export default function ProjectsView() {
                                   project.status !== s && (
                                     <button
                                       key={s}
-                                      onClick={() => {
+                                      onClick={(e) => {
+                                        e.stopPropagation();
                                         updateProject(project.id, { status: s });
                                         setActiveMenuId(null);
                                       }}
@@ -192,7 +194,7 @@ export default function ProjectsView() {
                                 ))}
                                 <div className="h-px bg-[var(--border-primary)] my-1 mx-2" />
                                 <button
-                                  onClick={() => deleteProject(project.id)}
+                                  onClick={(e) => { e.stopPropagation(); deleteProject(project.id); }}
                                   className="w-full text-left px-3 py-1.5 text-[12px] text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] rounded-lg transition-colors flex items-center gap-2"
                                 >
                                   <Trash2 size={12} /> Supprimer

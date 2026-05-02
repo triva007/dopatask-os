@@ -99,6 +99,7 @@ export interface Note {
   labels: string[];
   images: string[];
   order: number;
+  projectId?: string;
   createdAt: number;
   updatedAt: number;
 }
