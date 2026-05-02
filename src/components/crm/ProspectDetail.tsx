@@ -8,7 +8,7 @@ import {
   ArrowLeft, Phone, MapPin, Save, Check,
   Loader2, DollarSign, PhoneOff, Voicemail, Calendar, Frown,
   ChevronLeft, ChevronRight, Sparkles, RotateCcw, X,
-  ListChecks, Plus, CheckCircle2, Circle,
+  ListChecks, Plus, CheckCircle2, Circle, Trash2,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -52,16 +52,20 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     [calls, id]
   );
 
-  // Tâches liées : recherche du nom d'entreprise dans text/description (case-insensitive)
+  // Tâches liées : matching par ID ou fallback par nom d'entreprise (pour les anciennes tâches)
   const relatedTasks = useMemo(() => {
     if (!prospect) return [];
-    const needle = prospect.entreprise.trim().toLowerCase();
-    if (needle.length < 2) return [];
+    const businessName = prospect.entreprise.trim().toLowerCase();
     return allTasks.filter((t) => {
-      const hay = `${t.text || ""} ${t.description || ""}`.toLowerCase();
-      return hay.includes(needle);
+      if (t.linkedProspectId === id) return true;
+      // Fallback matching
+      if (!t.linkedProspectId && businessName.length >= 2) {
+        const hay = `${t.text || ""} ${t.description || ""}`.toLowerCase();
+        return hay.includes(businessName);
+      }
+      return false;
     });
-  }, [allTasks, prospect?.entreprise]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [allTasks, id, prospect?.entreprise]);
 
   const openTasks = useMemo(
     () => relatedTasks.filter((t) => t.status !== "done" && t.status !== "completed"),
@@ -72,14 +76,34 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     [relatedTasks]
   );
 
+  const [newTaskText, setNewTaskText] = useState("");
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+
   const onAddTaskForProspect = () => {
-    if (!prospect) return;
-    addTask(`Suivi ${prospect.entreprise}`, "todo");
+    if (!prospect || !newTaskText.trim()) return;
+    addTask(newTaskText.trim(), "todo", undefined, undefined, undefined, id);
+    setNewTaskText("");
   };
 
   const onToggleTask = (taskId: string, isDone: boolean) => {
     if (isDone) updateTaskStatus(taskId, "todo");
     else completeTask(taskId);
+  };
+
+  const deleteTask = useAppStore(s => s.deleteTask);
+  const updateTask = useAppStore(s => s.updateTask);
+
+  const onStartEdit = (task: any) => {
+    setEditingTaskId(task.id);
+    setEditingText(task.text);
+  };
+
+  const onSaveEdit = () => {
+    if (editingTaskId && editingText.trim()) {
+      updateTask(editingTaskId, { text: editingText.trim() });
+    }
+    setEditingTaskId(null);
   };
 
   const tentativeNum = prospectCalls.length + 1;
@@ -342,36 +366,48 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
 
         {/* ─── TÂCHES LIÉES ─── */}
         <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-3.5">
-          <div className="flex items-center justify-between mb-2.5">
+          <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-1.5">
               <ListChecks size={13} className="text-dopa-violet" />
               <h4 className="text-[12px] font-bold tracking-tight">Tâches liées</h4>
               {relatedTasks.length > 0 && (
                 <span className="text-[10px] tabular-nums text-[var(--text-tertiary)]">
                   · {openTasks.length} en cours
-                  {completedTasks.length > 0 && ` · ${completedTasks.length} fait`}
                 </span>
               )}
             </div>
-            <motion.button
-              whileTap={{ scale: 0.94 }}
-              whileHover={{ scale: 1.03 }}
+          </div>
+
+          {/* Add task input */}
+          <div className="flex gap-2 mb-4">
+            <input
+              type="text"
+              value={newTaskText}
+              onChange={(e) => setNewTaskText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && onAddTaskForProspect()}
+              placeholder="Nouvelle tâche de suivi..."
+              className="flex-1 bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-1.5 text-[12px] focus:outline-none focus:border-dopa-violet/50"
+            />
+            <button
               onClick={onAddTaskForProspect}
-              className="inline-flex items-center gap-1 px-2 py-1 bg-dopa-violet/15 text-dopa-violet rounded-md text-[10.5px] font-semibold hover:bg-dopa-violet/25"
+              disabled={!newTaskText.trim()}
+              className="p-2 bg-dopa-violet text-white rounded-lg disabled:opacity-30 hover:brightness-110"
             >
-              <Plus size={11} /> Tâche
-            </motion.button>
+              <Plus size={14} />
+            </button>
           </div>
 
           {relatedTasks.length === 0 ? (
             <p className="text-[11px] text-[var(--text-tertiary)] italic py-1">
-              Aucune tâche liée. Crée-en une pour suivre ce prospect.
+              Aucune tâche liée.
             </p>
           ) : (
-            <ul className="space-y-1.5">
+            <ul className="space-y-2">
               <AnimatePresence initial={false}>
                 {[...openTasks, ...completedTasks].map((t) => {
                   const isDone = t.status === "done" || t.status === "completed";
+                  const isEditing = editingTaskId === t.id;
+
                   return (
                     <motion.li
                       key={t.id}
@@ -380,7 +416,7 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, x: -8 }}
                       transition={{ duration: 0.18, ease: "easeOut" }}
-                      className={`group flex items-start gap-2 px-2 py-1.5 rounded-lg border transition-colors ${
+                      className={`group flex items-start gap-2 px-2 py-2 rounded-lg border transition-colors ${
                         isDone
                           ? "bg-[var(--surface-1)] border-[var(--border-primary)] opacity-60"
                           : "bg-[var(--surface-2)] border-[var(--border-primary)] hover:border-dopa-violet/40"
@@ -389,35 +425,40 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                       <button
                         onClick={() => onToggleTask(t.id, isDone)}
                         className="shrink-0 mt-0.5 text-[var(--text-tertiary)] hover:text-dopa-green"
-                        title={isDone ? "Marquer comme à faire" : "Terminer"}
                       >
                         {isDone ? (
-                          <CheckCircle2 size={14} className="text-dopa-green" />
+                          <CheckCircle2 size={15} className="text-dopa-green" />
                         ) : (
-                          <Circle size={14} />
+                          <Circle size={15} />
                         )}
                       </button>
+                      
                       <div className="flex-1 min-w-0">
-                        <p className={`text-[12px] leading-tight ${isDone ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)] font-medium"}`}>
-                          {t.text}
-                        </p>
-                        {t.description && (
-                          <p className="text-[10.5px] text-[var(--text-tertiary)] mt-0.5 line-clamp-1">
-                            {t.description}
+                        {isEditing ? (
+                          <input
+                            autoFocus
+                            value={editingText}
+                            onChange={(e) => setEditingText(e.target.value)}
+                            onBlur={onSaveEdit}
+                            onKeyDown={(e) => e.key === "Enter" && onSaveEdit()}
+                            className="w-full bg-transparent border-none p-0 text-[12px] focus:outline-none"
+                          />
+                        ) : (
+                          <p 
+                            onClick={() => onStartEdit(t)}
+                            className={`text-[12px] leading-tight cursor-text ${isDone ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)] font-medium"}`}
+                          >
+                            {t.text}
                           </p>
                         )}
-                        <div className="flex items-center gap-2 mt-1 text-[9.5px] text-[var(--text-tertiary)] flex-wrap">
-                          <span className="uppercase tracking-wider font-semibold px-1.5 py-px rounded bg-[var(--surface-1)]">
-                            {t.status}
-                          </span>
-                          {t.dueDate && (
-                            <span className="inline-flex items-center gap-0.5 tabular-nums">
-                              <Calendar size={9} />
-                              {new Date(t.dueDate).toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                            </span>
-                          )}
-                        </div>
                       </div>
+
+                      <button
+                        onClick={() => deleteTask(t.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-tertiary)] hover:text-[var(--accent-red)] transition-opacity"
+                      >
+                        <Trash2 size={12} />
+                      </button>
                     </motion.li>
                   );
                 })}

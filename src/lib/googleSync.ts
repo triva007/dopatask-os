@@ -53,6 +53,8 @@ export async function syncTasks(): Promise<{ pulled: number; pushed: number; upd
   const data = (await res.json()) as { tasks: ApiGoogleTask[]; lists: { id: string; title?: string }[] };
   const googleTasks = data.tasks || [];
   const defaultListId = data.lists?.[0]?.id;
+  const crmList = data.lists?.find(l => l.title?.toUpperCase() === "CRM");
+  const crmListId = crmList?.id;
 
   // Pour chaque Google Task : si elle existe en local (par googleTaskId), update si plus récente. Sinon, importe.
   const currentTasks = useAppStore.getState().tasks;
@@ -108,46 +110,49 @@ export async function syncTasks(): Promise<{ pulled: number; pushed: number; upd
   }
 
   // 2) PUSH : pour chaque tâche locale sans googleTaskId, créer côté Google
-  if (defaultListId) {
-    const tasksAfterPull = useAppStore.getState().tasks;
-    for (const t of tasksAfterPull) {
-      if (t.googleTaskId) continue;
-      // Skip les tâches "done" anciennes (>30j) pour pas polluer
-      if (t.status === "done" && t.completedAt && Date.now() - t.completedAt > 1000 * 60 * 60 * 24 * 30) {
-        continue;
-      }
-      const payload: Record<string, unknown> = {
-        listId: defaultListId,
-        title: t.text,
-      };
-      if (t.description) payload.notes = t.description;
-      if (t.dueDate) payload.due = `${t.dueDate}T00:00:00.000Z`;
-      if (t.status === "done") payload.status = "completed";
+  const tasksAfterPull = useAppStore.getState().tasks;
+  for (const t of tasksAfterPull) {
+    if (t.googleTaskId) continue;
+    // Skip les tâches "done" anciennes (>30j) pour pas polluer
+    if (t.status === "done" && t.completedAt && Date.now() - t.completedAt > 1000 * 60 * 60 * 24 * 30) {
+      continue;
+    }
 
-      const r = await fetch("/api/google/tasks", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-      if (r.ok) {
-        const { task: created, listId } = (await r.json()) as {
-          task: { id: string; updated?: string };
-          listId: string;
-        };
-        useAppStore.setState((s) => ({
-          tasks: s.tasks.map((tt) =>
-            tt.id === t.id
-              ? {
-                  ...tt,
-                  googleTaskId: created.id,
-                  googleTaskListId: listId,
-                  googleUpdated: created.updated,
-                }
-              : tt
-          ),
-        }));
-        pushed++;
-      }
+    // Choisir la liste : CRM si linkedProspectId présent et liste CRM trouvée, sinon défaut
+    const targetListId = (t.linkedProspectId && crmListId) ? crmListId : defaultListId;
+    if (!targetListId) continue;
+
+    const payload: Record<string, unknown> = {
+      listId: targetListId,
+      title: t.text,
+    };
+    if (t.description) payload.notes = t.description;
+    if (t.dueDate) payload.due = `${t.dueDate}T00:00:00.000Z`;
+    if (t.status === "done") payload.status = "completed";
+
+    const r = await fetch("/api/google/tasks", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (r.ok) {
+      const { task: created, listId } = (await r.json()) as {
+        task: { id: string; updated?: string };
+        listId: string;
+      };
+      useAppStore.setState((s) => ({
+        tasks: s.tasks.map((tt) =>
+          tt.id === t.id
+            ? {
+                ...tt,
+                googleTaskId: created.id,
+                googleTaskListId: listId,
+                googleUpdated: created.updated,
+              }
+            : tt
+        ),
+      }));
+      pushed++;
     }
   }
 

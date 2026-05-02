@@ -41,6 +41,7 @@ export interface Task {
   googleUpdated?: string;
   linkedJournalId?: string;
   linkedNoteId?: string;
+  linkedProspectId?: string;
 }
 
 export interface Project {
@@ -139,7 +140,7 @@ interface AppState {
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (v: boolean) => void;
   tasks: Task[];
-  addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string, linkedNoteId?: string) => void;
+  addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string, linkedNoteId?: string, linkedProspectId?: string) => void;
   updateTask: (id: string, updates: Partial<Task>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   completeTask: (id: string) => void;
@@ -255,10 +256,10 @@ export const useAppStore = create<AppState>()(
         }),
 
         tasks: [],
-        addTask: (text, status, projectId, linkedJournalId, linkedNoteId) => {
+        addTask: (text, status, projectId, linkedJournalId, linkedNoteId, linkedProspectId) => {
           const trimmedText = text.trim();
           if (!trimmedText) return;
-          const newTask: Task = { id: uid(), text: trimmedText, status: status ?? "today", projectId, createdAt: Date.now(), tags: [], microSteps: [], expanded: false, linkedJournalId, linkedNoteId };
+          const newTask: Task = { id: uid(), text: trimmedText, status: status ?? "today", projectId, createdAt: Date.now(), tags: [], microSteps: [], expanded: false, linkedJournalId, linkedNoteId, linkedProspectId };
           set((s) => ({ tasks: [...s.tasks, newTask], lastActiveAt: Date.now(), lastActiveTaskId: newTask.id }));
           get().addToast(`Tâche ajoutée`, "info");
         },

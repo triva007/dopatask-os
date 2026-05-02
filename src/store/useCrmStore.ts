@@ -197,7 +197,11 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       try {
         useAppStore.getState().addTask(
           `Maquette pour ${prospect.entreprise}`,
-          "today"
+          "today",
+          undefined, // projectId
+          undefined, // linkedJournalId
+          undefined, // linkedNoteId
+          prospectId // linkedProspectId
         );
       } catch (e) {
         // si le store tâches n'est pas dispo, on ignore — pas critique
