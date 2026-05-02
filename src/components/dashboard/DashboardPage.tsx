@@ -291,8 +291,8 @@ export default function DashboardPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
               {projects.filter(p => p.status === "active").slice(0, 4).map((project) => {
-                const projectTasks = tasks.filter((t) => t.projectId === project.id && t.status !== "completed" && t.status !== "done").length;
-                const projectNotes = useAppStore.getState().notes.filter((n) => n.projectId === project.id).length;
+                const projectTasks = (tasks || []).filter((t) => t && t.projectId === project.id && t.status !== "completed" && t.status !== "done").length;
+                const projectNotes = (useAppStore.getState().notes || []).filter((n) => n && n.projectId === project.id).length;
                 
                 return (
                   <Link href="/projets" key={project.id} className="block group">
