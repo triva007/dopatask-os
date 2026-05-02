@@ -15,13 +15,27 @@ export default function Template({ children }: { children: React.ReactNode }) {
       const isShift = e.shiftKey;
 
       if (isCtrl && isZ) {
+        // Ne pas bloquer le Ctrl+Z natif si l'utilisateur tape du texte
+        const target = e.target as HTMLElement;
+        if (target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable)) {
+          return;
+        }
+
         e.preventDefault();
+        const temporalState = useAppStore.temporal.getState();
+        
         if (isShift) {
-          redo();
-          addToast("Action rétablie (Redo)", "info", 2000);
+          if (temporalState.futureStates.length > 0) {
+            temporalState.redo();
+            addToast("Action rétablie (Redo)", "info", 2000);
+          }
         } else {
-          undo();
-          addToast("Action annulée (Undo)", "info", 2000);
+          if (temporalState.pastStates.length > 0) {
+            temporalState.undo();
+            addToast("Action annulée (Undo)", "info", 2000);
+          } else {
+            addToast("Rien à annuler", "info", 2000);
+          }
         }
       }
     };

@@ -114,7 +114,7 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
 
 export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop, onEventDelete, onEventColorChange, onTaskDrop }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; offsetY: number; currentY: number; currentX: number } | null>(null);
+  const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; offsetY: number; currentY: number; currentX: number; startY: number; startX: number; hasMoved: boolean } | null>(null);
   const [draggedTaskOver, setDraggedTaskOver] = useState<{ dayIndex: number; top: number } | null>(null);
   const [selection, setSelection] = useState<{ startY: number; currentY: number; dayIndex: number; startTop: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; ev: CalendarEvent } | null>(null);
@@ -155,6 +155,9 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       offsetY,
       currentY: e.clientY,
       currentX: e.clientX,
+      startY: e.clientY,
+      startX: e.clientX,
+      hasMoved: false
     });
   }, [onEventDrop]);
 
@@ -167,7 +170,11 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
   useEffect(() => {
     const handleGlobalMouseMove = (e: MouseEvent) => {
       if (dragEvent) {
-        setDragEvent(prev => prev ? { ...prev, currentY: e.clientY, currentX: e.clientX } : null);
+        setDragEvent(prev => {
+          if (!prev) return null;
+          const moved = prev.hasMoved || Math.abs(e.clientY - prev.startY) > 3 || Math.abs(e.clientX - prev.startX) > 3;
+          return { ...prev, currentY: e.clientY, currentX: e.clientX, hasMoved: moved };
+        });
       } else if (selection) {
         setSelection(prev => prev ? { ...prev, currentY: e.clientY } : null);
       }
@@ -197,8 +204,15 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
         newStart.setHours(hour, minutes, 0, 0);
         const newEnd = new Date(newStart.getTime() + duration);
 
-        if (origStart.getTime() !== newStart.getTime()) {
+        if (origStart.getTime() !== newStart.getTime() && dragEvent.hasMoved) {
           onEventDrop(dragEvent.ev, newStart, newEnd);
+        } else if (!dragEvent.hasMoved) {
+          // If it didn't move, treat as click manually just in case
+          const btn = gridRef.current.querySelector(`[data-event-id="${dragEvent.ev.id}"]`);
+          if (btn && onEventClick) {
+            const r = btn.getBoundingClientRect();
+            onEventClick(dragEvent.ev, { top: r.top, left: r.right });
+          }
         }
         setDragEvent(null);
       } else if (selection) {
@@ -412,7 +426,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                   const color = getEventColor(l.ev, calendars);
                   const isTask = l.ev.type === "task";
                   const colWidth = 100 / l.totalCols;
-                  const isDragging = dragEvent?.ev.id === l.ev.id;
+                  const isDragging = dragEvent?.ev.id === l.ev.id && (dragEvent.hasMoved || false);
                   
                   // Calculate horizontal offset and top during drag
                   let dragHorizontalOffset = 0;
@@ -436,6 +450,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                   return (
                     <button
                       key={l.ev.id}
+                      data-event-id={l.ev.id}
                       className="cal-event absolute rounded-[4px] text-left overflow-hidden transition-all hover:opacity-90 group cursor-pointer"
                       style={{
                         top: top,
