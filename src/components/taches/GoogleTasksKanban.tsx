@@ -1003,6 +1003,7 @@ function TaskCard(p: TaskCardProps) {
                 "text-[14px] leading-snug break-words font-medium " +
                 (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
               }
+            >
               {(() => {
                 const projectId = (useAppStore.getState().googleTaskProjects || {})[p.t.id];
                 const project = projectId ? (useAppStore.getState().projects || []).find(pj => pj.id === projectId) : null;
