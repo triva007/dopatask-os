@@ -114,7 +114,8 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
 
 export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop, onEventDelete, onEventColorChange, onTaskDrop }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
-  const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; startY: number; startX: number; origTop: number; currentY: number; currentX: number } | null>(null);
+  const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; offsetY: number; currentY: number; currentX: number } | null>(null);
+  const [draggedTaskOver, setDraggedTaskOver] = useState<{ dayIndex: number; top: number } | null>(null);
   const [selection, setSelection] = useState<{ startY: number; currentY: number; dayIndex: number; startTop: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; ev: CalendarEvent } | null>(null);
 
@@ -143,11 +144,15 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
     if (!onEventDrop) return;
     e.stopPropagation();
     e.preventDefault();
+    
+    const rect = gridRef.current?.getBoundingClientRect();
+    const scrollTop = gridRef.current?.scrollTop || 0;
+    const origTop = timeToY(getEventStart(ev));
+    const offsetY = rect ? (e.clientY - rect.top + scrollTop - origTop) : 0;
+    
     setDragEvent({
       ev,
-      startY: e.clientY,
-      startX: e.clientX,
-      origTop: timeToY(getEventStart(ev)),
+      offsetY,
       currentY: e.clientY,
       currentX: e.clientX,
     });
@@ -170,22 +175,17 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
 
     const handleGlobalMouseUp = (e: MouseEvent) => {
       if (dragEvent && onEventDrop && gridRef.current) {
-        const deltaY = e.clientY - dragEvent.startY;
-        const deltaX = e.clientX - dragEvent.startX;
-        
-        // Calculate new day index
         const rect = gridRef.current.getBoundingClientRect();
         const gutterWidth = 52;
         const gridWidth = rect.width - gutterWidth;
         const dayWidth = gridWidth / days.length;
         
-        // Original day center relative to grid left
-        const origDayIndex = days.findIndex(d => isSameDay(d, getEventStart(dragEvent.ev)));
-        const dayOffset = Math.round(deltaX / dayWidth);
-        let newDayIndex = origDayIndex + dayOffset;
+        const relativeX = e.clientX - rect.left - gutterWidth;
+        let newDayIndex = Math.floor(relativeX / dayWidth);
         newDayIndex = Math.max(0, Math.min(days.length - 1, newDayIndex));
-
-        const newTop = Math.max(0, dragEvent.origTop + deltaY);
+        
+        const relativeY = e.clientY - rect.top + gridRef.current.scrollTop;
+        const newTop = Math.max(0, relativeY - dragEvent.offsetY);
         const hour = Math.floor(newTop / HOUR_HEIGHT);
         const minutes = Math.round(((newTop % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
 
@@ -197,7 +197,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
         newStart.setHours(hour, minutes, 0, 0);
         const newEnd = new Date(newStart.getTime() + duration);
 
-        if (Math.abs(deltaY) > 5 || Math.abs(deltaX) > 5) {
+        if (origStart.getTime() !== newStart.getTime()) {
           onEventDrop(dragEvent.ev, newStart, newEnd);
         }
         setDragEvent(null);
@@ -342,9 +342,19 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
             return (
               <div key={di} className="flex-1 min-w-0 relative border-l" style={{ borderColor: "var(--border-primary)" }}
                 onMouseDown={(e) => handleGridMouseDown(di, e)}
-                onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; }}
+                onDragOver={(e) => { 
+                  e.preventDefault(); 
+                  e.dataTransfer.dropEffect = "copy";
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const y = e.clientY - rect.top + (gridRef.current?.scrollTop || 0);
+                  const hour = Math.floor(y / HOUR_HEIGHT);
+                  const minutes = Math.round(((y % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+                  setDraggedTaskOver({ dayIndex: di, top: (hour + minutes / 60) * HOUR_HEIGHT });
+                }}
+                onDragLeave={() => setDraggedTaskOver(null)}
                 onDrop={(e) => {
                   e.preventDefault();
+                  setDraggedTaskOver(null);
                   const taskText = e.dataTransfer.getData("text/dopatask-name");
                   if (!taskText || !onTaskDrop) return;
                   const rect = e.currentTarget.getBoundingClientRect();
@@ -382,28 +392,46 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                   <div className="absolute left-0 right-0 z-30 pointer-events-none rounded-[4px]" style={{ background: "color-mix(in srgb, var(--accent-blue) 20%, transparent)", border: "1px solid color-mix(in srgb, var(--accent-blue) 50%, transparent)", top: Math.min(selection.startTop, selection.startTop + (selection.currentY - selection.startY)), height: Math.abs(selection.currentY - selection.startY) }} />
                 )}
 
+                {/* External Task Drop Preview */}
+                {draggedTaskOver?.dayIndex === di && (
+                  <div 
+                    className="absolute left-1 right-1 z-20 pointer-events-none rounded-[4px] border-2 border-dashed flex items-center justify-center text-[10px] font-semibold"
+                    style={{ 
+                      top: draggedTaskOver.top, 
+                      height: HOUR_HEIGHT, 
+                      borderColor: "var(--accent-blue)", 
+                      background: "color-mix(in srgb, var(--accent-blue) 10%, transparent)",
+                      color: "var(--accent-blue)"
+                    }} 
+                  >
+                    Déposer ici (1h)
+                  </div>
+                )}
+
                 {laid.map((l) => {
                   const color = getEventColor(l.ev, calendars);
                   const isTask = l.ev.type === "task";
                   const colWidth = 100 / l.totalCols;
                   const isDragging = dragEvent?.ev.id === l.ev.id;
                   
-                  // Calculate horizontal offset during drag
+                  // Calculate horizontal offset and top during drag
                   let dragHorizontalOffset = 0;
+                  let top = l.top;
                   if (isDragging && gridRef.current) {
                     const rect = gridRef.current.getBoundingClientRect();
                     const gutterWidth = 52;
                     const gridWidth = rect.width - gutterWidth;
                     const dayWidth = gridWidth / days.length;
-                    const deltaX = dragEvent.currentX - dragEvent.startX;
-                    const dayOffset = Math.round(deltaX / dayWidth);
-                    const origDayIndex = days.findIndex(d => isSameDay(d, getEventStart(dragEvent.ev)));
-                    let newDayIndex = origDayIndex + dayOffset;
+                    
+                    const relativeX = dragEvent.currentX - rect.left - gutterWidth;
+                    let newDayIndex = Math.floor(relativeX / dayWidth);
                     newDayIndex = Math.max(0, Math.min(days.length - 1, newDayIndex));
+                    
                     dragHorizontalOffset = (newDayIndex - di) * dayWidth;
+                    
+                    const relativeY = dragEvent.currentY - rect.top + gridRef.current.scrollTop;
+                    top = Math.max(0, relativeY - dragEvent.offsetY);
                   }
-
-                  const top = isDragging ? Math.max(0, dragEvent.origTop + dragEvent.currentY - dragEvent.startY) : l.top;
                   
                   return (
                     <button

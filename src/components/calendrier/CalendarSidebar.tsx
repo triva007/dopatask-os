@@ -37,18 +37,11 @@ export default function CalendarSidebar({
   const tasks = useAppStore((s) => s.tasks);
   const projects = useAppStore((s) => s.projects);
   const [tasksOpen, setTasksOpen] = useState(true);
-  const [filterStatus, setFilterStatus] = useState<string>("today");
 
-  // Active (non-completed) tasks
+  // Only "today" (Kill la task NOW)
   const activeTasks = useMemo(() => {
-    let filtered = tasks.filter(
-      (t) => t.status !== "completed" && t.status !== "done" && t.status !== "saved"
-    );
-    if (filterStatus !== "all") {
-      filtered = filtered.filter((t) => t.status === filterStatus);
-    }
-    return filtered.slice(0, 30); // limit for perf
-  }, [tasks, filterStatus]);
+    return tasks.filter((t) => t.status === "today").slice(0, 30); // limit for perf
+  }, [tasks]);
 
   const getProjectEmoji = (projectId?: string) => {
     if (!projectId) return "";
@@ -125,9 +118,9 @@ export default function CalendarSidebar({
           ) : (
             <ChevronRight size={11} className="text-[var(--text-tertiary)]" />
           )}
-          <ListChecks size={12} className="text-[var(--accent-purple)]" />
-          <h3 className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)] flex-1">
-            Tâches
+          <ListChecks size={12} className="text-[var(--accent-red)]" />
+          <h3 className="text-[10px] uppercase tracking-wider font-bold text-[var(--accent-red)] flex-1">
+            KILL LA TASK NOW
           </h3>
           <span className="text-[10px] tabular-nums text-[var(--text-ghost)] font-semibold">
             {activeTasks.length}
@@ -136,23 +129,6 @@ export default function CalendarSidebar({
 
         {tasksOpen && (
           <>
-            {/* Status filter tabs */}
-            <div className="flex flex-wrap gap-1 mb-2 px-0.5">
-              {(["today", "todo", "in_progress", "all"] as const).map((s) => (
-                <button
-                  key={s}
-                  onClick={() => setFilterStatus(s)}
-                  className={`px-1.5 py-0.5 rounded text-[9px] font-semibold transition-all ${
-                    filterStatus === s
-                      ? "bg-[var(--accent-purple)] text-white"
-                      : "bg-[var(--surface-2)] text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"
-                  }`}
-                >
-                  {s === "all" ? "Tout" : s === "today" ? "Auj." : s === "todo" ? "À faire" : "En cours"}
-                </button>
-              ))}
-            </div>
-
             {/* Tasks list */}
             <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
               {activeTasks.length === 0 ? (
