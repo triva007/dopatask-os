@@ -7,8 +7,9 @@ import type { Project } from "@/store/useAppStore";
 import { useEffect, useState } from "react";
 
 export default function ProjectDetailView({ project, onBack }: { project: Project; onBack: () => void }) {
-  const localTasks = useAppStore(s => (s.tasks || []).filter(t => t && t.projectId === project.id));
-  const notes = useAppStore(s => (s.notes || []).filter(n => n && n.projectId === project.id));
+  // Use optional chaining inside hooks to prevent crashes if project is undefined
+  const localTasks = useAppStore(s => (s.tasks || []).filter(t => t && t.projectId === project?.id));
+  const notes = useAppStore(s => (s.notes || []).filter(n => n && n.projectId === project?.id));
   const toggleTask = useAppStore(s => s.updateTaskStatus);
   const googleEventProjects = useAppStore(s => s.googleEventProjects || {});
   const googleTaskProjects = useAppStore(s => s.googleTaskProjects || {});
@@ -35,7 +36,7 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
           setGoogleEvents(d.events || []);
         }
       } catch (e) {
-        console.error(e);
+        console.error("ProjectDetailView fetch error:", e);
       } finally {
         setLoadingGoogle(false);
       }
@@ -44,16 +45,21 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
   }, [project?.id]);
 
   const linkedGoogleTasks = (googleTasks || []).filter(t => {
-    if (!t?.id) return false;
+    if (!t?.id || !project?.id) return false;
     const pid = googleTaskProjects[t.id] || googleTaskProjects[`task-${t.id}`];
     return pid === project.id;
   });
-  const linkedGoogleEvents = (googleEvents || []).filter(e => e?.id && googleEventProjects[e.id] === project.id);
+  const linkedGoogleEvents = (googleEvents || []).filter(e => e?.id && project?.id && googleEventProjects[e.id] === project.id);
 
-  const activeLocalTasks = localTasks.filter(t => t.status !== "done" && t.status !== "completed");
-  const completedLocalTasks = localTasks.filter(t => t.status === "done" || t.status === "completed");
+  const activeLocalTasks = (localTasks || []).filter(t => t && t.status !== "done" && t.status !== "completed");
+  const completedLocalTasks = (localTasks || []).filter(t => t && (t.status === "done" || t.status === "completed"));
 
-  if (!project) return null;
+  if (!project) return (
+    <div className="p-8 text-center">
+      <p className="text-[var(--text-tertiary)]">Chargement du projet...</p>
+      <button onClick={onBack} className="mt-4 text-[var(--accent-blue)] underline">Retour</button>
+    </div>
+  );
 
   return (
     <motion.div 
@@ -114,16 +120,16 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
                 <div className="space-y-2.5">
                   {activeLocalTasks.map(task => (
                     <motion.div 
-                      key={task.id} 
+                      key={task?.id || Math.random()} 
                       whileHover={{ scale: 1.01 }}
                       className="flex items-start gap-3 p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm transition-all"
                     >
-                      <button onClick={() => toggleTask(task.id, "completed")} className="mt-0.5 text-[var(--text-tertiary)] hover:text-[var(--accent-blue)] transition-colors">
+                      <button onClick={() => task?.id && toggleTask(task.id, "completed")} className="mt-0.5 text-[var(--text-tertiary)] hover:text-[var(--accent-blue)] transition-colors">
                         <Circle size={18} />
                       </button>
                       <div className="flex-1">
-                        <p className="text-[14.5px] font-medium text-[var(--text-primary)]">{task.text || "Sans titre"}</p>
-                        {task.description && <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{task.description}</p>}
+                        <p className="text-[14.5px] font-medium text-[var(--text-primary)]">{task?.text || "Sans titre"}</p>
+                        {task?.description && <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{task.description}</p>}
                       </div>
                     </motion.div>
                   ))}
@@ -141,9 +147,9 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
                   </button>
                   <div className="space-y-2 opacity-50">
                     {completedLocalTasks.map(task => (
-                      <div key={task.id} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-2)]">
+                      <div key={task?.id || Math.random()} className="flex items-start gap-3 p-3 rounded-xl border border-[var(--border-primary)] bg-[var(--surface-2)]">
                         <CheckCircle2 size={16} className="text-[var(--accent-green)] mt-0.5" />
-                        <span className="text-[13.5px] text-[var(--text-primary)] line-through">{task.text || "Sans titre"}</span>
+                        <span className="text-[13.5px] text-[var(--text-primary)] line-through">{task?.text || "Sans titre"}</span>
                       </div>
                     ))}
                   </div>
@@ -164,11 +170,11 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
               ) : linkedGoogleTasks.length > 0 ? (
                 <div className="space-y-2.5">
                   {linkedGoogleTasks.map(task => (
-                    <div key={task.id} className="flex items-start gap-3 p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm">
+                    <div key={task?.id || Math.random()} className="flex items-start gap-3 p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm">
                       <div className="mt-1 w-4 h-4 rounded-full border-2 border-[var(--accent-cyan)] opacity-50" />
                       <div className="flex-1">
-                        <p className="text-[14.5px] font-medium text-[var(--text-primary)]">{task.title || "(sans titre)"}</p>
-                        {task.notes && <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{task.notes}</p>}
+                        <p className="text-[14.5px] font-medium text-[var(--text-primary)]">{task?.title || "(sans titre)"}</p>
+                        {task?.notes && <p className="text-[12px] text-[var(--text-tertiary)] mt-1 line-clamp-1">{task.notes}</p>}
                       </div>
                     </div>
                   ))}
@@ -197,14 +203,14 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
                   {linkedGoogleEvents.map(event => {
                     let start: Date | null = null;
                     try {
-                      if (event.start?.dateTime) start = new Date(event.start.dateTime);
-                      else if (event.start?.date) start = new Date(event.start.date);
+                      if (event?.start?.dateTime) start = new Date(event.start.dateTime);
+                      else if (event?.start?.date) start = new Date(event.start.date);
                     } catch (e) { console.error(e); }
 
                     return (
-                      <div key={event.id} className="p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm">
+                      <div key={event?.id || Math.random()} className="p-4 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm">
                         <div className="flex items-center justify-between mb-2">
-                          <p className="text-[14.5px] font-bold text-[var(--text-primary)]">{event.summary || "(sans titre)"}</p>
+                          <p className="text-[14.5px] font-bold text-[var(--text-primary)]">{event?.summary || "(sans titre)"}</p>
                           {start && !isNaN(start.getTime()) && (
                             <span className="text-[10px] font-bold px-2 py-1 rounded-lg bg-[var(--accent-red-light)] text-[var(--accent-red)] uppercase tracking-tight">
                               {start.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
@@ -234,24 +240,31 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
               </h2>
               {notes.length > 0 ? (
                 <div className="grid grid-cols-1 gap-4">
-                  {notes.map(note => (
-                    <motion.div 
-                      key={note.id} 
-                      whileHover={{ y: -2 }}
-                      className="p-5 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm"
-                    >
-                      <h3 className="text-[15px] font-bold text-[var(--text-primary)] mb-2.5">{note.title || "Note sans titre"}</h3>
-                      <p className="text-[13px] text-[var(--text-secondary)] line-clamp-4 leading-relaxed">{note.content}</p>
-                      <div className="mt-4 pt-4 border-t border-[var(--border-primary)] flex items-center justify-between">
-                        <span className="text-[11px] text-[var(--text-tertiary)]">
-                          Modifié le {new Date(note.createdAt).toLocaleDateString("fr-FR")}
-                        </span>
-                        <button className="text-[11px] font-bold text-[var(--accent-blue)] hover:underline">
-                          Ouvrir la note
-                        </button>
-                      </div>
-                    </motion.div>
-                  ))}
+                  {notes.map(note => {
+                    let noteDate = "";
+                    try {
+                      if (note?.createdAt) noteDate = new Date(note.createdAt).toLocaleDateString("fr-FR");
+                    } catch (e) {}
+
+                    return (
+                      <motion.div 
+                        key={note?.id || Math.random()} 
+                        whileHover={{ y: -2 }}
+                        className="p-5 rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] shadow-sm"
+                      >
+                        <h3 className="text-[15px] font-bold text-[var(--text-primary)] mb-2.5">{note?.title || "Note sans titre"}</h3>
+                        <p className="text-[13px] text-[var(--text-secondary)] line-clamp-4 leading-relaxed">{note?.content || ""}</p>
+                        <div className="mt-4 pt-4 border-t border-[var(--border-primary)] flex items-center justify-between">
+                          <span className="text-[11px] text-[var(--text-tertiary)]">
+                            {noteDate ? `Modifié le ${noteDate}` : "Date inconnue"}
+                          </span>
+                          <button className="text-[11px] font-bold text-[var(--accent-blue)] hover:underline">
+                            Ouvrir la note
+                          </button>
+                        </div>
+                      </motion.div>
+                    );
+                  })}
                 </div>
               ) : (
                 <div className="py-8 text-center rounded-2xl border border-dashed border-[var(--border-primary)]">
