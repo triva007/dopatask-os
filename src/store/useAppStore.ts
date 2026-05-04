@@ -101,6 +101,7 @@ export interface Note {
   images: string[];
   order: number;
   projectId?: string;
+  linkedEventId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -156,7 +157,7 @@ interface AppState {
   newStart: () => void;
   reorderTasks: (taskIds: string[]) => void;
   projects: Project[];
-  addProject: (name: string, emoji?: string, objectiveId?: string, color?: string) => void;
+  addProject: (name: string, emoji?: string, objectiveId?: string, color?: string) => string;
   updateProject: (id: string, updates: Partial<Project>) => void;
   deleteProject: (id: string) => void;
   objectives: Objective[];
@@ -180,7 +181,7 @@ interface AppState {
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
   notes: Note[];
-  addNote: (title: string, content: string, color?: string, images?: string[], projectId?: string) => void;
+  addNote: (title: string, content: string, color?: string, images?: string[], projectId?: string, linkedEventId?: string) => string;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
@@ -279,7 +280,11 @@ export const useAppStore = create<AppState>()(
         reorderTasks: (taskIds) => set((s) => ({ tasks: s.tasks.map((t) => ({ ...t, order: taskIds.indexOf(t.id) })) })),
 
         projects: [],
-        addProject: (name, emoji, objectiveId, color) => set((s) => ({ projects: [...s.projects, { id: uid(), name: name.trim(), emoji: emoji ?? "📁", objectiveId, status: "active", color: color ?? "#3b82f6", createdAt: Date.now() }] })),
+        addProject: (name, emoji, objectiveId, color) => {
+          const newId = uid();
+          set((s) => ({ projects: [...s.projects, { id: newId, name: name.trim(), emoji: emoji ?? "📁", objectiveId, status: "active", color: color ?? "#3b82f6", createdAt: Date.now() }] }));
+          return newId;
+        },
         updateProject: (id, updates) => set((s) => ({ projects: s.projects.map((p) => p.id === id ? { ...p, ...updates } : p) })),
         deleteProject: (id) => set((s) => ({ projects: s.projects.filter((p) => p.id !== id), tasks: s.tasks.map((t) => t.projectId === id ? { ...t, projectId: undefined } : t) })),
 
@@ -307,10 +312,14 @@ export const useAppStore = create<AppState>()(
         sendJournalToInbox: (id) => { const entry = get().journalEntries.find(e => e.id === id); if (entry) get().addInboxItem(entry.content.slice(0, 100), "note"); },
 
         notes: [],
-        addNote: (title, content, color, images, projectId) => set((s) => {
-          const maxOrder = s.notes.length > 0 ? Math.max(...s.notes.map(n => n.order || 0)) : -1;
-          return { notes: [{ id: uid(), title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], order: maxOrder + 1, projectId, createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] };
-        }),
+        addNote: (title, content, color, images, projectId, linkedEventId) => {
+          const newId = uid();
+          set((s) => {
+            const maxOrder = s.notes.length > 0 ? Math.max(...s.notes.map(n => n.order || 0)) : -1;
+            return { notes: [{ id: newId, title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], order: maxOrder + 1, projectId, linkedEventId, createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] };
+          });
+          return newId;
+        },
         updateNote: (id, updates) => set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, ...updates, updatedAt: Date.now() } : n) })),
         deleteNote: (id) => set((s) => ({ notes: s.notes.filter((n) => n.id !== id) })),
         togglePinNote: (id) => set((s) => ({ notes: s.notes.map((n) => n.id === id ? { ...n, pinned: !n.pinned, updatedAt: Date.now() } : n) })),

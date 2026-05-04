@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   Search, ListChecks, FolderKanban, Target,
-  BookOpen, Inbox,
+  BookOpen, Inbox, StickyNote, Users,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useCrmStore } from "@/store/useCrmStore";
 
 interface SearchResult {
   id: string;
-  type: "task" | "project" | "objective" | "journal" | "inbox";
+  type: "task" | "project" | "objective" | "journal" | "inbox" | "note" | "prospect";
   title: string;
   subtitle?: string;
   status?: string;
@@ -19,11 +20,13 @@ interface SearchResult {
 }
 
 const TYPE_CONFIG = {
-  task:      { Icon: ListChecks,  label: "Tâche",     color: "var(--accent-blue)" },
+  task:      { Icon: ListChecks,   label: "Tâche",     color: "var(--accent-blue)" },
   project:   { Icon: FolderKanban, label: "Projet",    color: "var(--accent-purple)" },
   objective: { Icon: Target,       label: "Objectif",  color: "var(--accent-green)" },
   journal:   { Icon: BookOpen,     label: "Journal",   color: "var(--accent-orange)" },
   inbox:     { Icon: Inbox,        label: "Inbox",     color: "var(--accent-cyan)" },
+  note:      { Icon: StickyNote,   label: "Note",      color: "var(--accent-yellow, #eab308)" },
+  prospect:  { Icon: Users,        label: "CRM",       color: "var(--accent-pink, #ec4899)" },
 };
 
 export default function SpotlightSearch() {
@@ -33,9 +36,10 @@ export default function SpotlightSearch() {
   const inputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const { tasks, projects, objectives, journalEntries, inboxItems } = useAppStore();
+  const { tasks, projects, objectives, journalEntries, inboxItems, notes } = useAppStore();
+  const prospects = useCrmStore((s) => s.prospects);
 
-  // Keyboard shortcut: Ctrl+K or Cmd+K
+  // Keyboard shortcut: Ctrl+K
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "k") {
@@ -131,8 +135,39 @@ export default function SpotlightSearch() {
       }
     });
 
+    // Notes
+    notes.forEach((n) => {
+      if (n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || n.labels.some((l) => l.toLowerCase().includes(q))) {
+        r.push({
+          id: n.id,
+          type: "note",
+          title: n.title || "Note sans titre",
+          subtitle: "Carnet de notes",
+          href: "/notes" // Si vous avez une page dédiée, sinon ajuster.
+        });
+      }
+    });
+
+    // Prospects CRM
+    prospects.forEach((p) => {
+      if (
+        p.entreprise.toLowerCase().includes(q) ||
+        (p.telephone && p.telephone.includes(q)) ||
+        (p.notes && p.notes.toLowerCase().includes(q)) ||
+        (p.niche && p.niche.toLowerCase().includes(q))
+      ) {
+        r.push({
+          id: p.id,
+          type: "prospect",
+          title: p.entreprise,
+          subtitle: `Statut: ${p.statut.replace(/_/g, " ")}`,
+          href: `/prospects/${p.id}`
+        });
+      }
+    });
+
     return r.slice(0, 12);
-  }, [query, tasks, projects, objectives, journalEntries, inboxItems]);
+  }, [query, tasks, projects, objectives, journalEntries, inboxItems, notes, prospects]);
 
   const handleSelect = (result: SearchResult) => {
     setOpen(false);
@@ -242,7 +277,7 @@ export default function SpotlightSearch() {
           {/* Footer hint */}
           {!query.trim() && (
             <div className="px-5 py-4 text-center">
-              <p className="text-[11px] text-t-tertiary">Cherche dans tes tâches, projets, objectifs, journal et inbox</p>
+              <p className="text-[11px] text-t-tertiary">Appuyez sur <kbd className="font-mono bg-[var(--surface-2)] px-1 rounded">Ctrl+K</kbd> pour chercher dans vos tâches, projets, notes, et CRM</p>
             </div>
           )}
         </motion.div>

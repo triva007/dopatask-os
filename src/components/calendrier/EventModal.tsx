@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { X, MapPin, FileText, Clock, Palette } from "lucide-react";
+import { X, MapPin, FileText, Clock, Palette, StickyNote } from "lucide-react";
 import { motion } from "framer-motion";
+import { useRouter } from "next/navigation";
 import { useAppStore } from "@/store/useAppStore";
 import type { CalendarEvent, CalendarInfo } from "./useCalendarEvents";
 
@@ -53,11 +54,31 @@ const COLOR_OPTIONS = [
 ];
 
 export default function EventModal({ event, defaultDate, defaultEndDate, calendars, taskLists = [], onSave, onClose }: EventModalProps) {
+  const router = useRouter();
   const isEdit = !!event;
   const now = defaultDate || new Date();
   const defaultEnd = defaultEndDate || new Date(now.getTime() + 60 * 60 * 1000);
 
   const [mode, setMode] = useState<"event" | "task">(event?.type === "task" ? "task" : "event");
+
+  // Liaison de notes
+  const notes = useAppStore((s) => s.notes);
+  const addNote = useAppStore((s) => s.addNote);
+  const linkedNote = isEdit && event?.id ? notes.find((n) => n.linkedEventId === event.id) : undefined;
+
+  const handleCreateNote = () => {
+    if (!event?.id) return;
+    const noteId = addNote(
+      `Note: ${event.summary}`,
+      `Notes pour l'événement du ${new Date(event.start?.dateTime || event.start?.date || "").toLocaleDateString()}`,
+      undefined,
+      [],
+      projectId || undefined,
+      event.id
+    );
+    onClose();
+    router.push(`/notes?id=${noteId}`);
+  };
 
   const existingAllDay = event?.start?.date && !event?.start?.dateTime;
 
@@ -294,6 +315,32 @@ export default function EventModal({ event, defaultDate, defaultEndDate, calenda
               ))}
             </select>
           </div>
+
+          {/* Linked Note (Event Only & Edit Mode) */}
+          {mode === "event" && isEdit && (
+            <div className="flex items-center gap-3">
+              <StickyNote size={14} className="text-[var(--text-tertiary)] shrink-0" />
+              {linkedNote ? (
+                <button
+                  onClick={() => {
+                    onClose();
+                    router.push(`/notes?id=${linkedNote.id}`);
+                  }}
+                  className="flex-1 text-left bg-[var(--accent-blue-light)] text-[var(--accent-blue)] border border-[var(--accent-blue)]/30 rounded-xl px-3 py-2 text-[13px] font-medium hover:brightness-110 transition-all truncate"
+                >
+                  Ouvrir la note : {linkedNote.title}
+                </button>
+              ) : (
+                <button
+                  onClick={handleCreateNote}
+                  className="flex-1 text-left bg-[var(--surface-2)] border rounded-xl px-3 py-2 text-[13px] text-[var(--text-secondary)] hover:bg-[var(--surface-3)] transition-all"
+                  style={{ borderColor: "var(--border-primary)" }}
+                >
+                  + Créer une note pour cet événement
+                </button>
+              )}
+            </div>
+          )}
 
           {/* Calendar selector or Task list selector */}
           <div className="flex items-center gap-3">

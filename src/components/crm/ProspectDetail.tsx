@@ -8,7 +8,7 @@ import {
   ArrowLeft, Phone, MapPin, Save, Check,
   Loader2, DollarSign, PhoneOff, Ban, Calendar, Frown,
   ChevronLeft, ChevronRight, Sparkles, RotateCcw, X, Clock,
-  ListChecks, Plus, CheckCircle2, Circle, Trash2,
+  ListChecks, Plus, CheckCircle2, Circle, Trash2, FolderKanban,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -40,11 +40,12 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const addRevenu = useCrmStore((s) => s.addRevenu);
   const config = useCrmStore((s) => s.config);
 
-  // Tâches liées (matching par nom d'entreprise dans text/description)
   const allTasks = useAppStore((s) => s.tasks);
   const addTask = useAppStore((s) => s.addTask);
   const completeTask = useAppStore((s) => s.completeTask);
   const updateTaskStatus = useAppStore((s) => s.updateTaskStatus);
+  const addProject = useAppStore((s) => s.addProject);
+  const projects = useAppStore((s) => s.projects);
 
   const prospect = prospects.find((p) => p.id === id);
   const prospectCalls = useMemo(
@@ -307,6 +308,19 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     setActing(false);
   };
 
+  const onConvertToProject = () => {
+    if (!prospect) return;
+    const projectId = addProject(prospect.entreprise, "🚀", undefined, "var(--accent-green)");
+    
+    // Créer un template de tâches par défaut
+    addTask(`Kick-off client : ${prospect.entreprise}`, "todo", projectId, undefined, undefined, id);
+    addTask(`Demander les accès (CMS, GMB)`, "todo", projectId, undefined, undefined, id);
+    addTask(`Créer la maquette V1`, "todo", projectId, undefined, undefined, id);
+    
+    // Aller sur la page du projet
+    router.push(`/projets?id=${projectId}`);
+  };
+
   return (
     <div className="h-full flex flex-col overflow-hidden bg-[var(--background)]">
 
@@ -419,7 +433,21 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
         </div>
 
         {/* Action bar résultat appel — XL */}
-        {rappelMode ? (
+        {prospect.statut === "VENDU" ? (
+          <div className="flex flex-col items-center justify-center p-4 rounded-xl bg-[var(--accent-green-light)] border border-[var(--accent-green)]/30 text-center space-y-2">
+            <span className="text-[14px] font-bold text-[var(--accent-green)] flex items-center gap-2">
+              <CheckCircle2 size={18} />
+              Prospect Vendu !
+            </span>
+            <button
+              onClick={onConvertToProject}
+              className="mt-2 inline-flex items-center gap-2 px-4 py-2 bg-[var(--accent-green)] text-black rounded-lg text-[13px] font-bold hover:brightness-110 transition-all shadow-lg shadow-[var(--accent-green)]/20"
+            >
+              <FolderKanban size={16} />
+              Créer un Projet (Template)
+            </button>
+          </div>
+        ) : rappelMode ? (
           <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-secondary)]">
             <Clock size={15} style={{ color: "var(--accent-purple)" }} className="shrink-0" />
             <span className="text-[12px] font-semibold" style={{ color: "var(--accent-purple)" }}>Rappeler le :</span>

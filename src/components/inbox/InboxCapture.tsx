@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import Link from "next/link";
 import {
   Inbox, Plus, Mic, MicOff, ArrowRight, Trash2, Check,
-  ListTodo, StickyNote, Calendar, X,
+  ListTodo, StickyNote, Calendar, X, Phone, Clock
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
+import { useCrmStore } from "@/store/useCrmStore";
 import type { InboxItemType } from "@/store/useAppStore";
 
 const TYPE_CONFIG: { id: InboxItemType; label: string; icon: typeof ListTodo; color: string }[] = [
@@ -26,6 +28,32 @@ export default function InboxCapture() {
 
   const pendingItems = inboxItems.filter((i) => !i.processed);
   const processedItems = inboxItems.filter((i) => i.processed);
+
+  // CRM Rappels du jour
+  const { prospects, calls, loaded, loadAll } = useCrmStore();
+  
+  useEffect(() => {
+    if (!loaded) loadAll();
+  }, [loaded, loadAll]);
+
+  // CRM Rappels du jour
+  const rappelsDuJour = useMemo(() => {
+    const actifs = prospects.filter((p) => !p.archived);
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const now = Date.now();
+    const H24 = 24 * 60 * 60 * 1000;
+    const lastCallTs = new Map<string, number>();
+    for (const c of calls) {
+      const ts = new Date(c.date).getTime();
+      const prev = lastCallTs.get(c.prospect_id) ?? 0;
+      if (ts > prev) lastCallTs.set(c.prospect_id, ts);
+    }
+    return actifs.filter((p) => {
+      if (p.statut !== "REPONDEUR") return false;
+      if (p.date_relance) return p.date_relance <= todayStr;
+      return now - (lastCallTs.get(p.id) ?? 0) > H24;
+    });
+  }, [prospects, calls]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -179,6 +207,43 @@ export default function InboxCapture() {
             </motion.div>
           )}
         </div>
+
+        {/* CRM Rappels du jour */}
+        {rappelsDuJour.length > 0 && (
+          <div className="flex flex-col gap-2">
+            <p className="text-[12px] font-semibold flex items-center gap-1" style={{ color: "var(--accent-orange)" }}>
+              <Clock size={14} />
+              Rappels CRM du jour · {rappelsDuJour.length}
+            </p>
+            <div className="flex flex-col gap-2">
+              {rappelsDuJour.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/prospects/${p.id}`}
+                  className="flex items-center gap-3 px-4 py-3.5 rounded-lg group transition-colors"
+                  style={{
+                    background: "color-mix(in srgb, var(--accent-orange) 5%, var(--card-bg))",
+                    border: "1px solid color-mix(in srgb, var(--accent-orange) 15%, transparent)"
+                  }}
+                >
+                  <div
+                    className="w-7 h-7 rounded-md flex items-center justify-center shrink-0"
+                    style={{ background: "color-mix(in srgb, var(--accent-orange) 15%, transparent)" }}
+                  >
+                    <Phone size={12} style={{ color: "var(--accent-orange)" }} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13px] font-medium text-[var(--text-primary)] truncate">{p.entreprise}</p>
+                    <p className="text-[11px] text-[var(--accent-orange)] mt-0.5 opacity-80">
+                      {p.date_relance ? `Rappel prévu le ${new Date(p.date_relance + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}` : "Dernier appel > 24h"}
+                    </p>
+                  </div>
+                  <ArrowRight size={14} className="text-[var(--accent-orange)] opacity-0 group-hover:opacity-100 transition-opacity" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Pending Items */}
         {pendingItems.length > 0 && (
