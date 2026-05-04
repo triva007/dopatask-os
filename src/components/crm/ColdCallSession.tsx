@@ -187,7 +187,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
           </p>
           <button
             onClick={onExit}
-            className="px-5 py-2.5 rounded-xl bg-dopa-cyan text-black font-semibold text-[13px] hover:bg-dopa-cyan/90"
+            className="px-5 py-2.5 rounded-xl font-semibold text-[13px] transition-all"
+            style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}
           >
             Retour au CRM
           </button>
@@ -210,7 +211,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
           </p>
           <button
             onClick={onExit}
-            className="px-5 py-2.5 rounded-xl bg-dopa-cyan text-black font-semibold text-[13px] hover:bg-dopa-cyan/90"
+            className="px-5 py-2.5 rounded-xl font-semibold text-[13px] transition-all"
+            style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}
           >
             Retour au CRM
           </button>
@@ -260,8 +262,9 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             <button
               onClick={() => setShowScript(!showScript)}
               className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold transition-all ${
-                showScript ? "bg-dopa-cyan text-black" : "bg-surface-2 text-t-secondary hover:bg-surface-3"
+                showScript ? "" : "bg-surface-2 text-t-secondary hover:bg-surface-3"
               }`}
+              style={showScript ? { background: "var(--accent-cyan)", color: "var(--surface-0)" } : {}}
             >
               <FileText size={14} /> Script
             </button>
@@ -272,11 +275,12 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
       {/* Flash notification */}
       <AnimatePresence>
         {flash && (
-          <motion.div
+            <motion.div
             initial={{ opacity: 0, y: -12 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -12 }}
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg bg-dopa-green text-black text-[12.5px] font-semibold shadow-lg"
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-30 px-4 py-2 rounded-lg text-[12.5px] font-semibold shadow-lg"
+            style={{ background: "var(--accent-green)", color: "var(--surface-0)" }}
           >
             {flash}
           </motion.div>
@@ -342,7 +346,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 <div className="flex items-center gap-3 mb-4">
                   <a
                     href={telHref}
-                    className="flex-1 inline-flex items-center gap-3 px-5 py-4 rounded-xl bg-dopa-cyan text-black font-bold text-[22px] tabular-nums hover:bg-dopa-cyan/90 transition-colors"
+                    className="flex-1 inline-flex items-center gap-3 px-5 py-4 rounded-xl font-bold text-[22px] tabular-nums transition-colors"
+                    style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}
                   >
                     <Phone size={20} />
                     {tel}
@@ -356,7 +361,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                   </button>
                 </div>
               ) : (
-                <div className="mb-4 px-4 py-3 rounded-xl bg-dopa-red/10 border border-dopa-red/30 text-dopa-red text-[12.5px]">
+                <div className="mb-4 px-4 py-3 rounded-xl text-[12.5px]"
+                  style={{ background: "var(--accent-red-light)", border: "1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)", color: "var(--accent-red)" }}>
                   Pas de téléphone enregistré pour ce prospect.
                 </div>
               )}

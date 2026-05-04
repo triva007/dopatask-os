@@ -149,7 +149,7 @@ export default function CrmHub() {
       const prospect = prospects.find(p => p.id === active.id);
       if (prospect && prospect.statut !== over.id) {
         updateProspect(active.id, { statut: over.id });
-        if (over.id === "VENDU" || over.id === "RDV_BOOKE") celebrate();
+        if (over.id === "VENDU" || over.id === "RDV_BOOKE") celebrate("achievement");
       }
     }
   };
@@ -182,7 +182,8 @@ export default function CrmHub() {
             </Link>
             <button
               onClick={() => setShowImport(true)}
-              className="inline-flex items-center gap-2 px-3 py-2 bg-dopa-cyan/10 text-dopa-cyan rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/20"
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold transition-all"
+              style={{ background: "var(--accent-cyan-light)", color: "var(--accent-cyan)" }}
             >
               <Upload size={14} /> Importer CSV
             </button>
@@ -190,7 +191,8 @@ export default function CrmHub() {
         </div>
 
         {error && (
-          <div className="px-4 py-3 bg-dopa-red/10 border border-dopa-red/30 rounded-lg text-[12px] text-dopa-red flex items-center gap-2">
+          <div className="px-4 py-3 rounded-lg text-[12px] flex items-center gap-2"
+            style={{ background: "var(--accent-red-light)", color: "var(--accent-red)", border: "1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)" }}>
             <AlertTriangle size={14} /> {error}
           </div>
         )}
@@ -202,15 +204,21 @@ export default function CrmHub() {
           whileHover={aAppeler.length > 0 ? { scale: 1.005, y: -1 } : undefined}
           whileTap={aAppeler.length > 0 ? { scale: 0.995 } : undefined}
           transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          className="w-full group relative overflow-hidden rounded-2xl border-2 border-dopa-cyan bg-gradient-to-br from-dopa-cyan/15 via-dopa-cyan/5 to-transparent p-6 hover:shadow-[0_0_40px_rgba(34,211,238,0.18)] disabled:opacity-40 disabled:cursor-not-allowed"
+          className="w-full group relative overflow-hidden rounded-2xl border-2 p-6 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          style={{ 
+            borderColor: "var(--accent-cyan)", 
+            background: "linear-gradient(135deg, var(--accent-cyan-light) 0%, transparent 100%)",
+            boxShadow: "0 0 40px color-mix(in srgb, var(--accent-cyan) 10%, transparent)"
+          }}
         >
           <div className="flex items-center justify-between gap-6">
             <div className="flex items-center gap-4 text-left">
-              <div className="w-14 h-14 rounded-2xl bg-dopa-cyan text-black flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform">
+              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform"
+                style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}>
                 <Phone size={24} strokeWidth={2.5} />
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-widest font-bold text-dopa-cyan mb-1">
+                <p className="text-[11px] uppercase tracking-widest font-bold mb-1" style={{ color: "var(--accent-cyan)" }}>
                   Mode focus · Zéro distraction
                 </p>
                 <h2 className="text-[22px] font-bold leading-tight">
@@ -225,7 +233,7 @@ export default function CrmHub() {
             </div>
             {aAppeler.length > 0 && (
               <div className="text-right shrink-0">
-                <p className="text-[44px] font-black leading-none tabular-nums text-dopa-cyan">
+                <p className="text-[44px] font-black leading-none tabular-nums" style={{ color: "var(--accent-cyan)" }}>
                   {aAppeler.length}
                 </p>
                 <p className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold">
@@ -405,7 +413,8 @@ export default function CrmHub() {
             </p>
             <button
               onClick={() => setShowImport(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-dopa-cyan text-black rounded-lg text-[13px] font-semibold hover:bg-dopa-cyan/90"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg text-[13px] font-semibold transition-all"
+              style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}
             >
               <Upload size={14} /> Importer mon CSV
             </button>
@@ -496,11 +505,10 @@ function DraggableProspect({ prospect, colorInfo }: { prospect: any, colorInfo: 
   return (
     <div
       ref={setNodeRef}
-      style={style}
+      style={{ ...style, borderColor: colorInfo.border }}
       {...listeners}
       {...attributes}
       className={`rounded-lg p-2 border bg-[var(--surface-1)] transition-all cursor-grab active:cursor-grabbing hover:brightness-110 ${isDragging ? "opacity-50" : ""}`}
-      style={{ borderColor: colorInfo.border }}
     >
       <div className="flex justify-between items-start gap-1">
         <p className="text-[12px] font-semibold text-[var(--text-primary)] leading-tight line-clamp-2">

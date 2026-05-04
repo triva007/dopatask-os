@@ -37,12 +37,12 @@ import { CSS } from '@dnd-kit/utilities';
 const COLORS = [
   "var(--card-bg)",
   "var(--surface-2)",
-  "color-mix(in srgb, var(--accent-red) 15%, var(--card-bg))",
-  "color-mix(in srgb, var(--accent-orange) 15%, var(--card-bg))",
-  "color-mix(in srgb, var(--accent-green) 15%, var(--card-bg))",
-  "color-mix(in srgb, var(--accent-cyan) 15%, var(--card-bg))",
-  "color-mix(in srgb, var(--accent-blue) 15%, var(--card-bg))",
-  "color-mix(in srgb, var(--accent-purple) 15%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-red) 12%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-orange) 12%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-green) 12%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-cyan) 12%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-blue) 12%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-purple) 12%, var(--card-bg))",
 ];
 
 export default function NotesView() {
@@ -136,7 +136,7 @@ export default function NotesView() {
   const activeNote = activeId ? notes.find(n => n.id === activeId) : null;
 
   return (
-    <div className="flex flex-col h-full bg-[var(--background)]">
+    <div className="flex flex-col h-full bg-[var(--surface-1)]">
       {/* Header */}
       <div className="shrink-0 px-8 pt-8 pb-5 border-b border-[var(--border-primary)] flex items-center justify-between">
         <div>
@@ -360,7 +360,7 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
 
   return (
     <div 
-      className={`rounded-[22px] border border-[var(--border-primary)] p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-lg ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:y-[-4px]"}`}
+      className={`rounded-[22px] border border-[var(--border-primary)] p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-[var(--card-shadow)] hover:shadow-[var(--card-shadow-hover)] ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:translate-y-[-4px]"}`}
       style={{ background: note.color }}
       onContextMenu={onContextMenu}
       onClick={onEdit}
