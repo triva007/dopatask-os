@@ -258,7 +258,6 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   // Rappel plus tard inline
   const [rappelMode, setRappelMode] = useState(false);
   const [rappelDate, setRappelDate] = useState("");
-  const logCall = useCrmStore((s) => s.logCall);
 
   useEffect(() => {
     if (!loaded) loadAll();
