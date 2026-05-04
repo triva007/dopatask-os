@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCrmStore } from "@/store/useCrmStore";
+import NotificationCenter from "../toast/NotificationCenter";
 
 type NavItem = {
   href: string;
@@ -173,13 +174,16 @@ export default function Sidebar() {
       {/* Spacer */}
       <div className="flex-1" />
 
-      {/* Settings */}
-      <div className="px-1 mt-6 pt-6 border-t border-b-primary">
-        <NavLink
-          item={{ href: "/reglages", label: "Réglages", Icon: Settings }}
-          isActive={pathname === "/reglages"}
-          badgeCount={0}
-        />
+      {/* Settings & Notifications */}
+      <div className="px-1 mt-6 pt-6 border-t border-b-primary flex items-center gap-2">
+        <div className="flex-1">
+          <NavLink
+            item={{ href: "/reglages", label: "Réglages", Icon: Settings }}
+            isActive={pathname === "/reglages"}
+            badgeCount={0}
+          />
+        </div>
+        <NotificationCenter />
       </div>
 
     </nav>

@@ -6,18 +6,19 @@ import { supabaseStorage } from "@/lib/supabaseStorage";
 export * from "./slices/types";
 import {
   TaskStatus, IncupTag, ObjectiveHorizon, ProjectStatus, LifeGoalHorizon, InboxItemType, RecurrenceType,
-  MicroStep, Task, Project, Milestone, Objective, LifeGoal, JournalEntry, Note, InboxItem, TimelineEvent, Toast
+  MicroStep, Task, Project, Milestone, Objective, LifeGoal, JournalEntry, Note, InboxItem, TimelineEvent, Toast, ProjectTemplate
 } from "./slices/types";
 import { createTasksSlice } from "./slices/tasksSlice";
 import { createProjectsSlice } from "./slices/projectsSlice";
 import { createNotesSlice } from "./slices/notesSlice";
 import { createUISlice } from "./slices/uiSlice";
+import { createTemplatesSlice } from "./slices/templatesSlice";
 
 interface AppState {
   hasSeenTutorial: boolean;
   setHasSeenTutorial: (v: boolean) => void;
   tasks: Task[];
-  addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string, linkedNoteId?: string, linkedProspectId?: string) => void;
+  addTask: (text: string, status?: TaskStatus, projectId?: string, linkedJournalId?: string, linkedNoteId?: string, linkedProspectId?: string) => string;
   updateTask: (id: string, updates: Partial<Task>) => void;
   updateTaskStatus: (id: string, status: TaskStatus) => void;
   completeTask: (id: string) => void;
@@ -103,6 +104,10 @@ interface AppState {
   setGoogleEventProject: (eventId: string, projectId: string | null) => void;
   googleTaskProjects: Record<string, string>;
   setGoogleTaskProject: (taskId: string, projectId: string | null) => void;
+  templates: ProjectTemplate[];
+  saveProjectAsTemplate: (projectId: string, templateName: string) => void;
+  applyTemplateToProject: (templateId: string, projectId: string) => void;
+  deleteTemplate: (id: string) => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
@@ -115,6 +120,7 @@ export const useAppStore = create<AppState>()(
         ...createProjectsSlice(set, get, api),
         ...createNotesSlice(set, get, api),
         ...createUISlice(set, get, api),
+        ...createTemplatesSlice(set, get, api),
       }),
     ),
     {

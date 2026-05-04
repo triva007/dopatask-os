@@ -9,6 +9,7 @@ import {
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
 import { useCrmStore } from "@/store/useCrmStore";
+import Fuse from "fuse.js";
 
 interface SearchResult {
   id: string;
@@ -63,114 +64,53 @@ export default function SpotlightSearch() {
     }
   }, [open]);
 
+  // All searchable items
+  const searchableItems = useMemo(() => {
+    const items: SearchResult[] = [];
+    tasks.forEach(t => items.push({ id: t.id, type: "task", title: t.text, subtitle: t.status, href: "/taches" }));
+    projects.forEach(p => items.push({ id: p.id, type: "project", title: p.name, subtitle: p.status, href: "/projets" }));
+    objectives.forEach(o => items.push({ id: o.id, type: "objective", title: o.title, subtitle: `${o.progress}% · ${o.horizon}`, href: "/objectifs" }));
+    journalEntries.forEach(j => items.push({ id: j.id, type: "journal", title: j.content.slice(0, 100), subtitle: new Date(j.createdAt).toLocaleDateString(), href: "/journal" }));
+    inboxItems.forEach(i => items.push({ id: i.id, type: "inbox", title: i.text, subtitle: i.processed ? "Traité" : "À traiter", href: "/inbox" }));
+    notes.forEach(n => items.push({ id: n.id, type: "note", title: n.title || "Note sans titre", subtitle: n.content.slice(0, 50), href: "/notes" }));
+    prospects.forEach(p => items.push({ id: p.id, type: "prospect", title: p.entreprise, subtitle: p.statut, href: `/prospects/${p.id}` }));
+    return items;
+  }, [tasks, projects, objectives, journalEntries, inboxItems, notes, prospects]);
+
+  const fuse = useMemo(() => new Fuse(searchableItems, {
+    keys: ["title", "subtitle"],
+    threshold: 0.35,
+    distance: 100,
+  }), [searchableItems]);
+
+  const quickActions: SearchResult[] = useMemo(() => [
+    { id: "qa-theme",    type: "task", title: "Changer de thème", subtitle: "Passer en mode sombre/clair", href: "action:theme" },
+    { id: "qa-project",  type: "project", title: "Nouveau Projet", subtitle: "Créer un nouveau projet", href: "/projets" },
+    { id: "qa-prospect", type: "prospect", title: "Nouveau Prospect", subtitle: "Ajouter au CRM", href: "/crm" },
+    { id: "qa-task",     type: "task", title: "Nouvelle Tâche", subtitle: "Ajouter à l'inbox", href: "/inbox" },
+  ], []);
+
   // Search results
   const results = useMemo(() => {
-    if (!query.trim()) return [];
-    const q = query.toLowerCase();
-    const r: SearchResult[] = [];
+    const q = query.trim();
+    if (!q) return [];
 
-    // Tasks
-    tasks.forEach((t) => {
-      if (t.text?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.tags?.some((tag) => tag.toLowerCase().includes(q))) {
-        r.push({
-          id: t.id,
-          type: "task",
-          title: t.text,
-          subtitle: t.status === "today" ? "Priorité du jour" : t.status === "inbox" ? "Inbox" : t.status === "completed" || t.status === "done" ? "Terminé" : t.status === "in_progress" ? "En cours" : t.status,
-          status: t.status,
-          href: "/taches"
-        });
-      }
-    });
+    if (q.startsWith(">")) {
+      const sub = q.slice(1).toLowerCase();
+      return quickActions.filter(a => a.title.toLowerCase().includes(sub) || a.subtitle?.toLowerCase().includes(sub));
+    }
 
-    // Projects
-    projects.forEach((p) => {
-      if (p.name?.toLowerCase().includes(q)) {
-        r.push({
-          id: p.id,
-          type: "project",
-          title: `${p.emoji} ${p.name}`,
-          subtitle: p.status === "active" ? "Actif" : p.status,
-          href: "/projets"
-        });
-      }
-    });
+    return fuse.search(q).map(r => r.item).slice(0, 10);
+  }, [query, fuse, quickActions]);
 
-    // Objectives
-    objectives.forEach((o) => {
-      if (o.title?.toLowerCase().includes(q) || o.milestones?.some((m) => m.text?.toLowerCase().includes(q))) {
-        r.push({
-          id: o.id,
-          type: "objective",
-          title: o.title,
-          subtitle: `${o.progress}% · ${o.horizon}`,
-          href: "/objectifs"
-        });
-      }
-    });
-
-    // Journal
-    journalEntries.forEach((j) => {
-      if (j.content?.toLowerCase().includes(q)) {
-        r.push({
-          id: j.id,
-          type: "journal",
-          title: j.content.slice(0, 80) + (j.content.length > 80 ? "…" : ""),
-          subtitle: new Date(j.createdAt).toLocaleDateString("fr-FR"),
-          href: "/journal"
-        });
-      }
-    });
-
-    // Inbox
-    inboxItems.forEach((i) => {
-      if (i.text?.toLowerCase().includes(q)) {
-        r.push({
-          id: i.id,
-          type: "inbox",
-          title: i.text,
-          subtitle: i.processed ? "Traité" : "À traiter",
-          href: "/inbox"
-        });
-      }
-    });
-
-    // Notes
-    notes.forEach((n) => {
-      if (n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q) || n.labels?.some((l) => l.toLowerCase().includes(q))) {
-        r.push({
-          id: n.id,
-          type: "note",
-          title: n.title || "Note sans titre",
-          subtitle: "Carnet de notes",
-          href: "/notes" // Si vous avez une page dédiée, sinon ajuster.
-        });
-      }
-    });
-
-    // Prospects CRM
-    prospects.forEach((p) => {
-      if (
-        p.entreprise?.toLowerCase().includes(q) ||
-        (p.telephone && p.telephone.includes(q)) ||
-        (p.notes && p.notes.toLowerCase().includes(q)) ||
-        (p.niche && p.niche.toLowerCase().includes(q))
-      ) {
-        r.push({
-          id: p.id,
-          type: "prospect",
-          title: p.entreprise,
-          subtitle: `Statut: ${p.statut.replace(/_/g, " ")}`,
-          href: `/prospects/${p.id}`
-        });
-      }
-    });
-
-    return r.slice(0, 12);
-  }, [query, tasks, projects, objectives, journalEntries, inboxItems, notes, prospects]);
+  const toggleTheme = useAppStore((s) => s.toggleTheme);
 
   const handleSelect = (result: SearchResult) => {
     setOpen(false);
+    if (result.href === "action:theme") {
+      toggleTheme();
+      return;
+    }
     router.push(result.href);
   };
 

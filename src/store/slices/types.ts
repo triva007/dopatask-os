@@ -131,3 +131,9 @@ export interface Toast {
   duration?: number;
   createdAt: number;
 }
+
+export interface ProjectTemplate {
+  id: string;
+  name: string;
+  tasks: { text: string; tags: IncupTag[]; microSteps: { text: string }[] }[];
+}

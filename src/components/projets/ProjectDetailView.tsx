@@ -1,7 +1,7 @@
 "use client";
 
 import { useAppStore } from "@/store/useAppStore";
-import { ArrowLeft, CheckCircle2, Circle, FileText, CalendarDays, Loader2, Calendar, Layout, ListChecks } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Circle, FileText, CalendarDays, Loader2, Calendar, Layout, ListChecks, Copy } from "lucide-react";
 import type { Project } from "@/store/useAppStore";
 import { useEffect, useState, useMemo } from "react";
 
@@ -15,6 +15,8 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
   const toggleTask = useAppStore(s => s.updateTaskStatus);
   const googleEventProjects = useAppStore(s => s.googleEventProjects ?? EMPTY_OBJ);
   const googleTaskProjects = useAppStore(s => s.googleTaskProjects ?? EMPTY_OBJ);
+  const saveAsTemplate = useAppStore(s => s.saveProjectAsTemplate);
+  const addToast = useAppStore(s => s.addToast);
 
   const [googleTasks, setGoogleTasks] = useState<any[]>([]);
   const [googleEvents, setGoogleEvents] = useState<any[]>([]);
@@ -106,6 +108,17 @@ export default function ProjectDetailView({ project, onBack }: { project: Projec
               Espace projet consolidé
             </p>
           </div>
+        </div>
+        <div className="absolute top-8 right-8 flex gap-2">
+          <button
+            onClick={() => {
+              saveAsTemplate(project.id, project.name);
+              addToast(`Modèle "${project.name}" sauvegardé !`, "success");
+            }}
+            className="h-8 px-3 rounded-lg text-[11px] font-bold border border-[var(--border-primary)] bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors flex items-center gap-1.5 shadow-sm"
+          >
+            <Copy size={12} /> Sauvegarder comme modèle
+          </button>
         </div>
       </div>
 

@@ -10,10 +10,11 @@ export const createTasksSlice: StateCreator<AppState, [], [], Pick<AppState, "ta
   setLastActive: (taskId) => set((s) => ({ lastActiveAt: Date.now(), lastActiveTaskId: taskId ?? s.lastActiveTaskId })),
   addTask: (text, status, projectId, linkedJournalId, linkedNoteId, linkedProspectId) => {
     const trimmedText = text.trim();
-    if (!trimmedText) return;
+    if (!trimmedText) return "";
     const newTask: Task = { id: uid(), text: trimmedText, status: status ?? "today", projectId, createdAt: Date.now(), tags: [], microSteps: [], expanded: false, linkedJournalId, linkedNoteId, linkedProspectId };
     set((s) => ({ tasks: [...s.tasks, newTask], lastActiveAt: Date.now(), lastActiveTaskId: newTask.id }));
     get().addToast(`Tâche ajoutée`, "info");
+    return newTask.id;
   },
   updateTask: (id, updates) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, ...updates } : t) })),
   updateTaskStatus: (id, status) => set((s) => ({ tasks: s.tasks.map((t) => t.id === id ? { ...t, status, ...(status === "completed" ? { completedAt: Date.now() } : {}) } : t) })),

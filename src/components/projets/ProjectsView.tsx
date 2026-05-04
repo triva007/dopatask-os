@@ -7,10 +7,11 @@ import { useAppStore } from "@/store/useAppStore";
 import ProjectDetailView from "./ProjectDetailView";
 
 export default function ProjectsView() {
-  const { projects, addProject, updateProject, deleteProject } = useAppStore();
+  const { projects, addProject, updateProject, deleteProject, templates, applyTemplateToProject } = useAppStore();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [newEmoji, setNewEmoji] = useState("📁");
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>("");
   const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
 
@@ -23,9 +24,13 @@ export default function ProjectsView() {
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newName.trim()) return;
-    addProject(newName.trim(), newEmoji);
+    const pid = addProject(newName.trim(), newEmoji);
+    if (selectedTemplateId && pid) {
+      applyTemplateToProject(selectedTemplateId, pid);
+    }
     setNewName("");
     setNewEmoji("📁");
+    setSelectedTemplateId("");
     setAdding(false);
   };
 
@@ -80,6 +85,22 @@ export default function ProjectsView() {
                   autoFocus
                 />
               </div>
+
+              {templates.length > 0 && (
+                <div className="px-1.5 py-1">
+                  <label className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold mb-1.5 block">Appliquer un modèle ?</label>
+                  <select
+                    value={selectedTemplateId}
+                    onChange={(e) => setSelectedTemplateId(e.target.value)}
+                    className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-1.5 text-[12.5px] text-[var(--text-primary)] focus:outline-none"
+                  >
+                    <option value="">Aucun modèle</option>
+                    {templates.map(tpl => (
+                      <option key={tpl.id} value={tpl.id}>{tpl.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <div className="flex gap-2 justify-end">
                 <button
                   type="button"

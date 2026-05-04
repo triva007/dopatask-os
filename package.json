@@ -19,6 +19,7 @@
         "@vercel/analytics": "^2.0.1",
         "canvas-confetti": "^1.9.4",
         "framer-motion": "^12.36.0",
+        "fuse.js": "^7.3.0",
         "lucide-react": "^0.577.0",
         "next": "14.2.35",
         "papaparse": "^5.5.3",
