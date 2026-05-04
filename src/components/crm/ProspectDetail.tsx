@@ -6,8 +6,8 @@ import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ArrowLeft, Phone, MapPin, Save, Check,
-  Loader2, DollarSign, PhoneOff, Voicemail, Calendar, Frown,
-  ChevronLeft, ChevronRight, Sparkles, RotateCcw, X,
+  Loader2, DollarSign, PhoneOff, Ban, Calendar, Frown,
+  ChevronLeft, ChevronRight, Sparkles, RotateCcw, X, Clock,
   ListChecks, Plus, CheckCircle2, Circle, Trash2,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
@@ -255,6 +255,10 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const [acting, setActing] = useState(false);
   const [showVendu, setShowVendu] = useState(false);
   const [montantVendu, setMontantVendu] = useState(config?.prix_site || 980);
+  // Rappel plus tard inline
+  const [rappelMode, setRappelMode] = useState(false);
+  const [rappelDate, setRappelDate] = useState("");
+  const logCall = useCrmStore((s) => s.logCall);
 
   useEffect(() => {
     if (!loaded) loadAll();
@@ -284,10 +288,17 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     setTimeout(() => setSavedPulse(false), 1200);
   };
 
-  const onAction = async (resultat: ResultatAppel) => {
+  const onAction = async (resultat: ResultatAppel, rappelDate?: string) => {
     setActing(true);
-    await logCall(id, resultat);
+    await logCall(id, resultat, undefined, rappelDate);
     setActing(false);
+    setRappelMode(false);
+  };
+
+  const onNotesBlur = async () => {
+    if (form.notes !== prospect.notes) {
+      await updateProspect(id, { notes: form.notes ?? null });
+    }
   };
 
   const onVendu = async () => {
@@ -409,25 +420,50 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
         </div>
 
         {/* Action bar résultat appel — XL */}
-        <div className="grid grid-cols-5 gap-1.5">
-          <ResultBtn icon={<Calendar size={18} />} label="RDV Booké" color="blue" onClick={() => onAction("RDV")} disabled={acting} />
-          <ResultBtn icon={<Voicemail size={18} />} label="Répondeur" color="orange" onClick={() => onAction("REPONDEUR")} disabled={acting} />
-          <ResultBtn icon={<Frown size={18} />} label="Refus" color="red" onClick={() => onAction("REFUS")} disabled={acting} />
-          <ResultBtn icon={<PhoneOff size={18} />} label="Pas joignable" color="gray" onClick={() => onAction("PAS_JOIGNABLE")} disabled={acting} />
-          <ResultBtn icon={<DollarSign size={18} />} label="VENDU" color="green" onClick={() => setShowVendu(true)} disabled={acting} />
-        </div>
+        {rappelMode ? (
+          <div className="flex items-center gap-2 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-secondary)]">
+            <Clock size={15} style={{ color: "var(--accent-purple)" }} className="shrink-0" />
+            <span className="text-[12px] font-semibold" style={{ color: "var(--accent-purple)" }}>Rappeler le :</span>
+            <input
+              type="date"
+              autoFocus
+              value={rappelDate}
+              min={new Date(Date.now() + 86400000).toISOString().slice(0, 10)}
+              onChange={(e) => setRappelDate(e.target.value)}
+              className="flex-1 bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-2 py-1.5 text-[12px] focus:outline-none"
+            />
+            <button
+              onClick={() => onAction("RAPPEL_PLUS_TARD", rappelDate)}
+              disabled={!rappelDate || acting}
+              className="px-3 py-1.5 bg-[var(--accent-purple)] text-white rounded-lg text-[12px] font-semibold disabled:opacity-40"
+            >
+              OK
+            </button>
+            <button onClick={() => setRappelMode(false)} className="p-1.5 text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+              <X size={14} />
+            </button>
+          </div>
+        ) : (
+          <div className="grid grid-cols-5 gap-1.5">
+            <ResultBtn icon={<Calendar size={18} />}  label="RDV Booké"       color="blue"   onClick={() => onAction("RDV")}           disabled={acting} />
+            <ResultBtn icon={<PhoneOff size={18} />}  label="Répondeur"       color="orange" onClick={() => onAction("REPONDEUR")}     disabled={acting} />
+            <ResultBtn icon={<Clock size={18} />}     label="Rappel + tard"   color="purple" onClick={() => { setRappelDate(new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)); setRappelMode(true); }} disabled={acting} />
+            <ResultBtn icon={<Frown size={18} />}     label="Refus"           color="red"    onClick={() => onAction("REFUS")}          disabled={acting} />
+            <ResultBtn icon={<Ban size={18} />}       label="Pas ma cible"   color="gray"   onClick={() => onAction("PAS_MA_CIBLE")}   disabled={acting} />
+          </div>
+        )}
       </div>
 
       {/* ─── BODY scrollable ─── */}
       <div className="flex-1 overflow-auto p-5 space-y-4">
 
-        {/* Statut + RDV date (édition rapide) */}
+        {/* Statut + RDV date + date_relance */}
         <div className="grid grid-cols-2 gap-3">
           <Field label="Statut">
             <select
               value={form.statut || prospect.statut}
               onChange={(e) => setForm({ ...form, statut: e.target.value as Prospect["statut"] })}
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none focus:border-var(--accent-cyan)/50 cursor-pointer"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none cursor-pointer"
             >
               {STATUTS_ORDRE.map((s) => (
                 <option key={s} value={s}>{STATUT_EMOJI[s]} {STATUT_LABEL[s]}</option>
@@ -439,10 +475,23 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
               type="date"
               value={form.date_rdv || ""}
               onChange={(e) => setForm({ ...form, date_rdv: e.target.value || null })}
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-cyan)/50"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
             />
           </Field>
         </div>
+
+        {/* Date de rappel (visible si REPONDEUR ou date_relance fixée) */}
+        {(prospect.statut === "REPONDEUR" || form.date_relance) && (
+          <Field label="🕐 Rappeler à partir du">
+            <input
+              type="date"
+              value={form.date_relance || ""}
+              onChange={(e) => setForm({ ...form, date_relance: e.target.value || null })}
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
+              style={{ borderColor: form.date_relance ? "var(--accent-purple)" : undefined }}
+            />
+          </Field>
+        )}
 
         {/* Maquette (visible si RDV booké ou maquette prête) */}
         {(prospect.statut === "RDV_BOOKE" || prospect.statut === "MAQUETTE_PRETE" || form.lien_maquette) && (
@@ -461,14 +510,15 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
           </Field>
         )}
 
-        {/* Notes (le champ principal) */}
-        <Field label="Notes (ce qui s'est dit)">
+        {/* Notes (auto-save sur blur) */}
+        <Field label="Notes (sauvegarde auto)">
           <textarea
             value={form.notes || ""}
             onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            onBlur={onNotesBlur}
             rows={4}
             placeholder="Le boss s'appelle Marc, dispo jeudi 14h, budget 3k€/an…"
-            className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12.5px] focus:outline-none focus:border-var(--accent-cyan)/50 resize-none leading-relaxed"
+            className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12.5px] focus:outline-none resize-none leading-relaxed"
           />
         </Field>
 
@@ -823,30 +873,31 @@ function Field({ label, children }: { label: React.ReactNode; children: React.Re
 }
 
 const RESULTAT_ICON: Record<ResultatAppel, string> = {
-  DECROCHE: "🗣️",
-  REPONDEUR: "🟠",
-  REFUS: "🔴",
-  EXISTE_PAS: "⚪",
-  RDV: "📅",
-  PAS_JOIGNABLE: "⏱️",
+  REPONDEUR:        "🟠",
+  RAPPEL_PLUS_TARD: "🕐",
+  REFUS:            "🔴",
+  EXISTE_PAS:       "⚪",
+  PAS_MA_CIBLE:     "🚫",
+  RDV:              "📅",
 };
 
 const RESULTAT_TEXT: Record<ResultatAppel, string> = {
-  DECROCHE: "Décroché",
-  REPONDEUR: "Répondeur",
-  REFUS: "Refus",
-  EXISTE_PAS: "N'existe pas",
-  RDV: "RDV pris",
-  PAS_JOIGNABLE: "Pas joignable",
+  REPONDEUR:        "Répondeur",
+  RAPPEL_PLUS_TARD: "Rappeler plus tard",
+  REFUS:            "Refus",
+  EXISTE_PAS:       "N'existe pas",
+  PAS_MA_CIBLE:     "Pas ma cible",
+  RDV:              "RDV pris",
 };
 
-type BtnColor = "blue" | "orange" | "red" | "gray" | "green";
+type BtnColor = "blue" | "orange" | "red" | "gray" | "green" | "purple";
 const BTN_COLORS: Record<BtnColor, string> = {
-  blue:   "bg-dopa-blue/10 text-dopa-blue border-dopa-blue/30 hover:bg-dopa-blue/20",
-  orange: "bg-[#422006]/80 text-[#fb923c] border-[#78350f] hover:bg-[#422006]",
-  red:    "bg-[var(--accent-red-light)] text-[var(--accent-red)] border-[var(--accent-red)] hover:bg-[var(--surface-2)]",
-  gray:   "bg-[var(--surface-2)] text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-surface-3",
-  green:  "bg-[var(--accent-green-light)] text-[var(--accent-green)] border-[var(--accent-green)] hover:bg-[var(--surface-2)]",
+  blue:   "bg-[var(--accent-blue-light)] text-[var(--accent-blue)] border-[var(--accent-blue)]/30 hover:opacity-80",
+  orange: "bg-[var(--accent-orange-light)] text-[var(--accent-orange)] border-[var(--accent-orange)]/30 hover:opacity-80",
+  red:    "bg-[var(--accent-red-light)] text-[var(--accent-red)] border-[var(--accent-red)]/30 hover:opacity-80",
+  gray:   "bg-[var(--surface-2)] text-[var(--text-secondary)] border-[var(--border-secondary)] hover:bg-[var(--surface-3)]",
+  green:  "bg-[var(--accent-green-light)] text-[var(--accent-green)] border-[var(--accent-green)]/30 hover:opacity-80",
+  purple: "bg-[var(--accent-purple-light)] text-[var(--accent-purple)] border-[var(--accent-purple)]/30 hover:opacity-80",
 };
 
 function ResultBtn({

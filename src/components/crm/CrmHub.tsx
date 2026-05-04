@@ -55,10 +55,36 @@ export default function CrmHub() {
 
   const actifs = useMemo(() => prospects.filter((p) => !p.archived), [prospects]);
   const archives = useMemo(() => prospects.filter((p) => p.archived), [prospects]);
-  const aAppeler = useMemo(
-    () => actifs.filter((p) => p.statut === "A_APPELER" || p.statut === "REPONDEUR"),
-    [actifs]
-  );
+
+  // Rappels du jour : REPONDEUR avec date_relance <= aujourd'hui ou sans date_relance ET dernier appel > 24h
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const rappelsDuJour = useMemo(() => {
+    const now = Date.now();
+    const H24 = 24 * 60 * 60 * 1000;
+    const lastCallTs = new Map<string, number>();
+    for (const c of calls) {
+      const ts = new Date(c.date).getTime();
+      const prev = lastCallTs.get(c.prospect_id) ?? 0;
+      if (ts > prev) lastCallTs.set(c.prospect_id, ts);
+    }
+    return actifs.filter((p) => {
+      if (p.statut !== "REPONDEUR") return false;
+      if (p.date_relance) return p.date_relance <= todayStr;
+      return now - (lastCallTs.get(p.id) ?? 0) > H24;
+    }).slice(0, 5);
+  }, [actifs, calls, todayStr]);
+
+  const aAppeler = useMemo(() => {
+    const now = Date.now();
+    return actifs.filter((p) => {
+      if (p.statut === "A_APPELER") return true;
+      if (p.statut === "REPONDEUR") {
+        if (p.date_relance) return p.date_relance <= todayStr;
+        return true;
+      }
+      return false;
+    });
+  }, [actifs, todayStr]);
   const rdvEnStock = useMemo(
     () => actifs.filter((p) => p.statut === "RDV_BOOKE" || p.statut === "MAQUETTE_PRETE" || p.statut === "R1_EFFECTUE"),
     [actifs]
@@ -69,7 +95,7 @@ export default function CrmHub() {
   const byStatut = useMemo(() => {
     const map: Record<StatutProspect, typeof prospects> = {
       A_APPELER: [], REPONDEUR: [], REFUS: [], EXISTE_PAS: [],
-      RDV_BOOKE: [], MAQUETTE_PRETE: [], R1_EFFECTUE: [], VENDU: [], PERDU: [],
+      PAS_MA_CIBLE: [], RDV_BOOKE: [], MAQUETTE_PRETE: [], R1_EFFECTUE: [], VENDU: [], PERDU: [],
     };
     for (const p of actifs) map[p.statut].push(p);
     return map;
@@ -188,6 +214,40 @@ export default function CrmHub() {
             )}
           </div>
         </motion.button>
+
+        {/* RAPPELS DU JOUR */}
+        {rappelsDuJour.length > 0 && (
+          <div className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-5"
+            style={{ borderColor: "color-mix(in srgb, var(--accent-orange) 25%, transparent)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <span className="text-[13px]">🕐</span>
+              <h3 className="text-[13px] font-semibold" style={{ color: "var(--accent-orange)" }}>
+                Rappels du jour · {rappelsDuJour.length}
+              </h3>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {rappelsDuJour.map((p) => (
+                <Link
+                  key={p.id}
+                  href={`/prospects/${p.id}`}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium hover:opacity-80 transition-opacity"
+                  style={{
+                    background: "color-mix(in srgb, var(--accent-orange) 10%, transparent)",
+                    color: "var(--accent-orange)",
+                    border: "1px solid color-mix(in srgb, var(--accent-orange) 22%, transparent)",
+                  }}
+                >
+                  {p.entreprise}
+                  {p.date_relance && (
+                    <span className="text-[10px] opacity-70">
+                      · prévu {new Date(p.date_relance + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                    </span>
+                  )}
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* STATS CRM : 5 mini-cards (stagger) */}
         <motion.div

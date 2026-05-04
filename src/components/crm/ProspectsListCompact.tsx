@@ -40,8 +40,9 @@ const PRIORITY_ORDER: Record<StatutProspect, number> = {
   A_APPELER: 4,
   VENDU: 5,
   REFUS: 6,
-  EXISTE_PAS: 7,
-  PERDU: 8,
+  PAS_MA_CIBLE: 7,
+  EXISTE_PAS: 8,
+  PERDU: 9,
 };
 
 export default function ProspectsListCompact({
@@ -128,6 +129,10 @@ export default function ProspectsListCompact({
     else if (filterStatut === "ARCHIVES") arr = arr.filter((p) => p.archived);
     else if (filterStatut === "JAMAIS_APPELES") arr = arr.filter((p) => !p.archived && callCountFor(p.id) === 0);
     else if (filterStatut === "A_RAPPELER") arr = arr.filter((p) => !p.archived && p.statut === "REPONDEUR");
+    else if ((filterStatut as any) === "RAPPEL_AUJOURD_HUI") {
+      const today = new Date().toISOString().slice(0, 10);
+      arr = arr.filter((p) => !p.archived && p.statut === "REPONDEUR" && !!p.date_relance && p.date_relance <= today);
+    }
     else if (filterStatut !== "ALL") arr = arr.filter((p) => p.statut === filterStatut);
 
     if (filterNiche !== "ALL") {
@@ -221,15 +226,19 @@ export default function ProspectsListCompact({
     clearSelection();
   };
 
-  const counts = useMemo(() => ({
-    actifs: prospects.filter((p) => !p.archived).length,
-    archived: prospects.filter((p) => p.archived).length,
-    aAppeler: prospects.filter((p) => !p.archived && p.statut === "A_APPELER").length,
-    aRappeler: prospects.filter((p) => !p.archived && p.statut === "REPONDEUR").length,
-    rdv: prospects.filter((p) => !p.archived && p.statut === "RDV_BOOKE").length,
-    vendus: prospects.filter((p) => p.statut === "VENDU").length,
-    jamais: prospects.filter((p) => !p.archived && callCountFor(p.id) === 0).length,
-  }), [prospects, callsByProspect]); // eslint-disable-line react-hooks/exhaustive-deps
+  const counts = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return {
+      actifs: prospects.filter((p) => !p.archived).length,
+      archived: prospects.filter((p) => p.archived).length,
+      aAppeler: prospects.filter((p) => !p.archived && p.statut === "A_APPELER").length,
+      aRappeler: prospects.filter((p) => !p.archived && p.statut === "REPONDEUR").length,
+      rappelAujourdhui: prospects.filter((p) => !p.archived && p.statut === "REPONDEUR" && !!p.date_relance && p.date_relance <= today).length,
+      rdv: prospects.filter((p) => !p.archived && p.statut === "RDV_BOOKE").length,
+      vendus: prospects.filter((p) => p.statut === "VENDU").length,
+      jamais: prospects.filter((p) => !p.archived && callCountFor(p.id) === 0).length,
+    };
+  }, [prospects, callsByProspect]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Drag-drop kanban
   const onDragStartProspect = (e: React.DragEvent, p: Prospect) => {
@@ -294,6 +303,9 @@ export default function ProspectsListCompact({
           <QuickTab active={filterStatut === "JAMAIS_APPELES"} onClick={() => setFilterStatut("JAMAIS_APPELES")} count={counts.jamais} color="#a78bfa">Jamais</QuickTab>
           <QuickTab active={filterStatut === "A_APPELER"} onClick={() => setFilterStatut("A_APPELER")} count={counts.aAppeler} color="#F97316">À appeler</QuickTab>
           <QuickTab active={filterStatut === "A_RAPPELER"} onClick={() => setFilterStatut("A_RAPPELER")} count={counts.aRappeler} color="#fbbf24">À rappeler</QuickTab>
+          {counts.rappelAujourdhui > 0 && (
+            <QuickTab active={filterStatut === "RAPPEL_AUJOURD_HUI" as any} onClick={() => (setFilterStatut as any)("RAPPEL_AUJOURD_HUI")} count={counts.rappelAujourdhui} color="#f97316">🕐 Rappels du jour</QuickTab>
+          )}
           <QuickTab active={filterStatut === "RDV_BOOKE"} onClick={() => setFilterStatut("RDV_BOOKE")} count={counts.rdv} color="#3B82F6">RDV</QuickTab>
           <QuickTab active={filterStatut === "VENDU"} onClick={() => setFilterStatut("VENDU")} count={counts.vendus} color="#10B981">Vendus</QuickTab>
           <QuickTab active={filterStatut === "ARCHIVES"} onClick={() => setFilterStatut("ARCHIVES")} count={counts.archived}>Archivés</QuickTab>
