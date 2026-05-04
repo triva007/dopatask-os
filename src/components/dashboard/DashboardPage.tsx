@@ -161,10 +161,15 @@ export default function DashboardPage() {
     }).slice(0, 5);
   }, [prospects, calls, todayStr]);
 
-  // Tâches du jour (locales)
+  // Tâches du jour (locales) - Filtrées par Kill la task now si présent
   const todayTasksList = useMemo(() => {
-    return tasks.filter(t => t.status === "today");
-  }, [tasks]);
+    return tasks.filter(t => {
+      const isToday = t.status === "today";
+      if (!isToday) return false;
+      if (killProject) return t.projectId === killProject.id;
+      return true;
+    });
+  }, [tasks, killProject]);
 
   return (
     <div className="h-full overflow-auto">

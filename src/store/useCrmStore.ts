@@ -36,6 +36,8 @@ type CrmState = {
   deleteProspect: (id: string) => Promise<void>;
   bulkUpdateProspects: (ids: string[], patch: Partial<Prospect>) => Promise<number>;
   bulkDeleteProspects: (ids: string[]) => Promise<number>;
+  updateCall: (id: string, patch: Partial<Call>) => Promise<void>;
+  deleteCall: (id: string) => Promise<void>;
 };
 
 export const useCrmStore = create<CrmState>()(
@@ -340,6 +342,29 @@ export const useCrmStore = create<CrmState>()(
       prospects: get().prospects.filter((p) => !idSet.has(p.id)),
     });
     return ids.length;
+  },
+  updateCall: async (id, patch) => {
+    const { data, error } = await supabase
+      .from("calls")
+      .update(patch)
+      .eq("id", id)
+      .select("*")
+      .single();
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
+    set({
+      calls: get().calls.map((c) => (c.id === id ? (data as Call) : c)),
+    });
+  },
+  deleteCall: async (id) => {
+    const { error } = await supabase.from("calls").delete().eq("id", id);
+    if (error) {
+      set({ error: error.message });
+      return;
+    }
+    set({ calls: get().calls.filter((c) => c.id !== id) });
   },
     }),
     {

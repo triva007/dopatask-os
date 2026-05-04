@@ -8,7 +8,7 @@ import {
   ArrowLeft, Phone, MapPin, Save, Check,
   Loader2, DollarSign, PhoneOff, Ban, Calendar, Frown,
   ChevronLeft, ChevronRight, Sparkles, RotateCcw, X, Clock,
-  ListChecks, Plus, CheckCircle2, Circle, Trash2, FolderKanban,
+  ListChecks, Plus, CheckCircle2, Circle, Trash2, FolderKanban, Edit3,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -38,6 +38,9 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const updateProspect = useCrmStore((s) => s.updateProspect);
   const logCall = useCrmStore((s) => s.logCall);
   const addRevenu = useCrmStore((s) => s.addRevenu);
+  const updateConfig = useCrmStore((s) => s.updateConfig);
+  const updateCall = useCrmStore((s) => s.updateCall);
+  const deleteCall = useCrmStore((s) => s.deleteCall);
   const config = useCrmStore((s) => s.config);
 
   const allTasks = useAppStore((s) => s.tasks);
@@ -266,6 +269,9 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   // Rappel plus tard inline
   const [rappelMode, setRappelMode] = useState(false);
   const [rappelDate, setRappelDate] = useState("");
+  const [editingCallId, setEditingCallId] = useState<string | null>(null);
+  const [editCallNotes, setEditCallNotes] = useState("");
+  const [editCallResult, setEditCallResult] = useState<ResultatAppel | null>(null);
 
   useEffect(() => {
     if (!loaded) loadAll();
@@ -876,18 +882,86 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
             <ol className="space-y-1.5 mt-2">
               {prospectCalls.map((c, idx) => {
                 const attemptNum = prospectCalls.length - idx;
+                const isEditing = editingCallId === c.id;
+
                 return (
-                  <li key={c.id} className="bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-3 py-2 flex items-start justify-between gap-3">
+                  <li key={c.id} className={`bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-lg px-3 py-2 flex items-start justify-between gap-3 group/call transition-all ${isEditing ? "ring-1 ring-[var(--accent-cyan)] shadow-sm" : ""}`}>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[11.5px] font-semibold flex items-center gap-1.5">
-                        <span className="text-[10px] font-bold text-[var(--text-tertiary)] tabular-nums">#{attemptNum}</span>
-                        {RESULTAT_ICON[c.resultat]} {RESULTAT_TEXT[c.resultat]}
-                      </p>
-                      {c.notes && <p className="text-[11px] text-[var(--text-secondary)] mt-1 whitespace-pre-wrap">{c.notes}</p>}
+                      {isEditing ? (
+                        <div className="space-y-2 py-1">
+                          <select
+                            value={editCallResult || c.resultat}
+                            onChange={(e) => setEditCallResult(e.target.value as ResultatAppel)}
+                            className="text-[11.5px] font-semibold bg-[var(--surface-2)] border border-[var(--border-primary)] rounded px-1.5 py-0.5 focus:outline-none"
+                          >
+                            {Object.keys(RESULTAT_TEXT).map(r => (
+                              <option key={r} value={r}>{RESULTAT_ICON[r as ResultatAppel]} {RESULTAT_TEXT[r as ResultatAppel]}</option>
+                            ))}
+                          </select>
+                          <textarea
+                            autoFocus
+                            value={editCallNotes}
+                            onChange={(e) => setEditCallNotes(e.target.value)}
+                            className="w-full text-[11px] bg-[var(--surface-2)] border border-[var(--border-primary)] rounded px-2 py-1 focus:outline-none resize-none"
+                            rows={2}
+                          />
+                          <div className="flex gap-2 justify-end">
+                            <button 
+                              onClick={() => setEditingCallId(null)}
+                              className="text-[10px] font-bold text-[var(--text-tertiary)] hover:text-[var(--text-primary)]"
+                            >
+                              Annuler
+                            </button>
+                            <button 
+                              onClick={async () => {
+                                await updateCall(c.id, { notes: editCallNotes, resultat: editCallResult || c.resultat });
+                                setEditingCallId(null);
+                              }}
+                              className="text-[10px] font-bold text-[var(--accent-cyan)] hover:brightness-110"
+                            >
+                              Sauvegarder
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <p className="text-[11.5px] font-semibold flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold text-[var(--text-tertiary)] tabular-nums">#{attemptNum}</span>
+                            {RESULTAT_ICON[c.resultat]} {RESULTAT_TEXT[c.resultat]}
+                          </p>
+                          {c.notes && <p className="text-[11px] text-[var(--text-secondary)] mt-1 whitespace-pre-wrap">{c.notes}</p>}
+                        </>
+                      )}
                     </div>
-                    <time className="text-[10px] text-[var(--text-tertiary)] tabular-nums whitespace-nowrap shrink-0">
-                      {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
-                    </time>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <time className="text-[10px] text-[var(--text-tertiary)] tabular-nums whitespace-nowrap">
+                        {new Date(c.date).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                      </time>
+                      {!isEditing && (
+                        <div className="flex items-center gap-1 opacity-0 group-hover/call:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => {
+                              setEditingCallId(c.id);
+                              setEditCallNotes(c.notes || "");
+                              setEditCallResult(c.resultat);
+                            }}
+                            className="p-1 text-[var(--text-tertiary)] hover:text-[var(--accent-cyan)]"
+                            title="Modifier"
+                          >
+                            <Edit3 size={11} />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm("Supprimer ce log d'appel ?")) deleteCall(c.id);
+                            }}
+                            className="p-1 text-[var(--text-tertiary)] hover:text-[var(--accent-red)]"
+                            title="Supprimer"
+                          >
+                            <Trash2 size={11} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </li>
                 );
               })}
