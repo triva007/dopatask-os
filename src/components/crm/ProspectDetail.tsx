@@ -46,11 +46,18 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
   const updateTaskStatus = useAppStore((s) => s.updateTaskStatus);
   const addProject = useAppStore((s) => s.addProject);
   const projects = useAppStore((s) => s.projects);
+  const allNotes = useAppStore((s) => s.notes);
+  const addNote = useAppStore((s) => s.addNote);
 
   const prospect = prospects.find((p) => p.id === id);
   const prospectCalls = useMemo(
     () => calls.filter((c) => c.prospect_id === id).sort((a, b) => b.date.localeCompare(a.date)),
     [calls, id]
+  );
+  
+  const relatedNotes = useMemo(
+    () => allNotes.filter((n) => n.linkedProspectId === id).sort((a, b) => b.createdAt - a.createdAt),
+    [allNotes, id]
   );
 
   // Tâches liées : matching par ID ou fallback par nom d'entreprise (pour les anciennes tâches)
@@ -306,6 +313,20 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
     await addRevenu(id, Number(montantVendu));
     setShowVendu(false);
     setActing(false);
+  };
+
+  const handleCreateNote = () => {
+    if (!prospect) return;
+    const noteId = addNote(
+      `Log: ${prospect.entreprise}`,
+      "",
+      undefined,
+      [],
+      undefined,
+      undefined,
+      prospect.id
+    );
+    router.push(`/notes?id=${noteId}`);
   };
 
   const onConvertToProject = () => {
@@ -799,6 +820,46 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
                   >
                     <Trash2 size={12} />
                   </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+        
+        {/* ─── NOTES & LOGS LIÉS ─── */}
+        <div className="rounded-xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-3.5 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <ListChecks size={13} className="text-dopa-orange" />
+              <h4 className="text-[12px] font-bold tracking-tight">Notes & Logs</h4>
+            </div>
+            <button
+              onClick={handleCreateNote}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-[var(--accent-orange-light)] text-[var(--accent-orange)] rounded-md text-[10.5px] font-semibold hover:brightness-110 transition-colors"
+            >
+              <Plus size={11} /> Nouvelle Note
+            </button>
+          </div>
+          
+          {relatedNotes.length === 0 ? (
+            <p className="text-[11px] text-[var(--text-tertiary)] italic py-1">
+              Aucune note liée.
+            </p>
+          ) : (
+            <div className="space-y-2">
+              {relatedNotes.map((n) => (
+                <div
+                  key={n.id}
+                  onClick={() => router.push(`/notes?id=${n.id}`)}
+                  className="group block p-3 bg-[var(--surface-2)] rounded-lg border border-[var(--border-primary)] hover:border-[var(--accent-orange)]/40 cursor-pointer transition-all"
+                >
+                  <p className="text-[12px] font-bold text-[var(--text-primary)] mb-1 truncate">{n.title}</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
+                    {n.content || <span className="italic opacity-50">Vide</span>}
+                  </p>
+                  <p className="text-[9.5px] text-[var(--text-tertiary)] mt-2 tabular-nums">
+                    {new Date(n.createdAt).toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                  </p>
                 </div>
               ))}
             </div>

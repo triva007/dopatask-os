@@ -102,6 +102,7 @@ export interface Note {
   order: number;
   projectId?: string;
   linkedEventId?: string;
+  linkedProspectId?: string;
   createdAt: number;
   updatedAt: number;
 }
@@ -181,7 +182,7 @@ interface AppState {
   convertJournalToTask: (id: string) => void;
   sendJournalToInbox: (id: string) => void;
   notes: Note[];
-  addNote: (title: string, content: string, color?: string, images?: string[], projectId?: string, linkedEventId?: string) => string;
+  addNote: (title: string, content: string, color?: string, images?: string[], projectId?: string, linkedEventId?: string, linkedProspectId?: string) => string;
   updateNote: (id: string, updates: Partial<Note>) => void;
   deleteNote: (id: string) => void;
   togglePinNote: (id: string) => void;
@@ -312,11 +313,11 @@ export const useAppStore = create<AppState>()(
         sendJournalToInbox: (id) => { const entry = get().journalEntries.find(e => e.id === id); if (entry) get().addInboxItem(entry.content.slice(0, 100), "note"); },
 
         notes: [],
-        addNote: (title, content, color, images, projectId, linkedEventId) => {
+        addNote: (title, content, color, images, projectId, linkedEventId, linkedProspectId) => {
           const newId = uid();
           set((s) => {
             const maxOrder = s.notes.length > 0 ? Math.max(...s.notes.map(n => n.order || 0)) : -1;
-            return { notes: [{ id: newId, title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], order: maxOrder + 1, projectId, linkedEventId, createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] };
+            return { notes: [{ id: newId, title: title.trim(), content: content.trim(), color: color ?? "#7c3aed", pinned: false, archived: false, labels: [], images: images ?? [], order: maxOrder + 1, projectId, linkedEventId, linkedProspectId, createdAt: Date.now(), updatedAt: Date.now() }, ...s.notes] };
           });
           return newId;
         },

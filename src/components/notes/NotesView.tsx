@@ -36,8 +36,13 @@ import { CSS } from '@dnd-kit/utilities';
 
 const COLORS = [
   "var(--card-bg)",
-  "#442b2d", "#3e3328", "#273934", "#20393f", "#223348", "#38284a", "#452440",
-  "#1e3a5f", "#1b4332", "#432818", "#3c0919"
+  "var(--surface-2)",
+  "color-mix(in srgb, var(--accent-red) 15%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-orange) 15%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-green) 15%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-cyan) 15%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-blue) 15%, var(--card-bg))",
+  "color-mix(in srgb, var(--accent-purple) 15%, var(--card-bg))",
 ];
 
 export default function NotesView() {

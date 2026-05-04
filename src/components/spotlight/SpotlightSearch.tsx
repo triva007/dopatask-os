@@ -71,7 +71,7 @@ export default function SpotlightSearch() {
 
     // Tasks
     tasks.forEach((t) => {
-      if (t.text.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.tags.some((tag) => tag.toLowerCase().includes(q))) {
+      if (t.text?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.tags?.some((tag) => tag.toLowerCase().includes(q))) {
         r.push({
           id: t.id,
           type: "task",
@@ -85,7 +85,7 @@ export default function SpotlightSearch() {
 
     // Projects
     projects.forEach((p) => {
-      if (p.name.toLowerCase().includes(q)) {
+      if (p.name?.toLowerCase().includes(q)) {
         r.push({
           id: p.id,
           type: "project",
@@ -98,7 +98,7 @@ export default function SpotlightSearch() {
 
     // Objectives
     objectives.forEach((o) => {
-      if (o.title.toLowerCase().includes(q) || o.milestones.some((m) => m.text.toLowerCase().includes(q))) {
+      if (o.title?.toLowerCase().includes(q) || o.milestones?.some((m) => m.text?.toLowerCase().includes(q))) {
         r.push({
           id: o.id,
           type: "objective",
@@ -111,7 +111,7 @@ export default function SpotlightSearch() {
 
     // Journal
     journalEntries.forEach((j) => {
-      if (j.content.toLowerCase().includes(q)) {
+      if (j.content?.toLowerCase().includes(q)) {
         r.push({
           id: j.id,
           type: "journal",
@@ -124,7 +124,7 @@ export default function SpotlightSearch() {
 
     // Inbox
     inboxItems.forEach((i) => {
-      if (i.text.toLowerCase().includes(q)) {
+      if (i.text?.toLowerCase().includes(q)) {
         r.push({
           id: i.id,
           type: "inbox",
@@ -137,7 +137,7 @@ export default function SpotlightSearch() {
 
     // Notes
     notes.forEach((n) => {
-      if (n.title.toLowerCase().includes(q) || n.content.toLowerCase().includes(q) || n.labels.some((l) => l.toLowerCase().includes(q))) {
+      if (n.title?.toLowerCase().includes(q) || n.content?.toLowerCase().includes(q) || n.labels?.some((l) => l.toLowerCase().includes(q))) {
         r.push({
           id: n.id,
           type: "note",
@@ -151,7 +151,7 @@ export default function SpotlightSearch() {
     // Prospects CRM
     prospects.forEach((p) => {
       if (
-        p.entreprise.toLowerCase().includes(q) ||
+        p.entreprise?.toLowerCase().includes(q) ||
         (p.telephone && p.telephone.includes(q)) ||
         (p.notes && p.notes.toLowerCase().includes(q)) ||
         (p.niche && p.niche.toLowerCase().includes(q))

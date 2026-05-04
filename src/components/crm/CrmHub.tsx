@@ -14,10 +14,11 @@ import {
 } from "@/lib/crmLabels";
 import type { StatutProspect } from "@/lib/crmTypes";
 import { computeStatsMois } from "@/lib/crmLogic";
-import StatutBadge from "./StatutBadge";
 import ImportCsvModal from "./ImportCsvModal";
 import ColdCallSession from "./ColdCallSession";
 import { celebrate } from "@/lib/dopamineFeedback";
+import { DndContext, useDraggable, useDroppable, DragOverlay, closestCenter } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 
 // Statuts affiches dans le pipeline kanban (on cache les terminaux)
 const PIPELINE_STATUTS: StatutProspect[] = [
@@ -32,9 +33,11 @@ export default function CrmHub() {
   const calls = useCrmStore((s) => s.calls);
   const revenus = useCrmStore((s) => s.revenus);
   const loadAll = useCrmStore((s) => s.loadAll);
+  const updateProspect = useCrmStore((s) => s.updateProspect);
 
   const [showImport, setShowImport] = useState(false);
   const [coldCallMode, setColdCallMode] = useState(false);
+  const [activeDragProspectId, setActiveDragProspectId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loaded) loadAll();
@@ -134,6 +137,24 @@ export default function CrmHub() {
   if (coldCallMode) {
     return <ColdCallSession onExit={() => setColdCallMode(false)} />;
   }
+
+  const handleDragStart = (e: any) => {
+    setActiveDragProspectId(e.active.id);
+  };
+
+  const handleDragEnd = (e: any) => {
+    setActiveDragProspectId(null);
+    const { active, over } = e;
+    if (over && active.id && PIPELINE_STATUTS.includes(over.id as StatutProspect)) {
+      const prospect = prospects.find(p => p.id === active.id);
+      if (prospect && prospect.statut !== over.id) {
+        updateProspect(active.id, { statut: over.id });
+        if (over.id === "VENDU" || over.id === "RDV_BOOKE") celebrate();
+      }
+    }
+  };
+
+  const activeDragProspect = activeDragProspectId ? prospects.find(p => p.id === activeDragProspectId) : null;
 
   return (
     <div className="h-full overflow-auto">
@@ -271,66 +292,34 @@ export default function CrmHub() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <TrendingUp size={16} className="text-dopa-cyan" />
-              <h2 className="text-[14px] font-semibold">Pipeline</h2>
+              <h2 className="text-[14px] font-semibold">Pipeline Kanban</h2>
             </div>
             <p className="text-[11px] text-t-tertiary">
-              Clique sur une colonne pour filtrer la liste complete.
+              Glissez et déposez les prospects pour les faire avancer.
             </p>
           </div>
-          <motion.div
-            className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3"
-            initial="hidden"
-            animate="show"
-            variants={{
-              hidden: { opacity: 0 },
-              show: { opacity: 1, transition: { staggerChildren: 0.04, delayChildren: 0.1 } },
-            }}
-          >
-            {PIPELINE_STATUTS.map((s) => {
-              const col = STATUT_COLORS[s];
-              const list = byStatut[s];
-              return (
-                <motion.div
-                  key={s}
-                  variants={{
-                    hidden: { opacity: 0, y: 10, scale: 0.97 },
-                    show: { opacity: 1, y: 0, scale: 1 },
-                  }}
-                  whileHover={{ y: -3 }}
-                  transition={{ type: "spring", stiffness: 360, damping: 24 }}
+          
+          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-start">
+              {PIPELINE_STATUTS.map((s) => {
+                const col = STATUT_COLORS[s];
+                const list = byStatut[s];
+                return (
+                  <DroppableColumn key={s} statut={s} colorInfo={col} list={list} />
+                );
+              })}
+            </div>
+            <DragOverlay>
+              {activeDragProspect ? (
+                <div 
+                  className="rounded-lg p-2 shadow-2xl scale-105 border border-surface-3 bg-surface-2"
+                  style={{ cursor: 'grabbing' }}
                 >
-                <Link
-                  href={`/prospects?statut=${s}`}
-                  className="group block rounded-xl border p-3 transition-shadow hover:shadow-card-hover"
-                  style={{ background: col.bg + "33", borderColor: col.border }}
-                >
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: col.text }}>
-                      <span>{STATUT_EMOJI[s]}</span>
-                      <span className="truncate">{STATUT_LABEL[s]}</span>
-                    </div>
-                  </div>
-                  <p className="text-[26px] font-black tabular-nums" style={{ color: col.text }}>
-                    {list.length}
-                  </p>
-                  <div className="mt-2 space-y-1 min-h-[34px]">
-                    {list.slice(0, 2).map((p) => (
-                      <p key={p.id} className="text-[11px] text-t-secondary truncate">
-                        {p.entreprise}
-                      </p>
-                    ))}
-                    {list.length > 2 && (
-                      <p className="text-[10px] text-t-tertiary">+ {list.length - 2}</p>
-                    )}
-                    {list.length === 0 && (
-                      <p className="text-[10.5px] text-t-tertiary italic">vide</p>
-                    )}
-                  </div>
-                </Link>
-                </motion.div>
-              );
-            })}
-          </motion.div>
+                  <p className="text-[12px] font-bold text-t-primary truncate">{activeDragProspect.entreprise}</p>
+                </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
 
         {/* 2 PANELS : PROCHAINS A APPELER + PROCHAINS RDV */}
@@ -462,5 +451,70 @@ function MiniStat({
         {suffix && <span className="text-[11px] font-semibold text-t-tertiary">{suffix}</span>}
       </p>
     </motion.div>
+  );
+}
+
+function DroppableColumn({ statut, colorInfo, list }: { statut: StatutProspect, colorInfo: any, list: any[] }) {
+  const { isOver, setNodeRef } = useDroppable({ id: statut });
+  
+  return (
+    <div
+      ref={setNodeRef}
+      className={`rounded-xl border p-3 flex flex-col h-full min-h-[250px] transition-colors ${isOver ? "ring-2 ring-offset-2 ring-offset-surface-1" : ""}`}
+      style={{ 
+        background: colorInfo.bg + "22", 
+        borderColor: isOver ? colorInfo.text : colorInfo.border,
+        boxShadow: isOver ? `0 0 20px ${colorInfo.text}33` : "none"
+      }}
+    >
+      <Link href={`/prospects?statut=${statut}`} className="flex items-center justify-between mb-3 hover:opacity-70 transition-opacity">
+        <div className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider" style={{ color: colorInfo.text }}>
+          <span>{STATUT_EMOJI[statut]}</span>
+          <span className="truncate">{STATUT_LABEL[statut]}</span>
+        </div>
+        <span className="text-[12px] font-bold bg-black/20 px-1.5 rounded" style={{ color: colorInfo.text }}>
+          {list.length}
+        </span>
+      </Link>
+      
+      <div className="flex-1 space-y-2 overflow-y-auto max-h-[400px] scrollbar-none pb-2">
+        {list.length === 0 && (
+          <p className="text-[11px] text-t-tertiary italic text-center mt-4">Glissez ici</p>
+        )}
+        {list.map((p) => (
+          <DraggableProspect key={p.id} prospect={p} colorInfo={colorInfo} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function DraggableProspect({ prospect, colorInfo }: { prospect: any, colorInfo: any }) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({ id: prospect.id });
+  const style = transform ? { transform: CSS.Translate.toString(transform) } : undefined;
+  
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+      className={`rounded-lg p-2 border bg-[var(--surface-1)] transition-all cursor-grab active:cursor-grabbing hover:brightness-110 ${isDragging ? "opacity-50" : ""}`}
+      style={{ borderColor: colorInfo.border }}
+    >
+      <div className="flex justify-between items-start gap-1">
+        <p className="text-[12px] font-semibold text-[var(--text-primary)] leading-tight line-clamp-2">
+          {prospect.entreprise}
+        </p>
+        <Link href={`/prospects/${prospect.id}`} className="shrink-0 p-1 bg-[var(--surface-2)] rounded hover:bg-[var(--surface-3)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" onClick={(e) => e.stopPropagation()}>
+          <ChevronRight size={12} />
+        </Link>
+      </div>
+      {(prospect.telephone || prospect.niche) && (
+        <p className="text-[10px] text-[var(--text-tertiary)] mt-1 truncate">
+          {prospect.telephone || prospect.niche}
+        </p>
+      )}
+    </div>
   );
 }

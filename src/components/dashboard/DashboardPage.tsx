@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
-import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText } from "lucide-react";
+import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText, Phone, ChevronRight, CheckCircle2, Circle } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
@@ -32,9 +32,12 @@ export default function DashboardPage() {
 
   const calls = useCrmStore((s) => s.calls);
   const revenus = useCrmStore((s) => s.revenus);
+  const prospects = useCrmStore((s) => s.prospects);
   const config = useCrmStore((s) => s.config);
   const loadCrm = useCrmStore((s) => s.loadAll);
   const crmLoaded = useCrmStore((s) => s.loaded);
+  const toggleTaskStatus = useAppStore((s) => s.updateTaskStatus);
+  const completeTask = useAppStore((s) => s.completeTask);
 
   const [, setTick] = useState(0);
   const [googleTasks, setGoogleTasks] = useState<any[]>([]);
@@ -138,6 +141,30 @@ export default function DashboardPage() {
   const ventesNecessaires = Math.ceil(manque / prixSite);
 
   const activeProfileId = getActiveProfileId();
+
+  // Rappels CRM du jour
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const rappelsDuJour = useMemo(() => {
+    const activeProspects = prospects.filter((p) => !p.archived);
+    const now = Date.now();
+    const H24 = 24 * 60 * 60 * 1000;
+    const lastCallTs = new Map<string, number>();
+    for (const c of calls) {
+      const ts = new Date(c.date).getTime();
+      const prev = lastCallTs.get(c.prospect_id) ?? 0;
+      if (ts > prev) lastCallTs.set(c.prospect_id, ts);
+    }
+    return activeProspects.filter((p) => {
+      if (p.statut !== "REPONDEUR") return false;
+      if (p.date_relance) return p.date_relance <= todayStr;
+      return now - (lastCallTs.get(p.id) ?? 0) > H24;
+    }).slice(0, 5);
+  }, [prospects, calls, todayStr]);
+
+  // Tâches du jour (locales)
+  const todayTasksList = useMemo(() => {
+    return tasks.filter(t => t.status === "today");
+  }, [tasks]);
 
   return (
     <div className="h-full overflow-auto">
@@ -266,6 +293,75 @@ export default function DashboardPage() {
             value={activeGoals} sub="en cours" accent="purple" />
           <MiniStat href="/projets" icon={<FolderKanban size={14} />} label="Projets"
             value={activeProjects} sub="actifs" accent="cyan" />
+        </div>
+
+        {/* ═══ ACTIONS DU JOUR (Tâches & Rappels CRM) ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+          {/* Tâches du jour */}
+          <div className="rounded-2xl p-5 border transition-all hover:border-[var(--accent-green)]/30 bg-[var(--surface-1)] shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-[var(--accent-green)]">
+                <ListChecks size={16} />
+                <h3 className="text-[14px] font-bold tracking-tight">Tâches du jour</h3>
+              </div>
+              <Link href="/taches" className="text-[11px] font-semibold text-[var(--text-tertiary)] hover:text-[var(--accent-green)] flex items-center gap-0.5">
+                Voir tout <ChevronRight size={12} />
+              </Link>
+            </div>
+            {todayTasksList.length === 0 ? (
+              <p className="text-[12px] text-[var(--text-tertiary)] italic py-2">Aucune tâche pour aujourd'hui. Profites-en pour te reposer ou vider l'inbox !</p>
+            ) : (
+              <ul className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 scrollbar-none">
+                {todayTasksList.map((t) => (
+                  <li key={t.id} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-primary)] hover:border-[var(--accent-green)]/40 transition-colors group">
+                    <button onClick={() => completeTask(t.id)} className="shrink-0 mt-0.5 text-[var(--text-tertiary)] group-hover:text-[var(--accent-green)]">
+                      <Circle size={14} />
+                    </button>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12.5px] font-medium text-[var(--text-primary)] truncate">{t.text}</p>
+                      {t.projectId && (
+                        <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5 inline-block bg-[var(--surface-3)] px-1.5 py-0.5 rounded">
+                          {projects.find(p => p.id === t.projectId)?.name || "Projet"}
+                        </p>
+                      )}
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Rappels CRM */}
+          <div className="rounded-2xl p-5 border transition-all hover:border-[var(--accent-orange)]/30 bg-[var(--surface-1)] shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2 text-[var(--accent-orange)]">
+                <Phone size={16} />
+                <h3 className="text-[14px] font-bold tracking-tight">Rappels CRM</h3>
+              </div>
+              <Link href="/crm" className="text-[11px] font-semibold text-[var(--text-tertiary)] hover:text-[var(--accent-orange)] flex items-center gap-0.5">
+                Ouvrir CRM <ChevronRight size={12} />
+              </Link>
+            </div>
+            {rappelsDuJour.length === 0 ? (
+              <p className="text-[12px] text-[var(--text-tertiary)] italic py-2">Aucun prospect à relancer. Top !</p>
+            ) : (
+              <ul className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 scrollbar-none">
+                {rappelsDuJour.map((p) => (
+                  <li key={p.id}>
+                    <Link href={`/prospects/${p.id}`} className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--accent-orange-light)] border border-[var(--accent-orange)]/20 hover:brightness-110 transition-all group">
+                      <div className="min-w-0">
+                        <p className="text-[12.5px] font-bold text-[var(--accent-orange)] truncate">{p.entreprise}</p>
+                        <p className="text-[10px] text-[var(--accent-orange)]/70 mt-0.5 flex items-center gap-1 font-semibold">
+                          <Phone size={10} /> {p.telephone || "Pas de numéro"}
+                        </p>
+                      </div>
+                      <ChevronRight size={14} className="text-[var(--accent-orange)]/50 group-hover:text-[var(--accent-orange)]" />
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
 
         {/* ═══ CATÉGORIES / PROJETS ═══ */}
