@@ -19,6 +19,7 @@ import ColdCallSession from "./ColdCallSession";
 import { celebrate } from "@/lib/dopamineFeedback";
 import { DndContext, useDraggable, useDroppable, DragOverlay, closestCenter } from '@dnd-kit/core';
 import { CSS } from '@dnd-kit/utilities';
+import StatutBadge from "./StatutBadge";
 
 // Statuts affiches dans le pipeline kanban (on cache les terminaux)
 const PIPELINE_STATUTS: StatutProspect[] = [
@@ -340,7 +341,7 @@ export default function CrmHub() {
                 <h3 className="text-[13.5px] font-semibold">A appeler en priorite</h3>
               </div>
               {aAppeler.length > 6 && (
-                <Link href="/prospects?statut=A_APPELER" className="text-[11px] text-t-tertiary hover:text-dopa-cyan inline-flex items-center gap-0.5">
+                <Link href="/prospects?statut=A_APPELER" className="text-[11px] text-t-tertiary hover:text-[var(--accent-cyan)] inline-flex items-center gap-0.5">
                   Voir les {aAppeler.length} <ChevronRight size={11} />
                 </Link>
               )}

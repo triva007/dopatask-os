@@ -180,7 +180,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     return (
       <div className="h-full flex items-center justify-center bg-surface-0 p-8">
         <div className="max-w-md w-full text-center">
-          <Trophy size={64} className="mx-auto mb-6 text-dopa-green" />
+          <Trophy size={64} className="mx-auto mb-6" style={{ color: "var(--accent-green)" }} />
           <h2 className="text-2xl font-bold mb-2">Liste vidée</h2>
           <p className="text-[13.5px] text-t-tertiary mb-6">
             Plus aucun prospect à appeler aujourd&apos;hui. Les répondeurs récents reviendront dans +24h.
@@ -201,12 +201,12 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     return (
       <div className="h-full flex items-center justify-center bg-surface-0 p-8">
         <div className="max-w-md w-full text-center">
-          <CheckCircle2 size={64} className="mx-auto mb-6 text-dopa-green" />
+          <CheckCircle2 size={64} className="mx-auto mb-6" style={{ color: "var(--accent-green)" }} />
           <h2 className="text-2xl font-bold mb-2">Session terminée</h2>
           <p className="text-[13.5px] text-t-tertiary mb-1">
             {missionToday} appel(s) comptabilisé(s) aujourd&apos;hui.
           </p>
-          <p className="text-[13.5px] text-dopa-green font-semibold mb-6">
+          <p className="text-[13.5px] font-semibold mb-6" style={{ color: "var(--accent-green)" }}>
             {rdvToday} RDV décroché(s).
           </p>
           <button
@@ -238,13 +238,13 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
           <div className="flex items-center gap-4 text-[12px]">
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">
-              <Target size={13} className="text-dopa-cyan" />
+              <Target size={13} style={{ color: "var(--accent-cyan)" }} />
               <span className="tabular-nums font-semibold text-t-primary">{missionToday}</span>
               <span>appels</span>
             </span>
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">
-              <Calendar size={13} className="text-dopa-green" />
-              <span className="tabular-nums font-semibold text-dopa-green">{rdvToday}</span>
+              <Calendar size={13} style={{ color: "var(--accent-green)" }} />
+              <span className="tabular-nums font-semibold" style={{ color: "var(--accent-green)" }}>{rdvToday}</span>
               <span>RDV</span>
             </span>
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">

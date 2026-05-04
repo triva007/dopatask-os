@@ -45,6 +45,21 @@ const COLORS = [
   "color-mix(in srgb, var(--accent-purple) 12%, var(--card-bg))",
 ];
 
+const isDark = (color: string) => {
+  if (!color) return false;
+  if (color.startsWith('var')) return false;
+  if (color.startsWith('color-mix')) return false;
+  if (color.startsWith('#')) {
+    const c = color.substring(1);
+    const r = parseInt(c.substring(0, 2), 16);
+    const g = parseInt(c.substring(2, 4), 16);
+    const b = parseInt(c.substring(4, 6), 16);
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b;
+    return luma < 140; // Slightly higher threshold for better visibility
+  }
+  return false;
+};
+
 export default function NotesView() {
   const { notes, addNote, updateNote, deleteNote, togglePinNote, toggleArchiveNote, reorderNotes } = useAppStore();
   const [search, setSearch] = useState("");
@@ -358,14 +373,19 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
     updateNote(note.id, { content: lines.join("\n") });
   };
 
+  const darkBg = isDark(note.color);
+  const textColor = darkBg ? "#FFFFFF" : "var(--text-primary)";
+  const textSecondary = darkBg ? "rgba(255,255,255,0.85)" : "var(--text-secondary)";
+  const borderColor = darkBg ? "rgba(255,255,255,0.15)" : "var(--border-primary)";
+
   return (
     <div 
-      className={`rounded-[22px] border border-[var(--border-primary)] p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-[var(--card-shadow)] hover:shadow-[var(--card-shadow-hover)] ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:translate-y-[-4px]"}`}
-      style={{ background: note.color }}
+      className={`rounded-[22px] border p-6 transition-all group relative cursor-pointer overflow-hidden h-fit shadow-[var(--card-shadow)] hover:shadow-[var(--card-shadow-hover)] ${isOverlay ? "scale-105 shadow-2xl rotate-2" : "hover:translate-y-[-4px]"}`}
+      style={{ background: note.color, borderColor }}
       onContextMenu={onContextMenu}
       onClick={onEdit}
     >
-      <div {...dragListeners} {...dragAttributes} className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity text-[var(--text-tertiary)] cursor-grab active:cursor-grabbing p-1">
+      <div {...dragListeners} {...dragAttributes} className={`absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing p-1 ${darkBg ? "text-white/50" : "text-[var(--text-tertiary)]"}`}>
         <GripVertical size={16} />
       </div>
 
@@ -375,22 +395,31 @@ function NoteCard({ note, onEdit, onContextMenu, dragListeners, dragAttributes, 
         </div>
       )}
 
-      {note.title && <h3 className="text-[16px] font-bold text-[var(--text-primary)] mb-3 pr-6 leading-tight">{note.title}</h3>}
+      {note.title && <h3 className="text-[16px] font-bold mb-3 pr-6 leading-tight" style={{ color: textColor }}>{note.title}</h3>}
       {note.projectId && (
         <div className="mb-3">
-          <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-[var(--surface-1)]/50 rounded-md text-[11px] font-medium text-[var(--text-secondary)] border border-[var(--border-primary)]/50">
+          <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-md text-[11px] font-medium border"
+            style={{ 
+              background: darkBg ? "rgba(255,255,255,0.1)" : "var(--surface-1)",
+              color: textSecondary,
+              borderColor: darkBg ? "rgba(255,255,255,0.1)" : "var(--border-primary)"
+            }}>
             {useAppStore.getState().projects.find(p => p.id === note.projectId)?.emoji}
             {useAppStore.getState().projects.find(p => p.id === note.projectId)?.name}
           </span>
         </div>
       )}
-      <div className="text-[14px] text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed line-clamp-[12]">
+      <div className="text-[14px] whitespace-pre-wrap leading-relaxed line-clamp-[12]" style={{ color: textSecondary }}>
         {note.content.split("\n").map((line: string, i: number) => {
           if (line.startsWith("[ ] ") || line.startsWith("[x] ")) {
             const checked = line.startsWith("[x] ");
             return (
               <div key={i} className="flex items-start gap-2 py-0.5" onClick={(e) => { e.stopPropagation(); toggleCheckbox(i); }}>
-                {checked ? <CheckSquare size={14} className="mt-1 text-[var(--accent-blue)]" /> : <Square size={14} className="mt-1 text-[var(--text-tertiary)]" />}
+                {checked ? (
+                  <CheckSquare size={14} className="mt-1" style={{ color: "var(--accent-blue)" }} />
+                ) : (
+                  <Square size={14} className="mt-1" style={{ color: darkBg ? "rgba(255,255,255,0.4)" : "var(--text-tertiary)" }} />
+                )}
                 <span className={checked ? "line-through opacity-50" : ""}>{line.slice(4)}</span>
               </div>
             );
