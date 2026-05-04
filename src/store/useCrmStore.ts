@@ -5,6 +5,7 @@
 "use client";
 
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { supabase } from "@/lib/supabase";
 import type { Prospect, Call, Revenu, Config, Script, ResultatAppel } from "@/lib/crmTypes";
 import { buildFeedbackLine, statutFromResultat, shouldArchive, resultatCompteMission } from "@/lib/crmLogic";
@@ -28,7 +29,7 @@ type CrmState = {
   createProspect: (data: Partial<Prospect> & { entreprise: string }) => Promise<Prospect | null>;
   updateProspect: (id: string, patch: Partial<Prospect>) => Promise<void>;
   importProspects: (rows: Array<Partial<Prospect> & { entreprise: string }>) => Promise<number>;
-  logCall: (prospectId: string, resultat: ResultatAppel, notes?: string, rappelDate?: string) => Promise<void>;
+  logCall: (prospectId: string, resultat: ResultatAppel, notes?: string, rappelDate?: string, duree_s?: number) => Promise<void>;
   addRevenu: (prospectId: string | null, montant: number, notes?: string) => Promise<void>;
   updateConfig: (patch: Partial<Config>) => Promise<void>;
   repairProspectsFromNotes: () => Promise<{ fixed: number; scanned: number }>;
@@ -37,8 +38,10 @@ type CrmState = {
   bulkDeleteProspects: (ids: string[]) => Promise<number>;
 };
 
-export const useCrmStore = create<CrmState>((set, get) => ({
-  prospects: [],
+export const useCrmStore = create<CrmState>()(
+  persist(
+    (set, get) => ({
+      prospects: [],
   calls: [],
   revenus: [],
   config: null,
@@ -147,7 +150,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     return (data || []).length;
   },
 
-  logCall: async (prospectId, resultat, notes, rappelDate) => {
+  logCall: async (prospectId, resultat, notes, rappelDate, duree_s) => {
     const prospect = get().prospects.find((p) => p.id === prospectId);
     if (!prospect) return;
     const userId = getActiveProfileId();
@@ -161,6 +164,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
         resultat,
         notes: notes || null,
         compte_mission: resultatCompteMission(resultat),
+        duree_s: duree_s || null,
       })
       .select("*")
       .single();
@@ -337,4 +341,10 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     });
     return ids.length;
   },
-}));
+    }),
+    {
+      name: "dopatask-crm-storage",
+      partialize: (state) => ({ prospects: state.prospects, calls: state.calls, revenus: state.revenus, config: state.config, scripts: state.scripts }),
+    }
+  )
+);

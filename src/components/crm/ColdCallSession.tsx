@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
-  CheckCircle2, Target, Flame, Trophy, Copy, ExternalLink, Clock, Ban,
+  CheckCircle2, Target, Flame, Trophy, Copy, ExternalLink, Clock, Ban, FileText, ChevronDown, ChevronUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
@@ -79,11 +79,44 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const [submitting, setSubmitting] = useState<ResultatAppel | null>(null);
   const [flash, setFlash]         = useState<string | null>(null);
 
-  // État pour le mode "Rappeler plus tard" (saisie de date)
   const [rappelMode, setRappelMode] = useState(false);
   const [rappelDate, setRappelDate] = useState(localDateOffset(3));
 
+  // Timer
+  const [seconds, setSeconds] = useState(0);
+
   const current = queue[cursor];
+
+  // Store data
+  const scripts = useCrmStore((s) => s.scripts);
+  const config  = useCrmStore((s) => s.config);
+
+  const activeScript = useMemo(() => {
+    if (!config?.script_actif_id) {
+      // Fallback sur la niche si pas de script global par défaut
+      return scripts.find(s => s.niche === current?.niche) || scripts[0];
+    }
+    return scripts.find(s => s.id === config.script_actif_id) || scripts[0];
+  }, [config, scripts, current?.niche]);
+
+  const [showScript, setShowScript] = useState(false);
+
+  // Timer logic
+  useEffect(() => {
+    let interval: any;
+    if (current) {
+      interval = setInterval(() => {
+        setSeconds((s) => s + 1);
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [current?.id]);
+
+  const formatTime = (s: number) => {
+    const mins = Math.floor(s / 60);
+    const secs = s % 60;
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   // Stats session du jour
   const callsToday  = useMemo(() => calls.filter((c) => isToday(c.date)), [calls]);
@@ -95,6 +128,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setNoteDraft("");
     setRappelMode(false);
     setRappelDate(localDateOffset(3));
+    setSeconds(0);
   }, [current?.id]);
 
   const next = () => { if (cursor + 1 < queue.length) setCursor((c) => c + 1); };
@@ -103,7 +137,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
     if (!current || submitting) return;
     setSubmitting(resultat);
-    await logCall(current.id, resultat, noteDraft.trim() || undefined, dateRappel);
+    await logCall(current.id, resultat, noteDraft.trim() || undefined, dateRappel, seconds);
     const outcome = OUTCOMES.find((o) => o.key === resultat);
     setFlash(outcome?.label || resultat);
     setTimeout(() => setFlash(null), 1500);
@@ -212,10 +246,25 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               <span>RDV</span>
             </span>
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">
+              <Clock size={13} className={seconds > 60 ? "text-dopa-orange" : "text-dopa-cyan"} />
+              <span className={`tabular-nums font-semibold ${seconds > 60 ? "text-dopa-orange" : "text-t-primary"}`}>
+                {formatTime(seconds)}
+              </span>
+            </span>
+            <span className="inline-flex items-center gap-1.5 text-t-tertiary">
               <Flame size={13} className="text-dopa-orange" />
               <span className="tabular-nums font-semibold text-t-primary">{cursor + 1}</span>
               <span>/ {queue.length}</span>
             </span>
+
+            <button
+              onClick={() => setShowScript(!showScript)}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold transition-all ${
+                showScript ? "bg-dopa-cyan text-black" : "bg-surface-2 text-t-secondary hover:bg-surface-3"
+              }`}
+            >
+              <FileText size={14} /> Script
+            </button>
           </div>
         </div>
       </div>
@@ -242,7 +291,9 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.18 }}
+            className="flex flex-col lg:flex-row gap-6 items-start"
           >
+            <div className="flex-1 w-full lg:min-w-0">
             {/* Card prospect */}
             <div className="rounded-2xl border border-surface-3 bg-surface-1 p-7 mb-5">
               <div className="flex items-start justify-between gap-4 mb-5">
@@ -393,12 +444,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                         >
                           {isLoading ? "..." : "Confirmer"}
                         </button>
-                        <button
-                          onClick={() => setRappelMode(false)}
-                          className="px-3 py-2 rounded-lg bg-surface-2 border border-surface-3 text-[12px] text-t-tertiary hover:bg-surface-3"
-                        >
-                          Annuler
-                        </button>
                       </div>
                     </motion.div>
                   );
@@ -407,35 +452,101 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 return (
                   <button
                     key={o.key}
-                    onClick={() => {
-                      if (isRappel) { setRappelMode(true); }
-                      else { handleLog(o.key); }
-                    }}
+                    onClick={isRappel ? () => setRappelMode(true) : () => handleLog(o.key)}
                     disabled={!!submitting}
-                    className="group relative px-4 py-4 rounded-xl border-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 text-left"
-                    style={{ background: `${o.color}12`, borderColor: `${o.color}55` }}
+                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-surface-3 hover:brightness-110 active:scale-[0.98] transition-all group relative overflow-hidden"
+                    style={{ background: `${o.color}15`, borderColor: `${o.color}35` }}
                   >
-                    <div className="flex items-start justify-between mb-2">
-                      <Icon size={18} style={{ color: o.textColor }} />
-                      <kbd className="text-[10px] px-1.5 py-0.5 rounded bg-surface-0 border border-surface-3 text-t-tertiary font-mono">
-                        {o.shortcut}
-                      </kbd>
-                    </div>
-                    <p className="text-[14px] font-bold mb-0.5" style={{ color: o.textColor }}>
-                      {isLoading ? "..." : o.label}
-                    </p>
-                    <p className="text-[11px] text-t-tertiary leading-tight">{o.desc}</p>
+                    {isLoading && (
+                      <div className="absolute inset-0 bg-white/10 flex items-center justify-center backdrop-blur-[1px]">
+                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                    <Icon size={20} className="mb-2 transition-transform group-hover:scale-110" style={{ color: o.textColor }} />
+                    <span className="text-[13px] font-bold text-t-primary">{o.label}</span>
+                    <span className="text-[10px] text-t-tertiary mt-1 font-medium text-center">{o.desc}</span>
+                    <span className="absolute top-1 right-2 text-[9px] font-bold opacity-30 group-hover:opacity-60">{o.shortcut}</span>
                   </button>
                 );
               })}
             </div>
-
-            <p className="text-[11px] text-t-tertiary text-center mt-4">
+            
+            <p className="text-[11px] text-t-tertiary text-center mt-6">
               Raccourcis : <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">1</kbd>–<kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">6</kbd> pour logger · <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">→</kbd> skip · <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">Esc</kbd> quitter
             </p>
-          </motion.div>
-        </AnimatePresence>
-      </div>
+          </div>
+
+          {/* Script Side Panel */}
+          <AnimatePresence>
+            {showScript && activeScript && (
+              <motion.div
+                initial={{ opacity: 0, x: 20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                className="w-full lg:w-[350px] shrink-0 sticky top-24 h-fit max-h-[80vh] overflow-auto rounded-2xl border border-surface-3 bg-surface-1 shadow-sm flex flex-col"
+              >
+                <div className="p-4 border-b border-surface-3 flex items-center justify-between bg-surface-2/50">
+                  <div className="flex items-center gap-2">
+                    <FileText size={16} className="text-dopa-cyan" />
+                    <h2 className="text-[14px] font-bold tracking-tight">{activeScript.nom}</h2>
+                  </div>
+                  <button onClick={() => setShowScript(false)} className="text-t-tertiary hover:text-t-primary">
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="p-5 space-y-6">
+                  {activeScript.ouverture && (
+                    <section>
+                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-cyan font-bold mb-2">Ouverture</h3>
+                      <p className="text-[13px] text-t-secondary italic leading-relaxed">
+                        &quot;{activeScript.ouverture}&quot;
+                      </p>
+                    </section>
+                  )}
+
+                  {activeScript.corps && (
+                    <section>
+                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-violet font-bold mb-2">Pitch / Corps</h3>
+                      <div className="text-[13px] text-t-secondary leading-relaxed whitespace-pre-wrap">
+                        {activeScript.corps}
+                      </div>
+                    </section>
+                  )}
+
+                  {activeScript.objections && activeScript.objections.length > 0 && (
+                    <section>
+                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-orange font-bold mb-2">Objections</h3>
+                      <div className="space-y-3">
+                        {activeScript.objections.map((obj, i) => (
+                          <div key={i} className="group">
+                            <p className="text-[12.5px] font-bold text-t-primary mb-1">
+                              {obj.question}
+                            </p>
+                            <p className="text-[12px] text-t-tertiary italic border-l-2 border-surface-3 pl-3 group-hover:border-dopa-orange transition-colors">
+                              {obj.reponse}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </section>
+                  )}
+
+                  {activeScript.cloture && (
+                    <section>
+                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-green font-bold mb-2">Clôture / RDV</h3>
+                      <p className="text-[13px] text-t-secondary italic leading-relaxed">
+                        &quot;{activeScript.cloture}&quot;
+                      </p>
+                    </section>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
+      </AnimatePresence>
     </div>
-  );
+  </div>
+);
 }
