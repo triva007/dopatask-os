@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
-  CheckCircle2, Target, Flame, Trophy, Copy, ExternalLink,
+  CheckCircle2, Target, Flame, Trophy, Copy, ExternalLink, Clock, Ban,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
@@ -21,81 +21,118 @@ type Outcome = {
 };
 
 const OUTCOMES: Outcome[] = [
-  { key: "RDV",          label: "RDV Booké",     shortcut: "1", color: "#10b981", textColor: "#10b981", icon: Calendar,      desc: "Il a dit oui. GG." },
-  { key: "DECROCHE",     label: "Décroché",      shortcut: "2", color: "#3b82f6", textColor: "#3b82f6", icon: Phone,         desc: "A parlé mais pas de RDV" },
-  { key: "REPONDEUR",    label: "Répondeur",     shortcut: "3", color: "#f97316", textColor: "#f97316", icon: PhoneOff,      desc: "Rappel plus tard" },
-  { key: "PAS_JOIGNABLE",label: "Pas joignable", shortcut: "4", color: "#eab308", textColor: "#eab308", icon: PhoneOff,      desc: "Sonné dans le vide" },
-  { key: "REFUS",        label: "Refus",         shortcut: "5", color: "#ef4444", textColor: "#ef4444", icon: X,             desc: "Pas intéressé. Next." },
-  { key: "EXISTE_PAS",   label: "N'existe pas",  shortcut: "6", color: "#64748b", textColor: "#94a3b8", icon: X,             desc: "Numéro mort / faux" },
+  { key: "RDV",             label: "RDV Booké",          shortcut: "1", color: "#10b981", textColor: "#10b981", icon: Calendar, desc: "Il a dit oui. GG."           },
+  { key: "REPONDEUR",       label: "Répondeur",           shortcut: "2", color: "#f97316", textColor: "#f97316", icon: PhoneOff, desc: "Pas répondu, à relancer"     },
+  { key: "RAPPEL_PLUS_TARD",label: "Rappeler plus tard",  shortcut: "3", color: "#8b5cf6", textColor: "#8b5cf6", icon: Clock,    desc: "Fixer une date de rappel"    },
+  { key: "REFUS",           label: "Refus",               shortcut: "4", color: "#ef4444", textColor: "#ef4444", icon: X,        desc: "Pas intéressé. Next."        },
+  { key: "EXISTE_PAS",      label: "N'existe pas",        shortcut: "5", color: "#64748b", textColor: "#94a3b8", icon: X,        desc: "Numéro mort / faux"          },
+  { key: "PAS_MA_CIBLE",    label: "Pas ma cible",        shortcut: "6", color: "#eab308", textColor: "#eab308", icon: Ban,      desc: "Erreur de sourcing"          },
 ];
+
+/** Date ISO locale (YYYY-MM-DD) pour un offset de jours */
+function localDateOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 
 export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const prospects = useCrmStore((s) => s.prospects);
-  const calls = useCrmStore((s) => s.calls);
-  const logCall = useCrmStore((s) => s.logCall);
+  const calls     = useCrmStore((s) => s.calls);
+  const logCall   = useCrmStore((s) => s.logCall);
 
-  // File d'attente : A_APPELER + REPONDEUR actifs, plus anciens d'abord (logique cold-call = épuiser la liste)
+  /* ── Queue : A_APPELER + REPONDEUR dont le dernier appel date de >24h
+     ET dont la date_relance (si présente) est aujourd'hui ou passée ── */
   const queue = useMemo<Prospect[]>(() => {
-    return prospects
-      .filter((p) => !p.archived && (p.statut === "A_APPELER" || p.statut === "REPONDEUR"))
-      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
-  }, [prospects]);
+    const now = Date.now();
+    const H24 = 24 * 60 * 60 * 1000;
 
-  // Index prospect courant (filtré sur la queue)
-  const [cursor, setCursor] = useState(0);
+    // Index : dernière date d'appel par prospect
+    const lastCallByProspect = new Map<string, number>();
+    for (const c of calls) {
+      const ts = new Date(c.date).getTime();
+      const prev = lastCallByProspect.get(c.prospect_id) ?? 0;
+      if (ts > prev) lastCallByProspect.set(c.prospect_id, ts);
+    }
+
+    return prospects
+      .filter((p) => {
+        if (p.archived) return false;
+        if (p.statut === "A_APPELER") return true;
+        if (p.statut === "REPONDEUR") {
+          // Si une date_relance est fixée, n'afficher qu'à partir de cette date
+          if (p.date_relance) {
+            const relance = new Date(p.date_relance + "T00:00:00").getTime();
+            return now >= relance;
+          }
+          // Sinon, attendre au moins 24h depuis le dernier appel
+          const lastTs = lastCallByProspect.get(p.id) ?? 0;
+          return now - lastTs > H24;
+        }
+        return false;
+      })
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+  }, [prospects, calls]);
+
+  const [cursor, setCursor]       = useState(0);
   const [noteDraft, setNoteDraft] = useState("");
   const [submitting, setSubmitting] = useState<ResultatAppel | null>(null);
-  const [flash, setFlash] = useState<string | null>(null);
+  const [flash, setFlash]         = useState<string | null>(null);
+
+  // État pour le mode "Rappeler plus tard" (saisie de date)
+  const [rappelMode, setRappelMode] = useState(false);
+  const [rappelDate, setRappelDate] = useState(localDateOffset(3));
 
   const current = queue[cursor];
 
   // Stats session du jour
-  const callsToday = useMemo(() => calls.filter((c) => isToday(c.date)), [calls]);
+  const callsToday  = useMemo(() => calls.filter((c) => isToday(c.date)), [calls]);
   const missionToday = callsToday.filter((c) => c.compte_mission).length;
-  const rdvToday = callsToday.filter((c) => c.resultat === "RDV").length;
+  const rdvToday     = callsToday.filter((c) => c.resultat === "RDV").length;
 
-  // Reset notes quand on change de prospect
+  // Reset quand on change de prospect
   useEffect(() => {
     setNoteDraft("");
+    setRappelMode(false);
+    setRappelDate(localDateOffset(3));
   }, [current?.id]);
 
-  const next = () => {
-    if (cursor + 1 < queue.length) setCursor((c) => c + 1);
-  };
-  const prev = () => {
-    if (cursor > 0) setCursor((c) => c - 1);
-  };
+  const next = () => { if (cursor + 1 < queue.length) setCursor((c) => c + 1); };
+  const prev = () => { if (cursor > 0) setCursor((c) => c - 1); };
 
-  const handleLog = async (resultat: ResultatAppel) => {
+  const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
     if (!current || submitting) return;
     setSubmitting(resultat);
-    await logCall(current.id, resultat, noteDraft.trim() || undefined);
+    await logCall(current.id, resultat, noteDraft.trim() || undefined, dateRappel);
     const outcome = OUTCOMES.find((o) => o.key === resultat);
     setFlash(outcome?.label || resultat);
     setTimeout(() => setFlash(null), 1500);
     setSubmitting(null);
-    // auto-advance vers le suivant. Le prospect courant va disparaître de la queue
-    // après logCall (statut changé), donc cursor pointera naturellement sur le suivant.
-    // On garde cursor tel quel — le useMemo va refiltrer la queue.
+    setRappelMode(false);
   };
 
   // Raccourcis clavier
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if ((e.target as HTMLElement)?.tagName === "TEXTAREA" || (e.target as HTMLElement)?.tagName === "INPUT") return;
-      if (e.key === "Escape") { onExit(); return; }
-      if (e.key === "ArrowRight" || e.key === "ArrowDown") { next(); return; }
-      if (e.key === "ArrowLeft" || e.key === "ArrowUp") { prev(); return; }
+      const tag = (e.target as HTMLElement)?.tagName;
+      if (tag === "TEXTAREA" || tag === "INPUT") return;
+      if (e.key === "Escape")                        { if (rappelMode) { setRappelMode(false); } else { onExit(); } return; }
+      if (e.key === "ArrowRight" || e.key === "ArrowDown")  { next(); return; }
+      if (e.key === "ArrowLeft"  || e.key === "ArrowUp")    { prev(); return; }
       const outcome = OUTCOMES.find((o) => o.shortcut === e.key);
       if (outcome) {
         e.preventDefault();
-        handleLog(outcome.key);
+        if (outcome.key === "RAPPEL_PLUS_TARD") {
+          setRappelMode(true);
+        } else {
+          handleLog(outcome.key);
+        }
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, cursor, queue.length, noteDraft]);
+  }, [current?.id, cursor, queue.length, noteDraft, rappelMode]);
 
   const copyTel = () => {
     if (!current?.telephone) return;
@@ -104,7 +141,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setTimeout(() => setFlash(null), 1200);
   };
 
-  // Si queue épuisée → écran de victoire
+  /* ── Écran liste vide ── */
   if (queue.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-surface-0 p-8">
@@ -112,7 +149,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
           <Trophy size={64} className="mx-auto mb-6 text-dopa-green" />
           <h2 className="text-2xl font-bold mb-2">Liste vidée</h2>
           <p className="text-[13.5px] text-t-tertiary mb-6">
-            Plus aucun prospect à appeler ou à relancer. Importe un nouveau CSV ou reviens demain.
+            Plus aucun prospect à appeler aujourd&apos;hui. Les répondeurs récents reviendront dans +24h.
           </p>
           <button
             onClick={onExit}
@@ -126,7 +163,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   }
 
   if (!current) {
-    // Fin de session (cursor hors queue)
     return (
       <div className="h-full flex items-center justify-center bg-surface-0 p-8">
         <div className="max-w-md w-full text-center">
@@ -149,7 +185,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     );
   }
 
-  const tel = current.telephone?.trim();
+  const tel    = current.telephone?.trim();
   const telHref = tel ? `tel:${tel.replace(/\s/g, "")}` : undefined;
 
   return (
@@ -218,6 +254,11 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                         Rappel répondeur
                       </span>
                     )}
+                    {current.date_relance && (
+                      <span className="ml-2 px-1.5 py-0.5 rounded bg-dopa-violet/15 text-dopa-violet text-[10px]">
+                        📅 Rappel prévu {new Date(current.date_relance + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
+                      </span>
+                    )}
                   </p>
                   <h1 className="text-[28px] font-bold leading-tight tracking-tight break-words">
                     {current.entreprise}
@@ -245,7 +286,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 </div>
               </div>
 
-              {/* Téléphone géant */}
+              {/* Téléphone */}
               {tel ? (
                 <div className="flex items-center gap-3 mb-4">
                   <a
@@ -272,35 +313,27 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               {/* Liens contexte */}
               <div className="flex flex-wrap gap-2 text-[12px]">
                 {current.gmb_url && (
-                  <a
-                    href={current.gmb_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-surface-3 hover:bg-surface-3 text-t-secondary"
-                  >
+                  <a href={current.gmb_url} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-surface-3 hover:bg-surface-3 text-t-secondary">
                     <ExternalLink size={11} /> Google Maps
                   </a>
                 )}
                 {current.site_url && (
-                  <a
-                    href={current.site_url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-surface-3 hover:bg-surface-3 text-t-secondary"
-                  >
+                  <a href={current.site_url} target="_blank" rel="noreferrer"
+                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-surface-3 hover:bg-surface-3 text-t-secondary">
                     <ExternalLink size={11} /> Site web
                   </a>
                 )}
               </div>
 
-              {/* Notes existantes */}
+              {/* Notes prospect (persistées) */}
               {current.notes && (
                 <div className="mt-4 px-3.5 py-2.5 rounded-lg bg-surface-2 border-l-2 border-dopa-violet/40 text-[12px] text-t-secondary whitespace-pre-wrap max-h-32 overflow-auto">
                   {current.notes}
                 </div>
               )}
 
-              {/* Feedback récent */}
+              {/* Historique appels */}
               {current.feedback && (
                 <div className="mt-2 px-3.5 py-2.5 rounded-lg bg-surface-2 border-l-2 border-dopa-cyan/40 text-[12px] text-t-secondary whitespace-pre-wrap max-h-32 overflow-auto">
                   <span className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold block mb-0.5">Historique</span>
@@ -309,10 +342,10 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               )}
             </div>
 
-            {/* Notes appel */}
+            {/* Zone note — se sauvegarde dans le prospect à chaque log */}
             <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5 mb-5">
               <label className="text-[11px] uppercase tracking-wider text-t-tertiary font-semibold block mb-2">
-                Notes de cet appel (optionnel)
+                Notes de cet appel <span className="normal-case font-normal">(enregistrées automatiquement)</span>
               </label>
               <textarea
                 value={noteDraft}
@@ -323,21 +356,64 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               />
             </div>
 
-            {/* Outcomes — boutons XL */}
+            {/* Outcomes */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
               {OUTCOMES.map((o) => {
-                const Icon = o.icon;
+                const Icon     = o.icon;
                 const isLoading = submitting === o.key;
+                const isRappel  = o.key === "RAPPEL_PLUS_TARD";
+
+                /* Bouton "Rappeler plus tard" → mode date picker si actif */
+                if (isRappel && rappelMode) {
+                  return (
+                    <motion.div
+                      key={o.key}
+                      initial={{ scale: 0.97 }}
+                      animate={{ scale: 1 }}
+                      className="col-span-2 md:col-span-1 px-4 py-4 rounded-xl border-2 text-left"
+                      style={{ background: `${o.color}18`, borderColor: `${o.color}88` }}
+                    >
+                      <p className="text-[12px] font-semibold mb-2" style={{ color: o.textColor }}>
+                        📅 Rappeler le :
+                      </p>
+                      <input
+                        type="date"
+                        value={rappelDate}
+                        min={localDateOffset(1)}
+                        onChange={(e) => setRappelDate(e.target.value)}
+                        className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-dopa-violet"
+                        autoFocus
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleLog("RAPPEL_PLUS_TARD", rappelDate)}
+                          disabled={!!submitting || !rappelDate}
+                          className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold disabled:opacity-50 transition-colors"
+                          style={{ background: o.color, color: "#fff" }}
+                        >
+                          {isLoading ? "..." : "Confirmer"}
+                        </button>
+                        <button
+                          onClick={() => setRappelMode(false)}
+                          className="px-3 py-2 rounded-lg bg-surface-2 border border-surface-3 text-[12px] text-t-tertiary hover:bg-surface-3"
+                        >
+                          Annuler
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                }
+
                 return (
                   <button
                     key={o.key}
-                    onClick={() => handleLog(o.key)}
+                    onClick={() => {
+                      if (isRappel) { setRappelMode(true); }
+                      else { handleLog(o.key); }
+                    }}
                     disabled={!!submitting}
                     className="group relative px-4 py-4 rounded-xl border-2 transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:translate-y-0 text-left"
-                    style={{
-                      background: `${o.color}12`,
-                      borderColor: `${o.color}55`,
-                    }}
+                    style={{ background: `${o.color}12`, borderColor: `${o.color}55` }}
                   >
                     <div className="flex items-start justify-between mb-2">
                       <Icon size={18} style={{ color: o.textColor }} />

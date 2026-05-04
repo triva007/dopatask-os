@@ -6,6 +6,7 @@ export type StatutProspect =
   | "REPONDEUR"
   | "REFUS"
   | "EXISTE_PAS"
+  | "PAS_MA_CIBLE"
   | "RDV_BOOKE"
   | "MAQUETTE_PRETE"
   | "R1_EFFECTUE"
@@ -13,12 +14,12 @@ export type StatutProspect =
   | "PERDU";
 
 export type ResultatAppel =
-  | "DECROCHE"
   | "REPONDEUR"
+  | "RAPPEL_PLUS_TARD"
   | "REFUS"
   | "EXISTE_PAS"
-  | "RDV"
-  | "PAS_JOIGNABLE";
+  | "PAS_MA_CIBLE"
+  | "RDV";
 
 export type Prospect = {
   id: string;
@@ -28,7 +29,7 @@ export type Prospect = {
   site_url: string | null;
   statut: StatutProspect;
   date_rdv: string | null;
-  date_relance: string | null;
+  date_relance: string | null; // date à partir de laquelle relancer (RAPPEL_PLUS_TARD)
   lien_maquette: string | null;
   feedback: string | null;
   notes: string | null;

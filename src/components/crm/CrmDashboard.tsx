@@ -104,9 +104,18 @@ export default function CrmDashboard() {
   const callsParJourPourTenir = joursOuvres > 0 ? Math.ceil((ventesNecessaires * 100) / Math.max(1, stats.tauxClosing || 8) / Math.max(1, stats.tauxConversion || 10) * 100 / joursOuvres) : 0;
 
   // Focus du jour
-  const aAppelerCount = prospects.filter(
-    (p) => !p.archived && (p.statut === "A_APPELER" || p.statut === "REPONDEUR")
-  ).length;
+  const todayTs = Date.now();
+  const aAppelerCount = prospects.filter((p) => {
+    if (p.archived) return false;
+    if (p.statut === "A_APPELER") return true;
+    if (p.statut === "REPONDEUR") {
+      if (p.date_relance) {
+        return new Date(p.date_relance + "T00:00:00").getTime() <= todayTs;
+      }
+      return true; // sans date_relance : compte
+    }
+    return false;
+  }).length;
   const restantAppels = Math.max(0, dailyTarget - stats.appelsDuJour);
   const dailyPct = Math.min(100, Math.round((stats.appelsDuJour / dailyTarget) * 100));
 

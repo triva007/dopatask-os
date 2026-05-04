@@ -164,10 +164,14 @@ export function buildFeedbackLine(params: {
   if (match) callCount = parseInt(match[1], 10);
 
   switch (resultat) {
-    case "REPONDEUR":
-      // +1 seulement si le statut précédent n'était pas déjà "répondeur"
+    case "REPONDEUR": {
       if (match) callCount += 1;
       return `(Appel n°${callCount}) Répondeur le ${dateStr}`;
+    }
+    case "RAPPEL_PLUS_TARD": {
+      if (match) callCount += 1;
+      return `(Appel n°${callCount}) Rappeler plus tard (demandé le ${dateStr})`;
+    }
     case "REFUS": {
       const prefix = match ? `(Appel n°${callCount}) ` : "";
       return `${prefix}Refus le ${dateStr}`;
@@ -176,18 +180,17 @@ export function buildFeedbackLine(params: {
       const prefix = match ? `(Appel n°${callCount}) ` : "";
       return `${prefix}N'existe plus le ${dateStr}`;
     }
+    case "PAS_MA_CIBLE": {
+      const prefix = match ? `(Appel n°${callCount}) ` : "";
+      return `${prefix}Pas ma cible le ${dateStr}`;
+    }
     case "RDV": {
       const prefix = match ? `(Appel n°${callCount}) ` : "";
       return `${prefix}RDV pris le ${dateStr}`;
     }
-    case "PAS_JOIGNABLE": {
-      const prefix = match ? `(Appel n°${callCount}) ` : "";
-      return `${prefix}Pas joignable le ${dateStr}`;
-    }
-    case "DECROCHE":
     default: {
       const prefix = match ? `(Appel n°${callCount}) ` : "";
-      return `${prefix}Décroché le ${dateStr}`;
+      return `${prefix}Appel le ${dateStr}`;
     }
   }
 }
@@ -206,14 +209,13 @@ export function statutFromResultat(
       return "REFUS";
     case "EXISTE_PAS":
       return "EXISTE_PAS";
+    case "PAS_MA_CIBLE":
+      return "PAS_MA_CIBLE";
     case "REPONDEUR":
+    case "RAPPEL_PLUS_TARD":
+      // Les deux = pas répondu, on met en attente de relance
       return "REPONDEUR";
-    case "PAS_JOIGNABLE":
-      // Pas joignable = on peut rappeler plus tard, on garde en REPONDEUR
-      return "REPONDEUR";
-    case "DECROCHE":
     default:
-      // Décroché sans action claire : on garde le statut actuel
       return currentStatut;
   }
 }
@@ -223,8 +225,8 @@ export function shouldArchive(statut: StatutProspect): boolean {
 }
 
 export function resultatCompteMission(resultat: ResultatAppel): boolean {
-  // Aligné sur isRealCall() du sheet : REPONDEUR et PAS_JOIGNABLE ne comptent pas
-  return resultat !== "REPONDEUR" && resultat !== "PAS_JOIGNABLE";
+  // REPONDEUR et RAPPEL_PLUS_TARD = pas de vrai contact humain, ne comptent pas
+  return resultat !== "REPONDEUR" && resultat !== "RAPPEL_PLUS_TARD";
 }
 
 // ============================================================

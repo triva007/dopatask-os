@@ -28,7 +28,7 @@ type CrmState = {
   createProspect: (data: Partial<Prospect> & { entreprise: string }) => Promise<Prospect | null>;
   updateProspect: (id: string, patch: Partial<Prospect>) => Promise<void>;
   importProspects: (rows: Array<Partial<Prospect> & { entreprise: string }>) => Promise<number>;
-  logCall: (prospectId: string, resultat: ResultatAppel, notes?: string) => Promise<void>;
+  logCall: (prospectId: string, resultat: ResultatAppel, notes?: string, rappelDate?: string) => Promise<void>;
   addRevenu: (prospectId: string | null, montant: number, notes?: string) => Promise<void>;
   updateConfig: (patch: Partial<Config>) => Promise<void>;
   repairProspectsFromNotes: () => Promise<{ fixed: number; scanned: number }>;
@@ -147,7 +147,7 @@ export const useCrmStore = create<CrmState>((set, get) => ({
     return (data || []).length;
   },
 
-  logCall: async (prospectId, resultat, notes) => {
+  logCall: async (prospectId, resultat, notes, rappelDate) => {
     const prospect = get().prospects.find((p) => p.id === prospectId);
     if (!prospect) return;
     const userId = getActiveProfileId();
@@ -182,7 +182,26 @@ export const useCrmStore = create<CrmState>((set, get) => ({
       feedback: newFeedback,
       archived: archive ? true : prospect.archived,
     };
-    // Si RDV booké → on pose date_rdv à +3 jours ouvrés par défaut (Aaron peut éditer)
+
+    // Si note fournie → l'ajouter au champ notes du prospect (persistance)
+    if (notes && notes.trim()) {
+      const { formatDateFR } = await import("@/lib/crmLogic");
+      const dateStr = formatDateFR(new Date());
+      const noteEntry = `[${dateStr}] ${notes.trim()}`;
+      const existing = prospect.notes ? prospect.notes.trim() : "";
+      patch.notes = existing ? `${existing}\n${noteEntry}` : noteEntry;
+    }
+
+    // Si RAPPEL_PLUS_TARD → poser date_relance
+    if (resultat === "RAPPEL_PLUS_TARD" && rappelDate) {
+      patch.date_relance = rappelDate;
+    }
+    // Si répondeur simple, effacer date_relance préexistante (pas de date spécifique)
+    if (resultat === "REPONDEUR") {
+      patch.date_relance = null;
+    }
+
+    // Si RDV booké → on pose date_rdv à +3 jours ouvrés par défaut
     if (resultat === "RDV" && !prospect.date_rdv) {
       const d = new Date();
       d.setDate(d.getDate() + 3);
@@ -198,20 +217,18 @@ export const useCrmStore = create<CrmState>((set, get) => ({
         useAppStore.getState().addTask(
           `Maquette pour ${prospect.entreprise}`,
           "today",
-          undefined, // projectId
-          undefined, // linkedJournalId
-          undefined, // linkedNoteId
-          prospectId // linkedProspectId
+          undefined,
+          undefined,
+          undefined,
+          prospectId
         );
       } catch (e) {
-        // si le store tâches n'est pas dispo, on ignore — pas critique
         console.warn("addTask failed", e);
       }
     }
 
     // 4. Feedback dopamine
     if (resultat === "RDV") celebrate("critical");
-    else if (resultat === "DECROCHE") celebrate("task-complete");
     else celebrate("task-complete");
   },
 
