@@ -161,15 +161,30 @@ export default function DashboardPage() {
     }).slice(0, 5);
   }, [prospects, calls, todayStr]);
 
-  // Tâches du jour (locales) - Filtrées par Kill la task now si présent
-  const todayTasksList = useMemo(() => {
-    return tasks.filter(t => {
-      const isToday = t.status === "today";
-      if (!isToday) return false;
-      if (killProject) return t.projectId === killProject.id;
-      return true;
-    });
-  }, [tasks, killProject]);
+  // Fusion des tâches "Kill la task NOW" pour le widget du dashboard
+  const combinedKillTasks = useMemo(() => {
+    const local = filteredLocalTasks.map(t => ({ ...t, isGoogle: false, displayTitle: t.text }));
+    const google = filteredGTasks.map(t => ({ ...t, isGoogle: true, displayTitle: t.title }));
+    return [...local, ...google];
+  }, [filteredLocalTasks, filteredGTasks]);
+
+  const handleToggleTask = async (task: any) => {
+    if (task.isGoogle) {
+      try {
+        const r = await fetch("/api/google/tasks", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ listId: task.listId, taskId: task.id, updates: { status: "completed" } }),
+        });
+        if (r.ok) {
+          setGoogleTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: "completed" } : t));
+          useAppStore.getState().addToast("Tâche Google complétée", "success");
+        }
+      } catch (e) { console.error(e); }
+    } else {
+      completeTask(task.id);
+    }
+  };
 
   return (
     <div className="h-full overflow-auto">
@@ -313,22 +328,32 @@ export default function DashboardPage() {
                 Voir tout <ChevronRight size={12} />
               </Link>
             </div>
-            {todayTasksList.length === 0 ? (
-              <p className="text-[12px] text-[var(--text-tertiary)] italic py-2">Aucune tâche pour aujourd'hui. Profites-en pour te reposer ou vider l'inbox !</p>
+            {combinedKillTasks.length === 0 ? (
+              <p className="text-[12px] text-[var(--text-tertiary)] italic py-2">Rien dans "Kill la task NOW". Profites-en pour te reposer ou vider l'inbox !</p>
             ) : (
               <ul className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 scrollbar-none">
-                {todayTasksList.map((t) => (
+                {combinedKillTasks.map((t) => (
                   <li key={t.id} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-primary)] hover:border-[var(--accent-green)]/40 transition-colors group">
-                    <button onClick={() => completeTask(t.id)} className="shrink-0 mt-0.5 text-[var(--text-tertiary)] group-hover:text-[var(--accent-green)]">
+                    <button 
+                      onClick={() => handleToggleTask(t)} 
+                      className="shrink-0 mt-0.5 text-[var(--text-tertiary)] group-hover:text-[var(--accent-green)]"
+                    >
                       <Circle size={14} />
                     </button>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[12.5px] font-medium text-[var(--text-primary)] truncate">{t.text}</p>
-                      {t.projectId && (
-                        <p className="text-[10px] text-[var(--text-tertiary)] mt-0.5 inline-block bg-[var(--surface-3)] px-1.5 py-0.5 rounded">
-                          {projects.find(p => p.id === t.projectId)?.name || "Projet"}
-                        </p>
-                      )}
+                      <p className="text-[12.5px] font-medium text-[var(--text-primary)] truncate">{t.displayTitle}</p>
+                      <div className="flex items-center gap-2 mt-0.5">
+                        {t.isGoogle && (
+                          <span className="text-[9px] text-[var(--accent-blue)] font-bold uppercase tracking-wider bg-[var(--accent-blue-light)] px-1.5 py-0.5 rounded">
+                            Google
+                          </span>
+                        )}
+                        {t.projectId && !t.isGoogle && (
+                          <p className="text-[10px] text-[var(--text-tertiary)] inline-block bg-[var(--surface-3)] px-1.5 py-0.5 rounded">
+                            {projects.find(p => p.id === t.projectId)?.name || "Projet"}
+                          </p>
+                        )}
+                      </div>
                     </div>
                   </li>
                 ))}
