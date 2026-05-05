@@ -74,6 +74,15 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
       .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
   }, [prospects, calls]);
 
+  const [sessionQueue, setSessionQueue] = useState<Prospect[]>([]);
+
+  // Initialisation de la queue stable au montage (ou quand la queue calculée change mais qu'on n'en a pas encore)
+  useEffect(() => {
+    if (sessionQueue.length === 0 && queue.length > 0) {
+      setSessionQueue(queue);
+    }
+  }, [queue, sessionQueue.length]);
+
   const [cursor, setCursor]       = useState(0);
   const [noteDraft, setNoteDraft] = useState("");
   const [submitting, setSubmitting] = useState<ResultatAppel | null>(null);
@@ -85,7 +94,13 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   // Timer
   const [seconds, setSeconds] = useState(0);
 
-  const current = queue[cursor];
+  // On récupère le prospect actuel depuis le store via son ID pour avoir les données fraîches,
+  // tout en gardant l'ordre de la sessionQueue stable.
+  const currentId = sessionQueue[cursor]?.id;
+  const current   = useMemo(() => {
+    if (!currentId) return null;
+    return prospects.find(p => p.id === currentId) || sessionQueue[cursor];
+  }, [currentId, prospects, sessionQueue, cursor]);
 
   // Store data
   const scripts = useCrmStore((s) => s.scripts);
@@ -123,15 +138,15 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const missionToday = callsToday.filter((c) => c.compte_mission).length;
   const rdvToday     = callsToday.filter((c) => c.resultat === "RDV").length;
 
-  // Reset quand on change de prospect
+  // Reset quand on change de prospect (via le curseur)
   useEffect(() => {
     setNoteDraft("");
     setRappelMode(false);
     setRappelDate(localDateOffset(3));
     setSeconds(0);
-  }, [current?.id]);
+  }, [cursor, currentId]);
 
-  const next = () => { if (cursor + 1 < queue.length) setCursor((c) => c + 1); };
+  const next = () => { if (cursor + 1 < sessionQueue.length) setCursor((c) => c + 1); };
   const prev = () => { if (cursor > 0) setCursor((c) => c - 1); };
 
   const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
@@ -166,7 +181,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, cursor, queue.length, noteDraft, rappelMode]);
+  }, [current?.id, cursor, sessionQueue.length, noteDraft, rappelMode]);
 
   const copyTel = () => {
     if (!current?.telephone) return;
@@ -176,7 +191,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   };
 
   /* ── Écran liste vide ── */
-  if (queue.length === 0) {
+  if (sessionQueue.length === 0) {
     return (
       <div className="h-full flex items-center justify-center bg-surface-0 p-8">
         <div className="max-w-md w-full text-center">
@@ -256,7 +271,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">
               <Flame size={13} className="text-dopa-orange" />
               <span className="tabular-nums font-semibold text-t-primary">{cursor + 1}</span>
-              <span>/ {queue.length}</span>
+              <span>/ {sessionQueue.length}</span>
             </span>
 
             <button
@@ -303,7 +318,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               <div className="flex items-start justify-between gap-4 mb-5">
                 <div className="min-w-0 flex-1">
                   <p className="text-[11px] uppercase tracking-wider text-t-tertiary font-semibold mb-1">
-                    Prospect {cursor + 1} / {queue.length}
+                    Prospect {cursor + 1} / {sessionQueue.length}
                     {current.statut === "REPONDEUR" && (
                       <span className="ml-2 px-1.5 py-0.5 rounded bg-dopa-orange/15 text-dopa-orange text-[10px]">
                         Rappel répondeur

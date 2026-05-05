@@ -40,7 +40,7 @@ export default function NotificationCenter() {
               initial={{ opacity: 0, scale: 0.95, y: 10, x: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0, x: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10, x: 10 }}
-              className="absolute bottom-12 left-0 w-[320px] bg-surface-1 border border-surface-3 rounded-2xl shadow-2xl z-50 overflow-hidden"
+              className="absolute bottom-12 right-0 w-[300px] bg-surface-1 border border-surface-3 rounded-2xl shadow-2xl z-50 overflow-hidden"
             >
               <div className="px-4 py-3 border-b border-surface-3 flex items-center justify-between bg-surface-2/50">
                 <h3 className="text-[13px] font-bold text-t-primary flex items-center gap-2">

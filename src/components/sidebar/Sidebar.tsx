@@ -108,7 +108,7 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="flex flex-col h-full w-full px-4 py-8 gap-1.5">
+    <nav className="flex flex-col h-full w-full px-4 py-8 gap-1.5 overflow-y-auto">
       {/* Logo — larger for PC */}
       <div className="flex items-center gap-3.5 pb-10 pt-2 px-3">
         <div
