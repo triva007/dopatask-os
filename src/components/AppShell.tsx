@@ -55,7 +55,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     <>
       <div className="flex h-screen overflow-hidden">
         {/* Sidebar — always visible */}
-        <aside className="glass-sidebar shrink-0 h-full">
+        <aside className="glass-sidebar shrink-0 h-full relative z-40">
           <Sidebar />
         </aside>
 
