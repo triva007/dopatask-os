@@ -108,74 +108,73 @@ export default function Sidebar() {
   };
 
   return (
-    <nav className="flex flex-col h-full w-full px-4 py-8 gap-1.5 overflow-y-auto">
-      {/* Logo — larger for PC */}
-      <div className="flex items-center gap-3.5 pb-10 pt-2 px-3">
-        <div
-          className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-lg"
-          style={{
-            background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))",
-          }}
-        >
-          <span className="text-[18px] text-white font-bold">A</span>
+    <div className="flex flex-col h-full w-full">
+      <nav className="flex-1 px-4 py-8 gap-1.5 overflow-y-auto">
+        {/* Logo — larger for PC */}
+        <div className="flex items-center gap-3.5 pb-10 pt-2 px-3">
+          <div
+            className="w-10 h-10 rounded-[12px] flex items-center justify-center shrink-0 shadow-lg"
+            style={{
+              background: "linear-gradient(135deg, var(--accent-blue), var(--accent-purple))",
+            }}
+          >
+            <span className="text-[18px] text-white font-bold">A</span>
+          </div>
+          <div>
+            <p className="text-[16px] font-bold leading-none tracking-tight text-sidebar-active-text">
+              Aaron-OS
+            </p>
+            <p className="text-[10px] leading-none mt-1.5 font-bold text-sidebar-inactive tracking-widest uppercase opacity-60">
+              v5.0 · Ultra PC
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-[16px] font-bold leading-none tracking-tight text-sidebar-active-text">
-            Aaron-OS
-          </p>
-          <p className="text-[10px] leading-none mt-1.5 font-bold text-sidebar-inactive tracking-widest uppercase opacity-60">
-            v5.0 · Ultra PC
-          </p>
+
+        {/* Primary group */}
+        <div className="flex flex-col gap-1 px-1">
+          {NAV_PRIMARY.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              badgeCount={countFor(item.badge)}
+            />
+          ))}
         </div>
-      </div>
 
-      {/* Primary group */}
-      <div className="flex flex-col gap-1 px-1">
-        {NAV_PRIMARY.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            isActive={pathname === item.href}
-            badgeCount={countFor(item.badge)}
-          />
-        ))}
-      </div>
+        {/* Divider + Agence */}
+        <p className="px-4 pt-8 pb-3 text-[10px] font-bold tracking-[0.25em] uppercase text-t-tertiary opacity-50">
+          Agence
+        </p>
+        <div className="flex flex-col gap-1 px-1">
+          {NAV_AGENCE.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              badgeCount={countFor(item.badge)}
+            />
+          ))}
+        </div>
 
-      {/* Divider + Agence */}
-      <p className="px-4 pt-8 pb-3 text-[10px] font-bold tracking-[0.25em] uppercase text-t-tertiary opacity-50">
-        Agence
-      </p>
-      <div className="flex flex-col gap-1 px-1">
-        {NAV_AGENCE.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            isActive={pathname === item.href}
-            badgeCount={countFor(item.badge)}
-          />
-        ))}
-      </div>
+        {/* Divider + Vie */}
+        <p className="px-4 pt-8 pb-3 text-[10px] font-bold tracking-[0.25em] uppercase text-t-tertiary opacity-50">
+          Vie
+        </p>
+        <div className="flex flex-col gap-1 px-1">
+          {NAV_VIE.map((item) => (
+            <NavLink
+              key={item.href}
+              item={item}
+              isActive={pathname === item.href}
+              badgeCount={countFor(item.badge)}
+            />
+          ))}
+        </div>
+      </nav>
 
-      {/* Divider + Vie */}
-      <p className="px-4 pt-8 pb-3 text-[10px] font-bold tracking-[0.25em] uppercase text-t-tertiary opacity-50">
-        Vie
-      </p>
-      <div className="flex flex-col gap-1 px-1">
-        {NAV_VIE.map((item) => (
-          <NavLink
-            key={item.href}
-            item={item}
-            isActive={pathname === item.href}
-            badgeCount={countFor(item.badge)}
-          />
-        ))}
-      </div>
-
-      {/* Spacer */}
-      <div className="flex-1" />
-
-      {/* Settings & Notifications */}
-      <div className="px-1 mt-6 pt-6 border-t border-b-primary flex items-center gap-2">
+      {/* Settings & Notifications — Fixed at bottom, outside of scroll area to prevent clipping popovers */}
+      <div className="px-5 py-6 mt-auto border-t border-surface-3 flex items-center gap-2">
         <div className="flex-1">
           <NavLink
             item={{ href: "/reglages", label: "Réglages", Icon: Settings }}
@@ -185,7 +184,6 @@ export default function Sidebar() {
         </div>
         <NotificationCenter />
       </div>
-
-    </nav>
+    </div>
   );
 }
