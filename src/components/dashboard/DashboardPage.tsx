@@ -378,36 +378,7 @@ export default function DashboardPage() {
         {/* ═══ Prochains événements Google ═══ */}
         <UpcomingEventsWidget />
 
-        {/* ═══ MISSION DU JOUR ═══ */}
-        {currentRoutine && (
-          <motion.div
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-4 border"
-            style={{ 
-              background: `color-mix(in srgb, ${currentRoutine.color} 8%, var(--surface-1))`,
-              borderColor: `color-mix(in srgb, ${currentRoutine.color} 20%, transparent)`
-            }}
-          >
-            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
-              style={{ background: currentRoutine.color, color: "#fff", fontSize: "24px" }}>
-              {currentRoutine.emoji}
-            </div>
-            <div>
-              <p className="text-[10px] font-bold tracking-widest uppercase mb-1" style={{ color: currentRoutine.color }}>
-                Mission du jour
-              </p>
-              <h2 className="text-[20px] font-bold text-[var(--text-primary)] leading-tight">
-                {currentRoutine.label}
-              </h2>
-              {currentRoutine.description && (
-                <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
-                  {currentRoutine.description}
-                </p>
-              )}
-            </div>
-          </motion.div>
-        )}
+
 
         {/* ═══ PROGRESS BAR ═══ */}
         <div className="rounded-xl p-5 border bg-[var(--surface-1)]">
