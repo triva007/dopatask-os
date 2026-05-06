@@ -3,12 +3,14 @@
 // Aucune dépendance MP3, 100 % client-side. Safe à appeler depuis le store.
 
 export type FeedbackType =
-  | "task-complete"   // petit pop joyeux
-  | "critical"        // gros combo (1 tâche sur ~7)
-  | "lucky-drop"      // jackpot rare
-  | "achievement"     // trophée débloqué
-  | "level-up"        // montée de niveau
-  | "purchase";       // achat boutique
+  | "task-complete"       // petit pop joyeux
+  | "critical"            // gros combo (1 tâche sur ~7)
+  | "lucky-drop"          // jackpot rare
+  | "achievement"         // trophée débloqué
+  | "level-up"            // montée de niveau
+  | "purchase"            // achat boutique
+  | "recurring-complete"  // tâche récurrente achevée (cycle satisfaisant)
+  | "all-done-today";     // TOUTES les tâches du jour sont faites 🏆
 
 // ─── Audio ───────────────────────────────────────────────────────────────────
 
@@ -85,6 +87,20 @@ function playSound(type: FeedbackType) {
       beep(880, 0.12, 0, "sine", 0.08);
       beep(1318, 0.16, 0.06, "sine", 0.08);
       break;
+    case "recurring-complete":
+      // cycle doux — montée puis retour
+      beep(440, 0.08, 0, "sine", 0.06);
+      beep(660, 0.1, 0.06, "sine", 0.07);
+      beep(550, 0.12, 0.14, "sine", 0.05);
+      break;
+    case "all-done-today":
+      // fanfare victorieuse complète
+      beep(523, 0.12, 0, "triangle", 0.1);
+      beep(659, 0.12, 0.1, "triangle", 0.1);
+      beep(784, 0.12, 0.2, "triangle", 0.1);
+      beep(1047, 0.3, 0.3, "triangle", 0.12);
+      beep(1319, 0.35, 0.45, "sine", 0.1);
+      break;
   }
 }
 
@@ -159,6 +175,27 @@ function triggerConfetti(type: FeedbackType) {
           colors: ["#3b82f6", "#60a5fa", "#93c5fd"],
         });
         break;
+      case "recurring-complete":
+        confetti({
+          particleCount: 20,
+          spread: 40,
+          origin: { y: 0.7 },
+          ticks: 60,
+          scalar: 0.7,
+          colors: ["#3b82f6", "#8b5cf6", "#a78bfa"],
+        });
+        break;
+      case "all-done-today": {
+        // GROSSE célébration — tu as tout fait aujourd'hui !
+        const end = Date.now() + 1500;
+        const colors = ["#22c55e", "#eab308", "#f97316", "#3b82f6", "#a855f7"];
+        (function frame() {
+          confetti({ particleCount: 6, angle: 60, spread: 55, origin: { x: 0 }, colors, scalar: 1.2 });
+          confetti({ particleCount: 6, angle: 120, spread: 55, origin: { x: 1 }, colors, scalar: 1.2 });
+          if (Date.now() < end) requestAnimationFrame(frame);
+        })();
+        break;
+      }
     }
   });
 }

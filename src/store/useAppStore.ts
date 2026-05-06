@@ -6,7 +6,8 @@ import { supabaseStorage } from "@/lib/supabaseStorage";
 export * from "./slices/types";
 import {
   TaskStatus, IncupTag, ObjectiveHorizon, ProjectStatus, LifeGoalHorizon, InboxItemType, RecurrenceType,
-  MicroStep, Task, Project, Milestone, Objective, LifeGoal, JournalEntry, Note, InboxItem, TimelineEvent, Toast, ProjectTemplate
+  MicroStep, Task, Project, Milestone, Objective, LifeGoal, JournalEntry, Note, InboxItem, TimelineEvent, Toast, ProjectTemplate,
+  DayRoutine, DEFAULT_WEEKLY_ROUTINE
 } from "./slices/types";
 import { createTasksSlice } from "./slices/tasksSlice";
 import { createProjectsSlice } from "./slices/projectsSlice";
@@ -108,6 +109,13 @@ interface AppState {
   saveProjectAsTemplate: (projectId: string, templateName: string) => void;
   applyTemplateToProject: (templateId: string, projectId: string) => void;
   deleteTemplate: (id: string) => void;
+  // TDAH — Routine hebdomadaire
+  weeklyRoutine: DayRoutine[];
+  setDayRoutine: (dayIndex: number, updates: Partial<DayRoutine>) => void;
+  resetWeeklyRoutine: () => void;
+  // TDAH — Auto-promotion & récurrence
+  promoteOverdueTasks: () => number;
+  completeRecurring: (id: string) => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);
@@ -125,11 +133,12 @@ export const useAppStore = create<AppState>()(
     ),
     {
       name: "dopatask-storage",
-      version: 9, // Normalize done -> completed and guard empty tasks
+      version: 10, // TDAH: add weeklyRoutine, promoteOverdueTasks, completeRecurring
       migrate: (persistedState: any, version: number) => {
         if (!persistedState.state) persistedState.state = {};
         if (!persistedState.state.googleEventProjects) persistedState.state.googleEventProjects = {};
         if (!persistedState.state.googleTaskProjects) persistedState.state.googleTaskProjects = {};
+        if (!persistedState.state.weeklyRoutine) persistedState.state.weeklyRoutine = DEFAULT_WEEKLY_ROUTINE;
         
         if (version < 9 && persistedState.state.tasks) {
           persistedState.state.tasks = persistedState.state.tasks.map((task: Task) =>

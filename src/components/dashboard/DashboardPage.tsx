@@ -4,12 +4,14 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
-import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText, Phone, ChevronRight, CheckCircle2, Circle } from "lucide-react";
+import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText, Phone, ChevronRight, CheckCircle2, Circle, Trophy, RotateCw, Calendar } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
 import VisionWidget from "@/components/dashboard/VisionWidget";
 import { getActiveProfileId } from "@/lib/supabaseStorage";
+import TdahBadge, { getBadgeVariant } from "@/components/ui/TdahBadge";
+import { celebrate } from "@/lib/dopamineFeedback";
 
 function businessDaysUntil(target: Date, from: Date = new Date()): number {
   let count = 0;
@@ -179,12 +181,79 @@ export default function DashboardPage() {
         if (r.ok) {
           setGoogleTasks(prev => prev.map(t => t.id === task.id ? { ...t, status: "completed" } : t));
           useAppStore.getState().addToast("Tâche Google complétée", "success");
+          celebrate("task-complete");
         }
       } catch (e) { console.error(e); }
     } else {
-      completeTask(task.id);
+      if (task.recurrence && task.recurrence !== "none") {
+        useAppStore.getState().completeRecurring(task.id);
+        celebrate("recurring-complete");
+      } else {
+        completeTask(task.id);
+        celebrate("task-complete");
+      }
     }
   };
+
+  // --- TDAH TOUR DE CONTRÔLE LOGIC ---
+  const todayDateStr = todayStr;
+  const weeklyRoutine = useAppStore((s) => s.weeklyRoutine);
+  const currentRoutine = weeklyRoutine.find((r) => r.dayIndex === new Date().getDay());
+
+  // Trigger auto-promotion once on mount
+  useEffect(() => {
+    const promoted = useAppStore.getState().promoteOverdueTasks();
+    if (promoted > 0) {
+      useAppStore.getState().addToast(`${promoted} tâche(s) promue(s) pour aujourd'hui`, "info");
+    }
+  }, []);
+
+  const tdahTasks = useMemo(() => {
+    const activeTasks = tasks.filter((t) => t.status !== "done" && t.status !== "completed");
+    const completedToday = tasks.filter(
+      (t) => (t.status === "done" || t.status === "completed") && t.completedAt && new Date(t.completedAt).toISOString().slice(0, 10) === todayDateStr
+    );
+
+    const maintenant: any[] = [];
+    const recurrent: any[] = [];
+    const bientot: any[] = [];
+
+    // Add Google Kill tasks to "maintenant"
+    filteredGTasks.forEach(t => maintenant.push({ ...t, isGoogle: true, displayTitle: t.title }));
+
+    activeTasks.forEach((t) => {
+      const isRecurring = !!t.recurrence && t.recurrence !== "none";
+      const isTodayOrOverdue = !t.dueDate || t.dueDate <= todayDateStr || t.status === "today";
+      
+      if (isRecurring) {
+        recurrent.push({ ...t, isGoogle: false, displayTitle: t.text });
+      } else if (isTodayOrOverdue) {
+        maintenant.push({ ...t, isGoogle: false, displayTitle: t.text });
+      } else {
+        bientot.push({ ...t, isGoogle: false, displayTitle: t.text });
+      }
+    });
+
+    // Sort recurrent by date
+    recurrent.sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
+
+    return { maintenant, recurrent, bientot, completedToday };
+  }, [tasks, filteredGTasks, todayDateStr]);
+
+  const progressTotal = tdahTasks.maintenant.length + tdahTasks.completedToday.length;
+  const progressCurrent = tdahTasks.completedToday.length;
+  const progressPct = progressTotal === 0 ? 0 : Math.round((progressCurrent / progressTotal) * 100);
+
+  // Trigger all-done celebration if just hit 100%
+  const [hasCelebratedAllDone, setHasCelebratedAllDone] = useState(false);
+  useEffect(() => {
+    if (progressPct === 100 && progressTotal > 0 && !hasCelebratedAllDone) {
+      celebrate("all-done-today");
+      setHasCelebratedAllDone(true);
+    } else if (progressPct < 100) {
+      setHasCelebratedAllDone(false);
+    }
+  }, [progressPct, progressTotal, hasCelebratedAllDone]);
 
   return (
     <div className="h-full overflow-auto">
@@ -303,155 +372,186 @@ export default function DashboardPage() {
         {/* ═══ VISION LONG TERME (Time Stripe style) ═══ */}
         {activeProfileId === 1 && <VisionWidget />}
 
-        {/* ═══ KPI grid (productivité globale) ═══ */}
-        <div className="grid grid-cols-4 gap-3">
-          <MiniStat href="/taches" icon={<ListChecks size={14} />} label="À faire"
-            value={pendingTasks} sub={`${doneToday} faites`} accent="green" />
-          <MiniStat href="/inbox" icon={<Inbox size={14} />} label="Inbox"
-            value={inboxCount} sub="à traiter" accent="orange" />
-          <MiniStat href="/objectifs" icon={<Target size={14} />} label="Objectifs"
-            value={activeGoals} sub="en cours" accent="purple" />
-          <MiniStat href="/projets" icon={<FolderKanban size={14} />} label="Projets"
-            value={activeProjects} sub="actifs" accent="cyan" />
-        </div>
-
-        {/* ═══ ACTIONS DU JOUR (Tâches & Rappels CRM) ═══ */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-          {/* Tâches du jour */}
-          <div className="rounded-2xl p-5 border transition-all hover:border-[var(--accent-green)]/30 bg-[var(--surface-1)] shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-[var(--accent-green)]">
-                <ListChecks size={16} />
-                <h3 className="text-[14px] font-bold tracking-tight">Tâches du jour</h3>
-              </div>
-              <Link href="/taches" className="text-[11px] font-semibold text-[var(--text-tertiary)] hover:text-[var(--accent-green)] flex items-center gap-0.5">
-                Voir tout <ChevronRight size={12} />
-              </Link>
-            </div>
-            {combinedKillTasks.length === 0 ? (
-              <p className="text-[12px] text-[var(--text-tertiary)] italic py-2">Rien dans "Kill la task NOW". Profites-en pour te reposer ou vider l'inbox !</p>
-            ) : (
-              <ul className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 scrollbar-none">
-                {combinedKillTasks.map((t) => (
-                  <li key={t.id} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-primary)] hover:border-[var(--accent-green)]/40 transition-colors group">
-                    <button 
-                      onClick={() => handleToggleTask(t)} 
-                      className="shrink-0 mt-0.5 text-[var(--text-tertiary)] group-hover:text-[var(--accent-green)]"
-                    >
-                      <Circle size={14} />
-                    </button>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12.5px] font-medium text-[var(--text-primary)] truncate">{t.displayTitle}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        {t.isGoogle && (
-                          <span className="text-[9px] text-[var(--accent-blue)] font-bold uppercase tracking-wider bg-[var(--accent-blue-light)] px-1.5 py-0.5 rounded">
-                            Google
-                          </span>
-                        )}
-                        {t.projectId && !t.isGoogle && (
-                          <p className="text-[10px] text-[var(--text-tertiary)] inline-block bg-[var(--surface-3)] px-1.5 py-0.5 rounded">
-                            {projects.find(p => p.id === t.projectId)?.name || "Projet"}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          {/* Rappels CRM */}
-          <div className="rounded-2xl p-5 border transition-all hover:border-[var(--accent-orange)]/30 bg-[var(--surface-1)] shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2 text-[var(--accent-orange)]">
-                <Phone size={16} />
-                <h3 className="text-[14px] font-bold tracking-tight">Rappels CRM</h3>
-              </div>
-              <Link href="/crm" className="text-[11px] font-semibold text-[var(--text-tertiary)] hover:text-[var(--accent-orange)] flex items-center gap-0.5">
-                Ouvrir CRM <ChevronRight size={12} />
-              </Link>
-            </div>
-            {rappelsDuJour.length === 0 ? (
-              <p className="text-[12px] text-[var(--text-tertiary)] italic py-2">Aucun prospect à relancer. Top !</p>
-            ) : (
-              <ul className="space-y-1.5 max-h-[220px] overflow-y-auto pr-2 scrollbar-none">
-                {rappelsDuJour.map((p) => (
-                  <li key={p.id}>
-                    <Link href={`/prospects/${p.id}`} className="flex items-center justify-between p-2.5 rounded-lg bg-[var(--accent-orange-light)] border border-[var(--accent-orange)]/20 hover:brightness-110 transition-all group">
-                      <div className="min-w-0">
-                        <p className="text-[12.5px] font-bold text-[var(--accent-orange)] truncate">{p.entreprise}</p>
-                        <p className="text-[10px] text-[var(--accent-orange)]/70 mt-0.5 flex items-center gap-1 font-semibold">
-                          <Phone size={10} /> {p.telephone || "Pas de numéro"}
-                        </p>
-                      </div>
-                      <ChevronRight size={14} className="text-[var(--accent-orange)]/50 group-hover:text-[var(--accent-orange)]" />
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-
-        {/* ═══ CATÉGORIES / PROJETS ═══ */}
-        {projects.length > 0 && (
+        {/* ═══ MISSION DU JOUR ═══ */}
+        {currentRoutine && (
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 5 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="rounded-2xl p-6"
-            style={{
-              background: "var(--surface-1)",
-              border: "1px solid var(--border-primary)",
+            className="rounded-xl p-4 flex flex-col md:flex-row md:items-center gap-4 border"
+            style={{ 
+              background: `color-mix(in srgb, ${currentRoutine.color} 8%, var(--surface-1))`,
+              borderColor: `color-mix(in srgb, ${currentRoutine.color} 20%, transparent)`
             }}
           >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-2.5">
-                <FolderKanban size={18} className="text-[var(--accent-blue)]" />
-                <h3 className="text-[16px] font-bold tracking-tight">Espaces de Vie & Catégories</h3>
-              </div>
-              <Link href="/projets" className="text-[12px] font-semibold text-[var(--accent-blue)] hover:underline">
-                Voir tout
-              </Link>
+            <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
+              style={{ background: currentRoutine.color, color: "#fff", fontSize: "24px" }}>
+              {currentRoutine.emoji}
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-              {projects.filter(p => p.status === "active").slice(0, 4).map((project) => {
-                const projectTasks = (tasks || []).filter((t) => t && t.projectId === project.id && t.status !== "completed" && t.status !== "done").length;
-                const projectNotes = (useAppStore.getState().notes || []).filter((n) => n && n.projectId === project.id).length;
-                
-                return (
-                  <Link href="/projets" key={project.id} className="block group">
-                    <motion.div 
-                      whileHover={{ y: -4 }}
-                      className="p-5 rounded-2xl border transition-all group-hover:bg-[var(--surface-2)] flex flex-col gap-4 shadow-sm" 
-                      style={{ borderColor: "var(--border-primary)", background: "var(--card-bg)" }}
-                    >
-                      <div className="flex items-center gap-3.5">
-                        <span className="text-[28px] leading-none drop-shadow-sm">{project.emoji}</span>
-                        <div className="flex flex-col">
-                          <span className="text-[15px] font-bold text-[var(--text-primary)] leading-tight group-hover:text-[var(--accent-blue)] transition-colors">{project.name}</span>
-                          <span className="text-[11px] text-[var(--text-tertiary)] uppercase font-bold tracking-wider mt-0.5">Catégorie</span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-4 mt-1">
-                        <div className="flex items-center gap-1.5">
-                          <ListChecks size={12} className="text-[var(--text-tertiary)]" />
-                          <span className="text-[12px] font-semibold text-[var(--text-secondary)]">{projectTasks}</span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <FileText size={12} className="text-[var(--text-tertiary)]" />
-                          <span className="text-[12px] font-semibold text-[var(--text-secondary)]">{projectNotes}</span>
-                        </div>
-                      </div>
-                    </motion.div>
-                  </Link>
-                );
-              })}
+            <div>
+              <p className="text-[10px] font-bold tracking-widest uppercase mb-1" style={{ color: currentRoutine.color }}>
+                Mission du jour
+              </p>
+              <h2 className="text-[20px] font-bold text-[var(--text-primary)] leading-tight">
+                {currentRoutine.label}
+              </h2>
+              {currentRoutine.description && (
+                <p className="text-[13px] text-[var(--text-secondary)] mt-0.5">
+                  {currentRoutine.description}
+                </p>
+              )}
             </div>
           </motion.div>
         )}
+
+        {/* ═══ PROGRESS BAR ═══ */}
+        <div className="rounded-xl p-5 border bg-[var(--surface-1)]">
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="text-[14px] font-bold text-[var(--text-primary)]">Progression du jour</h3>
+            <span className="text-[13px] font-semibold tabular-nums" style={{ color: progressPct === 100 ? "var(--accent-green)" : "var(--text-secondary)" }}>
+              {progressCurrent} / {progressTotal}
+            </span>
+          </div>
+          <div className="relative h-[8px] rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
+            <motion.div
+              initial={{ width: 0 }}
+              animate={{ width: `${progressPct}%` }}
+              transition={{ duration: 0.5, ease: "easeOut" }}
+              className="absolute inset-y-0 left-0 rounded-full"
+              style={{ background: progressPct === 100 ? "var(--accent-green)" : "var(--brand-primary)" }}
+            />
+          </div>
+          <p className="text-[11.5px] text-[var(--text-tertiary)] mt-3 italic text-center">
+            {progressPct === 0 && "C'est parti ! Une tâche à la fois."}
+            {progressPct > 0 && progressPct < 50 && "Beau début, on continue !"}
+            {progressPct >= 50 && progressPct < 100 && "Plus de la moitié ! Lâche rien."}
+            {progressPct === 100 && "TOUT EST FAIT ! Repos mérité 🏆"}
+          </p>
+        </div>
+
+        {/* ═══ COLONNES TOUR DE CONTRÔLE ═══ */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          
+          {/* ⚡ MAINTENANT */}
+          <div className="rounded-2xl p-5 border transition-all hover:border-[var(--brand-primary)]/30 bg-[var(--surface-1)] shadow-sm flex flex-col h-full">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 rounded flex items-center justify-center bg-[var(--brand-primary)] text-white">
+                <ListChecks size={14} />
+              </div>
+              <h3 className="text-[15px] font-bold tracking-tight">Maintenant</h3>
+            </div>
+            {tdahTasks.maintenant.length === 0 ? (
+              <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-tertiary)] py-8">
+                <CheckCircle2 size={32} className="mb-2 opacity-50 text-[var(--accent-green)]" />
+                <p className="text-[13px] font-medium">Tout est clair !</p>
+              </div>
+            ) : (
+              <ul className="space-y-2 flex-1">
+                {tdahTasks.maintenant.map((t) => {
+                  const variant = getBadgeVariant(t.dueDate, false, false);
+                  return (
+                    <motion.li layoutId={t.id} key={t.id} className="flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-2)] border border-[var(--border-primary)] hover:border-[var(--brand-primary)]/40 transition-colors group">
+                      <button onClick={() => handleToggleTask(t)} className="shrink-0 mt-0.5 text-[var(--text-tertiary)] group-hover:text-[var(--accent-green)] transition-colors">
+                        <Circle size={16} />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13px] font-medium text-[var(--text-primary)] leading-tight">{t.displayTitle}</p>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <TdahBadge variant={variant} />
+                          {t.isGoogle && <TdahBadge variant="future" label="Google" size="sm" />}
+                        </div>
+                      </div>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* 🔄 RÉCURRENT */}
+          <div className="rounded-2xl p-5 border transition-all hover:border-[var(--accent-blue)]/30 bg-[var(--surface-1)] shadow-sm flex flex-col h-full">
+            <div className="flex items-center gap-2 mb-4">
+              <div className="w-6 h-6 rounded flex items-center justify-center bg-[var(--accent-blue)] text-white">
+                <RotateCw size={14} />
+              </div>
+              <h3 className="text-[15px] font-bold tracking-tight">Récurrent</h3>
+            </div>
+            {tdahTasks.recurrent.length === 0 ? (
+              <div className="flex-1 flex items-center justify-center text-[var(--text-tertiary)] py-8">
+                <p className="text-[13px] italic">Aucune tâche récurrente.</p>
+              </div>
+            ) : (
+              <ul className="space-y-2 flex-1">
+                {tdahTasks.recurrent.map((t) => {
+                  const variant = getBadgeVariant(t.dueDate, true, false);
+                  return (
+                    <motion.li layoutId={t.id} key={t.id} className={`flex items-start gap-3 p-3 rounded-xl bg-[var(--surface-2)] border transition-colors group ${variant === "today" || variant === "overdue" ? "border-[var(--accent-blue)]/30" : "border-[var(--border-primary)]"}`}>
+                      <button onClick={() => handleToggleTask(t)} className="shrink-0 mt-0.5 text-[var(--text-tertiary)] group-hover:text-[var(--accent-blue)] transition-colors">
+                        <Circle size={16} />
+                      </button>
+                      <div className="flex-1 min-w-0">
+                        <p className={`text-[13px] font-medium leading-tight ${variant !== "today" && variant !== "overdue" ? "text-[var(--text-secondary)] opacity-70" : "text-[var(--text-primary)]"}`}>
+                          {t.displayTitle}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                          <TdahBadge variant={variant} />
+                          <span className="text-[9px] font-bold text-[var(--text-tertiary)] uppercase tracking-wider">{t.recurrence}</span>
+                        </div>
+                      </div>
+                    </motion.li>
+                  );
+                })}
+              </ul>
+            )}
+          </div>
+
+          {/* 📋 BIENTÔT & TERMINÉ */}
+          <div className="flex flex-col gap-5">
+            {/* BIENTÔT */}
+            <div className="rounded-2xl p-5 border transition-all hover:border-[var(--text-tertiary)]/30 bg-[var(--surface-1)] shadow-sm">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                  <Calendar size={14} />
+                  <h3 className="text-[14px] font-bold tracking-tight">Bientôt ({tdahTasks.bientot.length})</h3>
+                </div>
+              </div>
+              <p className="text-[11px] text-[var(--text-tertiary)] italic mb-3">Pas pour maintenant. Garde tes œillères.</p>
+              <ul className="space-y-1.5 max-h-[150px] overflow-y-auto pr-2 scrollbar-none opacity-60 hover:opacity-100 transition-opacity">
+                {tdahTasks.bientot.slice(0, 5).map((t) => (
+                  <li key={t.id} className="flex items-start gap-2 p-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-primary)]">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] text-[var(--text-secondary)] truncate">{t.displayTitle}</p>
+                      {t.dueDate && <p className="text-[9px] text-[var(--text-tertiary)] mt-0.5">{t.dueDate}</p>}
+                    </div>
+                  </li>
+                ))}
+                {tdahTasks.bientot.length > 5 && (
+                  <li className="text-center text-[10px] font-medium text-[var(--text-tertiary)] pt-2">
+                    + {tdahTasks.bientot.length - 5} autres
+                  </li>
+                )}
+              </ul>
+            </div>
+
+            {/* TERMINÉ AUJOURD'HUI */}
+            <div className="rounded-2xl p-5 border transition-all hover:border-[var(--accent-green)]/30 bg-[var(--surface-1)] shadow-sm flex-1">
+              <div className="flex items-center justify-between mb-4 text-[var(--accent-green)]">
+                <div className="flex items-center gap-2">
+                  <Trophy size={14} />
+                  <h3 className="text-[14px] font-bold tracking-tight">Terminé aujourd'hui</h3>
+                </div>
+                <span className="text-[12px] font-bold">{tdahTasks.completedToday.length}</span>
+              </div>
+              <ul className="space-y-1.5 max-h-[150px] overflow-y-auto pr-2 scrollbar-none">
+                {tdahTasks.completedToday.map((t) => (
+                  <li key={t.id} className="flex items-center gap-2 p-2 rounded-lg bg-[var(--surface-2)] border border-[var(--border-primary)] opacity-60">
+                    <CheckCircle2 size={12} className="text-[var(--accent-green)] shrink-0" />
+                    <p className="text-[11px] text-[var(--text-secondary)] line-through truncate">{t.text}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

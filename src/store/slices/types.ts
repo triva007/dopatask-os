@@ -132,6 +132,24 @@ export interface Toast {
   createdAt: number;
 }
 
+export interface DayRoutine {
+  dayIndex: number;       // 0=Dimanche, 1=Lundi, 2=Mardi...6=Samedi
+  emoji: string;
+  label: string;
+  color: string;
+  description?: string;
+}
+
+export const DEFAULT_WEEKLY_ROUTINE: DayRoutine[] = [
+  { dayIndex: 0, emoji: "🛋️", label: "Repos", color: "var(--accent-purple)", description: "Recharge & détente" },
+  { dayIndex: 1, emoji: "🔧", label: "Systèmes", color: "var(--accent-blue)", description: "Automatisations, IA, optimisations" },
+  { dayIndex: 2, emoji: "💰", label: "Ventes", color: "var(--accent-green)", description: "Prospection, emails, conversions" },
+  { dayIndex: 3, emoji: "🎬", label: "Création", color: "var(--accent-orange)", description: "Contenu, vidéos, design" },
+  { dayIndex: 4, emoji: "📨", label: "Communication", color: "var(--accent-cyan)", description: "Newsletter, réseaux, communauté" },
+  { dayIndex: 5, emoji: "⚡", label: "Rattrapage", color: "var(--accent-red)", description: "Petites tâches, admin, nettoyage" },
+  { dayIndex: 6, emoji: "🛋️", label: "Repos", color: "var(--accent-purple)", description: "Recharge & détente" },
+];
+
 export interface ProjectTemplate {
   id: string;
   name: string;

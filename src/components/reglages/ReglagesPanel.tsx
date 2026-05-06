@@ -246,6 +246,43 @@ export default function ReglagesPanel() {
             />
           </Section>
 
+          {/* Weekly Routine */}
+          <Section title="Routine Hebdomadaire">
+            <div className="rounded-3xl bg-[var(--surface-1)] border border-[var(--border-primary)] overflow-hidden">
+              <div className="px-5 py-4 border-b border-[var(--border-primary)] flex items-center justify-between">
+                <div>
+                  <h3 className="text-[14px] font-bold text-[var(--text-primary)]">Mission du Jour</h3>
+                  <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Le focus unique pour chaque jour de la semaine.</p>
+                </div>
+              </div>
+              <div className="divide-y divide-[var(--border-primary)]">
+                {useAppStore.getState().weeklyRoutine.map((routine, i) => (
+                  <div key={i} className="px-5 py-3 flex items-center gap-4 hover:bg-[var(--surface-2)] transition-colors group">
+                    <div className="w-[80px] shrink-0 text-[12px] font-semibold text-[var(--text-secondary)] uppercase tracking-wider">
+                      {["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"][routine.dayIndex]}
+                    </div>
+                    <div className="flex-1 flex items-center gap-3">
+                      <input
+                        type="text"
+                        value={routine.emoji}
+                        onChange={(e) => useAppStore.getState().setDayRoutine(routine.dayIndex, { emoji: e.target.value })}
+                        className="w-10 text-center bg-transparent border-b border-transparent focus:border-[var(--brand-primary)] outline-none text-[16px]"
+                        maxLength={2}
+                      />
+                      <input
+                        type="text"
+                        value={routine.label}
+                        onChange={(e) => useAppStore.getState().setDayRoutine(routine.dayIndex, { label: e.target.value })}
+                        className="flex-1 bg-transparent border-b border-transparent focus:border-[var(--brand-primary)] outline-none text-[14px] font-medium text-[var(--text-primary)]"
+                        placeholder="Label de la mission"
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </Section>
+
           {/* Data */}
           <Section title="Données & Sécurité">
             <SettingRow

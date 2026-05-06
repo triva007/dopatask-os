@@ -1,9 +1,9 @@
 import { StateCreator } from "zustand";
 import { AppState } from "../useAppStore";
-import { Toast, InboxItem, TimelineEvent } from "./types";
+import { Toast, InboxItem, TimelineEvent, DayRoutine, DEFAULT_WEEKLY_ROUTINE } from "./types";
 import { uid } from "./utils";
 
-export const createUISlice: StateCreator<AppState, [], [], Pick<AppState, "hasSeenTutorial" | "setHasSeenTutorial" | "theme" | "toggleTheme" | "googleEventProjects" | "setGoogleEventProject" | "googleTaskProjects" | "setGoogleTaskProject" | "inboxItems" | "addInboxItem" | "processInboxItem" | "convertInboxToTask" | "deleteInboxItem" | "clearProcessedInbox" | "timelineEvents" | "addTimelineEvent" | "updateTimelineEvent" | "deleteTimelineEvent" | "xp" | "bossHp" | "streak" | "bossLevel" | "lastCritical" | "lastStreakDate" | "purchasedRewards" | "totalFocusMinutes" | "hyperfocusSessions" | "totalTasksCompleted" | "unlockedAchievements" | "dailyChallengeId" | "dailyChallengeCompleted" | "addXp" | "attackBoss" | "toasts" | "addToast" | "removeToast" | "settings" | "updateSettings">> = (set, get) => ({
+export const createUISlice: StateCreator<AppState, [], [], Pick<AppState, "hasSeenTutorial" | "setHasSeenTutorial" | "theme" | "toggleTheme" | "googleEventProjects" | "setGoogleEventProject" | "googleTaskProjects" | "setGoogleTaskProject" | "inboxItems" | "addInboxItem" | "processInboxItem" | "convertInboxToTask" | "deleteInboxItem" | "clearProcessedInbox" | "timelineEvents" | "addTimelineEvent" | "updateTimelineEvent" | "deleteTimelineEvent" | "xp" | "bossHp" | "streak" | "bossLevel" | "lastCritical" | "lastStreakDate" | "purchasedRewards" | "totalFocusMinutes" | "hyperfocusSessions" | "totalTasksCompleted" | "unlockedAchievements" | "dailyChallengeId" | "dailyChallengeCompleted" | "addXp" | "attackBoss" | "toasts" | "addToast" | "removeToast" | "settings" | "updateSettings" | "weeklyRoutine" | "setDayRoutine" | "resetWeeklyRoutine">> = (set, get) => ({
   hasSeenTutorial: false,
   setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
   theme: "dark",
@@ -48,4 +48,11 @@ export const createUISlice: StateCreator<AppState, [], [], Pick<AppState, "hasSe
 
   settings: { enableSounds: true },
   updateSettings: (updates) => set((s) => ({ settings: { ...s.settings, ...updates } })),
+
+  // TDAH — Routine hebdomadaire
+  weeklyRoutine: DEFAULT_WEEKLY_ROUTINE,
+  setDayRoutine: (dayIndex, updates) => set((s) => ({
+    weeklyRoutine: s.weeklyRoutine.map((d) => d.dayIndex === dayIndex ? { ...d, ...updates } : d),
+  })),
+  resetWeeklyRoutine: () => set({ weeklyRoutine: DEFAULT_WEEKLY_ROUTINE }),
 });

@@ -1,9 +1,33 @@
 import { StateCreator } from "zustand";
 import { AppState } from "../useAppStore";
-import { Task, MicroStep, IncupTag, TaskStatus } from "./types";
+import { Task, MicroStep, IncupTag, TaskStatus, RecurrenceType } from "./types";
 import { uid } from "./utils";
 
-export const createTasksSlice: StateCreator<AppState, [], [], Pick<AppState, "tasks" | "addTask" | "updateTask" | "updateTaskStatus" | "completeTask" | "deleteTask" | "toggleExpand" | "addMicroStep" | "toggleMicroStep" | "deleteMicroStep" | "toggleTag" | "assignTaskToProject" | "setMicroSteps" | "newStart" | "reorderTasks" | "lastActiveAt" | "lastActiveTaskId" | "setLastActive">> = (set, get) => ({
+/** Calculate the next recurrence date from a given date string */
+function getNextRecurrenceDate(current: string, type: RecurrenceType): string {
+  const d = new Date(current + "T00:00:00");
+  switch (type) {
+    case "daily":
+      d.setDate(d.getDate() + 1);
+      break;
+    case "weekdays": {
+      d.setDate(d.getDate() + 1);
+      while (d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate() + 1);
+      break;
+    }
+    case "weekly":
+      d.setDate(d.getDate() + 7);
+      break;
+    case "monthly":
+      d.setMonth(d.getMonth() + 1);
+      break;
+    default:
+      d.setDate(d.getDate() + 1);
+  }
+  return d.toISOString().slice(0, 10);
+}
+
+export const createTasksSlice: StateCreator<AppState, [], [], Pick<AppState, "tasks" | "addTask" | "updateTask" | "updateTaskStatus" | "completeTask" | "deleteTask" | "toggleExpand" | "addMicroStep" | "toggleMicroStep" | "deleteMicroStep" | "toggleTag" | "assignTaskToProject" | "setMicroSteps" | "newStart" | "reorderTasks" | "lastActiveAt" | "lastActiveTaskId" | "setLastActive" | "promoteOverdueTasks" | "completeRecurring">> = (set, get) => ({
   tasks: [],
   lastActiveAt: Date.now(),
   lastActiveTaskId: null,
@@ -29,4 +53,46 @@ export const createTasksSlice: StateCreator<AppState, [], [], Pick<AppState, "ta
   setMicroSteps: (taskId, steps) => set((s) => ({ tasks: s.tasks.map((t) => t.id === taskId ? { ...t, microSteps: steps } : t) })),
   newStart: () => set((s) => ({ tasks: s.tasks.map((t) => t.status === "today" ? { ...t, status: "inbox" } : t), lastActiveTaskId: null })),
   reorderTasks: (taskIds) => set((s) => ({ tasks: s.tasks.map((t) => ({ ...t, order: taskIds.indexOf(t.id) })) })),
+
+  // TDAH — Auto-promote overdue tasks to "today"
+  promoteOverdueTasks: () => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    let promoted = 0;
+    set((s) => {
+      const updated = s.tasks.map((t) => {
+        if (
+          t.dueDate &&
+          t.dueDate <= todayStr &&
+          t.status !== "completed" &&
+          t.status !== "done" &&
+          t.status !== "today"
+        ) {
+          promoted++;
+          return { ...t, status: "today" as TaskStatus };
+        }
+        return t;
+      });
+      return { tasks: updated };
+    });
+    return promoted;
+  },
+
+  // TDAH — Complete a recurring task: mark done, set next due date, reset status
+  completeRecurring: (id) => {
+    const todayStr = new Date().toISOString().slice(0, 10);
+    set((s) => ({
+      tasks: s.tasks.map((t) => {
+        if (t.id !== id) return t;
+        const recurrence = t.recurrence || "daily";
+        const nextDate = getNextRecurrenceDate(t.dueDate || todayStr, recurrence);
+        return {
+          ...t,
+          status: "saved" as TaskStatus,
+          completedAt: Date.now(),
+          dueDate: nextDate,
+        };
+      }),
+    }));
+    get().addToast("Tâche récurrente achevée — elle reviendra !", "success");
+  },
 });
