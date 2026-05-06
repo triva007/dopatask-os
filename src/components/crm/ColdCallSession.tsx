@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
   CheckCircle2, Target, Flame, Trophy, Copy, ExternalLink, Clock, Ban, FileText, ChevronDown, ChevronUp,
+  Edit3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
@@ -90,6 +91,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
   const [rappelMode, setRappelMode] = useState(false);
   const [rappelDate, setRappelDate] = useState(localDateOffset(3));
+  const [isEditingHistory, setIsEditingHistory] = useState(false);
+  const [historyDraft, setHistoryDraft] = useState("");
 
   // Timer
   const [seconds, setSeconds] = useState(0);
@@ -143,6 +146,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setNoteDraft("");
     setRappelMode(false);
     setRappelDate(localDateOffset(3));
+    setIsEditingHistory(false);
     setSeconds(0);
   }, [cursor, currentId]);
 
@@ -406,12 +410,48 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               )}
 
               {/* Historique appels */}
-              {current.feedback && (
-                <div className="mt-2 px-3.5 py-2.5 rounded-lg bg-surface-2 border-l-2 border-dopa-cyan/40 text-[12px] text-t-secondary whitespace-pre-wrap max-h-32 overflow-auto">
-                  <span className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold block mb-0.5">Historique</span>
-                  {current.feedback}
+              <div className="mt-2 rounded-lg bg-surface-2 border-l-2 border-dopa-cyan/40 flex flex-col">
+                <div className="flex items-center justify-between px-3.5 py-1.5">
+                  <span className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold block">Historique</span>
+                  {!isEditingHistory && (
+                    <button onClick={() => { setIsEditingHistory(true); setHistoryDraft(current?.feedback || ""); }} className="text-t-tertiary hover:text-t-primary p-1">
+                      <Edit3 size={12} />
+                    </button>
+                  )}
                 </div>
-              )}
+                {isEditingHistory ? (
+                  <div className="flex flex-col gap-2 px-3.5 pb-2.5">
+                    <textarea 
+                      value={historyDraft} 
+                      onChange={e => setHistoryDraft(e.target.value)} 
+                      className="w-full bg-surface-0 border border-surface-3 rounded px-2 py-1.5 text-[12px] resize-y min-h-[80px] focus:outline-none focus:border-dopa-cyan/50"
+                      placeholder="Modifier l'historique ici..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setIsEditingHistory(false)} className="text-[11px] px-2 py-1 bg-surface-3 hover:bg-surface-3/80 rounded transition-colors">Annuler</button>
+                      <button 
+                        onClick={async () => { 
+                          if (current) {
+                            await useCrmStore.getState().updateProspect(current.id, { feedback: historyDraft || null }); 
+                          }
+                          setIsEditingHistory(false); 
+                        }} 
+                        className="text-[11px] px-2 py-1 bg-[var(--accent-cyan)] text-[var(--surface-0)] font-semibold rounded hover:brightness-110 transition-colors"
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  current?.feedback ? (
+                    <div className="px-3.5 pb-2.5 text-[12px] text-t-secondary whitespace-pre-wrap max-h-32 overflow-auto">
+                      {current.feedback}
+                    </div>
+                  ) : (
+                    <div className="px-3.5 pb-2.5 text-[11px] text-t-tertiary italic">Aucun historique.</div>
+                  )
+                )}
+              </div>
             </div>
 
             {/* Zone note — se sauvegarde dans le prospect à chaque log */}

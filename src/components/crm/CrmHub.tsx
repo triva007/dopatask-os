@@ -245,39 +245,7 @@ export default function CrmHub() {
           </div>
         </motion.button>
 
-        {/* RAPPELS DU JOUR */}
-        {rappelsDuJour.length > 0 && (
-          <div className="rounded-2xl border border-[var(--border-primary)] bg-[var(--surface-1)] p-5"
-            style={{ borderColor: "color-mix(in srgb, var(--accent-orange) 25%, transparent)" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="text-[13px]">🕐</span>
-              <h3 className="text-[13px] font-semibold" style={{ color: "var(--accent-orange)" }}>
-                Rappels du jour · {rappelsDuJour.length}
-              </h3>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {rappelsDuJour.map((p) => (
-                <Link
-                  key={p.id}
-                  href={`/prospects/${p.id}`}
-                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[12px] font-medium hover:opacity-80 transition-opacity"
-                  style={{
-                    background: "color-mix(in srgb, var(--accent-orange) 10%, transparent)",
-                    color: "var(--accent-orange)",
-                    border: "1px solid color-mix(in srgb, var(--accent-orange) 22%, transparent)",
-                  }}
-                >
-                  {p.entreprise}
-                  {p.date_relance && (
-                    <span className="text-[10px] opacity-70">
-                      · prévu {new Date(p.date_relance + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
-                    </span>
-                  )}
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+
 
         {/* STATS CRM : 5 mini-cards (stagger) */}
         <motion.div
@@ -296,40 +264,7 @@ export default function CrmHub() {
           <MiniStat icon={<Banknote size={14} />} label={`Revenu mois`} value={`${stats.revenuTotal.toLocaleString("fr-FR")}`} suffix="EUR" color="#22d3ee" />
         </motion.div>
 
-        {/* PIPELINE KANBAN */}
-        <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <TrendingUp size={16} className="text-dopa-cyan" />
-              <h2 className="text-[14px] font-semibold">Pipeline Kanban</h2>
-            </div>
-            <p className="text-[11px] text-t-tertiary">
-              Glissez et déposez les prospects pour les faire avancer.
-            </p>
-          </div>
-          
-          <DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd} collisionDetection={closestCenter}>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 items-start">
-              {PIPELINE_STATUTS.map((s) => {
-                const col = STATUT_COLORS[s];
-                const list = byStatut[s];
-                return (
-                  <DroppableColumn key={s} statut={s} colorInfo={col} list={list} />
-                );
-              })}
-            </div>
-            <DragOverlay>
-              {activeDragProspect ? (
-                <div 
-                  className="rounded-lg p-2 shadow-2xl scale-105 border border-surface-3 bg-surface-2"
-                  style={{ cursor: 'grabbing' }}
-                >
-                  <p className="text-[12px] font-bold text-t-primary truncate">{activeDragProspect.entreprise}</p>
-                </div>
-              ) : null}
-            </DragOverlay>
-          </DndContext>
-        </div>
+
 
         {/* 2 PANELS : PROCHAINS A APPELER + PROCHAINS RDV */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
