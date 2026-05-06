@@ -85,7 +85,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   }, [queue, sessionQueue.length]);
 
   const [cursor, setCursor]       = useState(0);
-  const [noteDraft, setNoteDraft] = useState("");
   const [submitting, setSubmitting] = useState<ResultatAppel | null>(null);
   const [flash, setFlash]         = useState<string | null>(null);
 
@@ -106,18 +105,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   }, [currentId, prospects, sessionQueue, cursor]);
 
   // Store data
-  const scripts = useCrmStore((s) => s.scripts);
   const config  = useCrmStore((s) => s.config);
-
-  const activeScript = useMemo(() => {
-    if (!config?.script_actif_id) {
-      // Fallback sur la niche si pas de script global par défaut
-      return scripts.find(s => s.niche === current?.niche) || scripts[0];
-    }
-    return scripts.find(s => s.id === config.script_actif_id) || scripts[0];
-  }, [config, scripts, current?.niche]);
-
-  const [showScript, setShowScript] = useState(false);
 
   // Timer logic
   useEffect(() => {
@@ -143,7 +131,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
   // Reset quand on change de prospect (via le curseur)
   useEffect(() => {
-    setNoteDraft("");
     setRappelMode(false);
     setRappelDate(localDateOffset(3));
     setIsEditingHistory(false);
@@ -156,7 +143,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
     if (!current || submitting) return;
     setSubmitting(resultat);
-    await logCall(current.id, resultat, noteDraft.trim() || undefined, dateRappel, seconds);
+    await logCall(current.id, resultat, undefined, dateRappel, seconds);
     const outcome = OUTCOMES.find((o) => o.key === resultat);
     setFlash(outcome?.label || resultat);
     setTimeout(() => setFlash(null), 1500);
@@ -185,7 +172,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, cursor, sessionQueue.length, noteDraft, rappelMode]);
+  }, [current?.id, cursor, sessionQueue.length, rappelMode]);
 
   const copyTel = () => {
     if (!current?.telephone) return;
@@ -277,16 +264,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               <span className="tabular-nums font-semibold text-t-primary">{cursor + 1}</span>
               <span>/ {sessionQueue.length}</span>
             </span>
-
-            <button
-              onClick={() => setShowScript(!showScript)}
-              className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[12.5px] font-semibold transition-all ${
-                showScript ? "" : "bg-surface-2 text-t-secondary hover:bg-surface-3"
-              }`}
-              style={showScript ? { background: "var(--accent-cyan)", color: "var(--surface-0)" } : {}}
-            >
-              <FileText size={14} /> Script
-            </button>
           </div>
         </div>
       </div>
@@ -402,12 +379,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 )}
               </div>
 
-              {/* Notes prospect (persistées) */}
-              {current.notes && (
-                <div className="mt-4 px-3.5 py-2.5 rounded-lg bg-surface-2 border-l-2 border-dopa-violet/40 text-[12px] text-t-secondary whitespace-pre-wrap max-h-32 overflow-auto">
-                  {current.notes}
-                </div>
-              )}
+
 
               {/* Historique appels */}
               <div className="mt-2 rounded-lg bg-surface-2 border-l-2 border-dopa-cyan/40 flex flex-col">
@@ -454,17 +426,22 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               </div>
             </div>
 
-            {/* Zone note — se sauvegarde dans le prospect à chaque log */}
+            {/* Zone note — sauvegarde auto sur blur */}
             <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5 mb-5">
               <label className="text-[11px] uppercase tracking-wider text-t-tertiary font-semibold block mb-2">
-                Notes de cet appel <span className="normal-case font-normal">(enregistrées automatiquement)</span>
+                Notes du prospect <span className="normal-case font-normal">(sauvegarde auto)</span>
               </label>
               <textarea
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                placeholder="Rappeler mardi matin, intéressé mais en voyage..."
-                rows={2}
-                className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-dopa-cyan"
+                key={`note-${current.id}`}
+                defaultValue={current.notes || ""}
+                onBlur={async (e) => {
+                  if (current && e.target.value !== current.notes) {
+                    await useCrmStore.getState().updateProspect(current.id, { notes: e.target.value });
+                  }
+                }}
+                placeholder="Informations sur le prospect..."
+                rows={3}
+                className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] resize-y focus:outline-none focus:border-dopa-violet"
               />
             </div>
 
@@ -537,74 +514,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             </p>
           </div>
 
-          {/* Script Side Panel */}
-          <AnimatePresence>
-            {showScript && activeScript && (
-              <motion.div
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                className="w-full lg:w-[350px] shrink-0 sticky top-24 h-fit max-h-[80vh] overflow-auto rounded-2xl border border-surface-3 bg-surface-1 shadow-sm flex flex-col"
-              >
-                <div className="p-4 border-b border-surface-3 flex items-center justify-between bg-surface-2/50">
-                  <div className="flex items-center gap-2">
-                    <FileText size={16} className="text-dopa-cyan" />
-                    <h2 className="text-[14px] font-bold tracking-tight">{activeScript.nom}</h2>
-                  </div>
-                  <button onClick={() => setShowScript(false)} className="text-t-tertiary hover:text-t-primary">
-                    <X size={16} />
-                  </button>
-                </div>
 
-                <div className="p-5 space-y-6">
-                  {activeScript.ouverture && (
-                    <section>
-                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-cyan font-bold mb-2">Ouverture</h3>
-                      <p className="text-[13px] text-t-secondary italic leading-relaxed">
-                        &quot;{activeScript.ouverture}&quot;
-                      </p>
-                    </section>
-                  )}
-
-                  {activeScript.corps && (
-                    <section>
-                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-violet font-bold mb-2">Pitch / Corps</h3>
-                      <div className="text-[13px] text-t-secondary leading-relaxed whitespace-pre-wrap">
-                        {activeScript.corps}
-                      </div>
-                    </section>
-                  )}
-
-                  {activeScript.objections && activeScript.objections.length > 0 && (
-                    <section>
-                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-orange font-bold mb-2">Objections</h3>
-                      <div className="space-y-3">
-                        {activeScript.objections.map((obj, i) => (
-                          <div key={i} className="group">
-                            <p className="text-[12.5px] font-bold text-t-primary mb-1">
-                              {obj.question}
-                            </p>
-                            <p className="text-[12px] text-t-tertiary italic border-l-2 border-surface-3 pl-3 group-hover:border-dopa-orange transition-colors">
-                              {obj.reponse}
-                            </p>
-                          </div>
-                        ))}
-                      </div>
-                    </section>
-                  )}
-
-                  {activeScript.cloture && (
-                    <section>
-                      <h3 className="text-[11px] uppercase tracking-wider text-dopa-green font-bold mb-2">Clôture / RDV</h3>
-                      <p className="text-[13px] text-t-secondary italic leading-relaxed">
-                        &quot;{activeScript.cloture}&quot;
-                      </p>
-                    </section>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
         </motion.div>
       </AnimatePresence>
     </div>
