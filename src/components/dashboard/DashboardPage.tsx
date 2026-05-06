@@ -8,7 +8,6 @@ import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText, Phone, Chevro
 import { useCrmStore } from "@/store/useCrmStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
-import VisionWidget from "@/components/dashboard/VisionWidget";
 import { getActiveProfileId } from "@/lib/supabaseStorage";
 import TdahBadge, { getBadgeVariant } from "@/components/ui/TdahBadge";
 import { celebrate } from "@/lib/dopamineFeedback";
@@ -209,11 +208,6 @@ export default function DashboardPage() {
   }, []);
 
   const tdahTasks = useMemo(() => {
-    const activeTasks = tasks.filter((t) => t.status !== "done" && t.status !== "completed");
-    const completedToday = tasks.filter(
-      (t) => (t.status === "done" || t.status === "completed") && t.completedAt && new Date(t.completedAt).toISOString().slice(0, 10) === todayDateStr
-    );
-
     const maintenant: any[] = [];
     const recurrent: any[] = [];
     const bientot: any[] = [];
@@ -221,7 +215,8 @@ export default function DashboardPage() {
     // Add Google Kill tasks to "maintenant"
     filteredGTasks.forEach(t => maintenant.push({ ...t, isGoogle: true, displayTitle: t.title }));
 
-    activeTasks.forEach((t) => {
+    // Add Local Kill tasks
+    filteredLocalTasks.forEach((t) => {
       const isRecurring = !!t.recurrence && t.recurrence !== "none";
       const isTodayOrOverdue = !t.dueDate || t.dueDate <= todayDateStr || t.status === "today";
       
@@ -234,11 +229,25 @@ export default function DashboardPage() {
       }
     });
 
+    const completedTodayLocal = killProject
+      ? tasks.filter(
+          (t) => t.projectId === killProject.id && (t.status === "done" || t.status === "completed") && t.completedAt && new Date(t.completedAt).toISOString().slice(0, 10) === todayDateStr
+        )
+      : [];
+      
+    const completedTodayGoogle = killList
+      ? googleTasks.filter(
+          (t) => t.listId === killList.id && t.status === "completed" && t.updated && new Date(t.updated).toISOString().slice(0, 10) === todayDateStr
+        ).map(t => ({ ...t, isGoogle: true, text: t.title, id: t.id }))
+      : [];
+
+    const completedToday = [...completedTodayLocal, ...completedTodayGoogle];
+
     // Sort recurrent by date
     recurrent.sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
 
     return { maintenant, recurrent, bientot, completedToday };
-  }, [tasks, filteredGTasks, todayDateStr]);
+  }, [tasks, filteredGTasks, filteredLocalTasks, googleTasks, killProject, killList, todayDateStr]);
 
   const progressTotal = tdahTasks.maintenant.length + tdahTasks.completedToday.length;
   const progressCurrent = tdahTasks.completedToday.length;
@@ -368,9 +377,6 @@ export default function DashboardPage() {
 
         {/* ═══ Prochains événements Google ═══ */}
         <UpcomingEventsWidget />
-
-        {/* ═══ VISION LONG TERME (Time Stripe style) ═══ */}
-        {activeProfileId === 1 && <VisionWidget />}
 
         {/* ═══ MISSION DU JOUR ═══ */}
         {currentRoutine && (
