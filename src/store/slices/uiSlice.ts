@@ -3,7 +3,7 @@ import { AppState } from "../useAppStore";
 import { Toast, InboxItem, TimelineEvent, DayRoutine, DEFAULT_WEEKLY_ROUTINE } from "./types";
 import { uid } from "./utils";
 
-export const createUISlice: StateCreator<AppState, [], [], Pick<AppState, "hasSeenTutorial" | "setHasSeenTutorial" | "theme" | "toggleTheme" | "googleEventProjects" | "setGoogleEventProject" | "googleTaskProjects" | "setGoogleTaskProject" | "googleTaskRecurrence" | "setGoogleTaskRecurrence" | "inboxItems" | "addInboxItem" | "processInboxItem" | "convertInboxToTask" | "deleteInboxItem" | "clearProcessedInbox" | "timelineEvents" | "addTimelineEvent" | "updateTimelineEvent" | "deleteTimelineEvent" | "xp" | "bossHp" | "streak" | "bossLevel" | "lastCritical" | "lastStreakDate" | "purchasedRewards" | "totalFocusMinutes" | "hyperfocusSessions" | "totalTasksCompleted" | "unlockedAchievements" | "dailyChallengeId" | "dailyChallengeCompleted" | "addXp" | "attackBoss" | "toasts" | "addToast" | "removeToast" | "settings" | "updateSettings" | "weeklyRoutine" | "setDayRoutine" | "resetWeeklyRoutine">> = (set, get) => ({
+export const createUISlice: StateCreator<AppState, [], [], Pick<AppState, "hasSeenTutorial" | "setHasSeenTutorial" | "theme" | "toggleTheme" | "googleEventProjects" | "setGoogleEventProject" | "googleTaskProjects" | "setGoogleTaskProject" | "googleTaskRecurrence" | "setGoogleTaskRecurrence" | "googleTaskSubtasks" | "setGoogleTaskSubtasks" | "inboxItems" | "addInboxItem" | "processInboxItem" | "convertInboxToTask" | "deleteInboxItem" | "clearProcessedInbox" | "timelineEvents" | "addTimelineEvent" | "updateTimelineEvent" | "deleteTimelineEvent" | "xp" | "bossHp" | "streak" | "bossLevel" | "lastCritical" | "lastStreakDate" | "purchasedRewards" | "totalFocusMinutes" | "hyperfocusSessions" | "totalTasksCompleted" | "unlockedAchievements" | "dailyChallengeId" | "dailyChallengeCompleted" | "addXp" | "attackBoss" | "toasts" | "addToast" | "removeToast" | "settings" | "updateSettings" | "weeklyRoutine" | "setDayRoutine" | "resetWeeklyRoutine">> = (set, get) => ({
   hasSeenTutorial: false,
   setHasSeenTutorial: (v) => set({ hasSeenTutorial: v }),
   theme: "dark",
@@ -31,6 +31,14 @@ export const createUISlice: StateCreator<AppState, [], [], Pick<AppState, "hasSe
     if (recurring) newMap[taskId] = true;
     else delete newMap[taskId];
     return { googleTaskRecurrence: newMap };
+  }),
+
+  googleTaskSubtasks: {},
+  setGoogleTaskSubtasks: (taskId, subtasks) => set((s) => {
+    const newMap = { ...s.googleTaskSubtasks };
+    if (subtasks && subtasks.length > 0) newMap[taskId] = subtasks;
+    else delete newMap[taskId];
+    return { googleTaskSubtasks: newMap };
   }),
 
   inboxItems: [],

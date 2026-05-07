@@ -107,6 +107,8 @@ interface AppState {
   setGoogleTaskProject: (taskId: string, projectId: string | null) => void;
   googleTaskRecurrence: Record<string, boolean>;
   setGoogleTaskRecurrence: (taskId: string, recurring: boolean) => void;
+  googleTaskSubtasks: Record<string, { id: string; text: string; completed: boolean }[]>;
+  setGoogleTaskSubtasks: (taskId: string, subtasks: { id: string; text: string; completed: boolean }[]) => void;
   templates: ProjectTemplate[];
   saveProjectAsTemplate: (projectId: string, templateName: string) => void;
   applyTemplateToProject: (templateId: string, projectId: string) => void;
@@ -141,6 +143,7 @@ export const useAppStore = create<AppState>()(
         if (!persistedState.state.googleEventProjects) persistedState.state.googleEventProjects = {};
         if (!persistedState.state.googleTaskProjects) persistedState.state.googleTaskProjects = {};
         if (!persistedState.state.googleTaskRecurrence) persistedState.state.googleTaskRecurrence = {};
+        if (!persistedState.state.googleTaskSubtasks) persistedState.state.googleTaskSubtasks = {};
         if (!persistedState.state.weeklyRoutine) persistedState.state.weeklyRoutine = DEFAULT_WEEKLY_ROUTINE;
         
         if (version < 9 && persistedState.state.tasks) {

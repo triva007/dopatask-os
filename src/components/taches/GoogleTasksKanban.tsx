@@ -591,17 +591,25 @@ export default function GoogleTasksKanban() {
                   <label className="text-[12px] font-semibold text-t-secondary">
                     Titre de la tâche
                   </label>
-                  <input
-                    type="text"
+                  <textarea
                     autoFocus
                     value={newTaskTitle}
-                    onChange={(e) => setNewTaskTitle(e.target.value)}
+                    onChange={(e) => {
+                      setNewTaskTitle(e.target.value);
+                      e.target.style.height = "auto";
+                      e.target.style.height = `${e.target.scrollHeight}px`;
+                    }}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleCreateNewTask();
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        handleCreateNewTask();
+                      }
                       if (e.key === "Escape") setIsNewTaskModalOpen(false);
                     }}
+                    rows={1}
                     placeholder="ex: Appeler le comptable..."
-                    className="w-full px-4 py-2.5 bg-surface-2 border border-surface-3 rounded-xl text-[14px] focus:outline-none focus:border-dopa-cyan transition-colors"
+                    className="w-full px-4 py-3 bg-surface-2 border border-surface-3 rounded-xl text-[14px] focus:outline-none focus:border-dopa-cyan transition-colors resize-none overflow-hidden leading-snug"
+                    style={{ minHeight: "44px" }}
                   />
                 </div>
 
@@ -778,22 +786,27 @@ function ListColumn(p: ListColumnProps) {
       {/* Add task */}
       <div className="shrink-0 px-4 py-3 border-b" style={{ borderColor: "var(--border-primary)" }}>
         {adding ? (
-          <input
-            ref={inputRef}
-            type="text"
+          <textarea
+            ref={inputRef as any}
             value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
+            onChange={(e) => {
+              setNewTitle(e.target.value);
+              e.target.style.height = "auto";
+              e.target.style.height = `${e.target.scrollHeight}px`;
+            }}
             onKeyDown={(e) => {
-              if (e.key === "Enter") submitNew();
+              if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); submitNew(); }
               if (e.key === "Escape") { setNewTitle(""); setAdding(false); }
             }}
             onBlur={submitNew}
+            rows={1}
             placeholder="Titre de la nouvelle tache..."
-            className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] focus:outline-none focus:ring-2 text-[var(--text-primary)] placeholder:text-[var(--text-ghost)]"
+            className="w-full border rounded-xl px-3.5 py-2.5 text-[13px] leading-snug focus:outline-none focus:ring-2 text-[var(--text-primary)] placeholder:text-[var(--text-ghost)] resize-none overflow-hidden"
             style={{
               background: "var(--surface-2)",
               borderColor: "var(--border-secondary)",
               outlineColor: "var(--focus-ring)",
+              minHeight: "40px"
             }}
           />
         ) : (
@@ -1120,9 +1133,33 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
   const [projectId, setProjectId] = useState((useAppStore.getState().googleTaskProjects || {})[t.id] || "");
   const [isRecurring, setIsRecurring] = useState((useAppStore.getState().googleTaskRecurrence || {})[t.id] || false);
+  const storeSubtasks = (useAppStore.getState().googleTaskSubtasks || {})[t.id] || [];
+  const [subtasks, setSubtasks] = useState<{ id: string; text: string; completed: boolean }[]>(storeSubtasks);
   const [saved, setSaved] = useState(false);
   const c = colorForList(t.listId);
   const completed = t.status === "completed";
+
+  const titleRef = useRef<HTMLTextAreaElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
+  const autoResize = (el: HTMLTextAreaElement | null) => {
+    if (el) {
+      el.style.height = "auto";
+      el.style.height = `${el.scrollHeight}px`;
+    }
+  };
+
+  useEffect(() => {
+    autoResize(titleRef.current);
+    const id = setTimeout(() => autoResize(titleRef.current), 50);
+    return () => clearTimeout(id);
+  }, [title]);
+
+  useEffect(() => {
+    autoResize(notesRef.current);
+    const id = setTimeout(() => autoResize(notesRef.current), 50);
+    return () => clearTimeout(id);
+  }, [notes]);
 
   const save = () => {
     const updates: Partial<GTask> = {};
@@ -1133,6 +1170,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     
     useAppStore.getState().setGoogleTaskProject(t.id, projectId || null);
     useAppStore.getState().setGoogleTaskRecurrence(t.id, isRecurring);
+    useAppStore.getState().setGoogleTaskSubtasks(t.id, subtasks);
 
     if (Object.keys(updates).length > 0) {
       onUpdate(updates);
@@ -1150,7 +1188,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [title, notes, due]);
+  }, [title, notes, due, projectId, isRecurring, subtasks]);
 
   return (
     <motion.div
@@ -1178,223 +1216,232 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
         {/* Header */}
         <div className="shrink-0 relative">
           <div className="absolute top-0 left-0 right-0 h-[3px] rounded-b-full mx-4" style={{ background: c.hue, opacity: 0.8 }} />
-          <div className="flex items-center gap-3 px-6 py-4 border-b" style={{ borderColor: "var(--border-primary)" }}>
-            <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold">
-              <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.hue }} />
-              {t.listTitle}
+          <div className="flex items-center justify-between px-6 py-4 border-b" style={{ borderColor: "var(--border-primary)" }}>
+            <div className="flex items-center gap-3">
+              <button 
+                onClick={onCheck} 
+                className="flex items-center justify-center w-[22px] h-[22px] rounded-full border-[2px] transition-transform hover:scale-110 active:scale-95" 
+                style={{ 
+                  background: completed ? c.hue : "transparent", 
+                  borderColor: completed ? c.hue : "var(--border-secondary)" 
+                }}
+              >
+                {completed && <Check size={12} className="text-white" strokeWidth={3} />}
+              </button>
+              <div className="flex items-center gap-2 text-[10.5px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: c.hue }} />
+                {t.listTitle}
+              </div>
             </div>
-            <div className="flex-1" />
-            <div className="text-[11px] text-[var(--text-tertiary)] flex items-center gap-1.5">
-              {saved ? (
-                <>
-                  <Check size={12} style={{ color: "var(--accent-green)" }} />
-                  <span style={{ color: "var(--accent-green)" }}>Enregistre</span>
-                </>
-              ) : (
-                <span className="opacity-50">Cmd+S pour sauver</span>
+            
+            <div className="flex items-center gap-4">
+              {saved && (
+                <span className="text-[11px] font-medium flex items-center gap-1.5" style={{ color: "var(--accent-green)" }}>
+                  <Check size={12} /> Enregistré
+                </span>
               )}
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={onDelete}
+                  className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--accent-red-light)] hover:text-[var(--accent-red)] transition-colors"
+                  aria-label="Supprimer"
+                >
+                  <Trash2 size={16} />
+                </button>
+                <button
+                  onClick={onClose}
+                  className="p-1.5 rounded-lg text-[var(--text-tertiary)] hover:bg-[var(--surface-2)] hover:text-[var(--text-primary)] transition-colors"
+                  aria-label="Fermer"
+                >
+                  <X size={18} />
+                </button>
+              </div>
             </div>
-            <button
-              onClick={onClose}
-              className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] p-2 rounded-xl transition-all"
-              aria-label="Fermer"
-            >
-              <X size={16} />
-            </button>
           </div>
         </div>
 
         {/* Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-6 space-y-6">
-          {/* Title + checkbox */}
-          <div className="flex items-start gap-3.5">
-            <button
-              onClick={onCheck}
-              className="shrink-0 mt-2"
-              aria-label={completed ? "Decocher" : "Cocher"}
-            >
-              <span
-                className={
-                  "block w-[24px] h-[24px] rounded-full border-2 transition-all flex items-center justify-center " +
-                  (completed ? "border-transparent" : "hover:border-[var(--accent-blue)]")
-                }
-                style={{
-                  background: completed ? "var(--accent-blue)" : "transparent",
-                  borderColor: completed ? "var(--accent-blue)" : "var(--text-ghost)",
-                }}
-              >
-                {completed && <Check size={14} className="text-white" strokeWidth={3} />}
-              </span>
-            </button>
-            <textarea
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={save}
-              rows={1}
-              placeholder="Titre de la tache..."
-              className={
-                "flex-1 bg-transparent text-[20px] font-semibold focus:outline-none resize-none leading-tight placeholder:text-[var(--text-ghost)] " +
-                (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
-              }
-              style={{ minHeight: "1.5em" }}
-            />
-          </div>
+        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-8">
+          <textarea
+            ref={titleRef}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            onBlur={save}
+            placeholder="Titre de la tâche..."
+            className={
+              "w-full bg-transparent text-[24px] sm:text-[28px] font-bold tracking-tight focus:outline-none resize-none leading-[1.2] placeholder:text-[var(--text-ghost)] " +
+              (completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")
+            }
+            style={{ minHeight: "36px", overflow: "hidden" }}
+          />
 
-          {/* Divider */}
-          <div className="divider-soft" />
+          {/* Properties Grid */}
+          <div className="mt-8 flex flex-col gap-1.5">
+            {/* Date */}
+            <div className="flex items-center min-h-[36px] group">
+              <div className="w-[140px] text-[13px] text-[var(--text-tertiary)] flex items-center gap-2 font-medium">
+                <CalendarIcon size={14} /> Date
+              </div>
+              <div className="flex-1 flex items-center">
+                <input
+                  type="date"
+                  value={due}
+                  onChange={(e) => setDue(e.target.value)}
+                  onBlur={save}
+                  className="bg-transparent text-[13.5px] font-medium focus:outline-none hover:bg-[var(--surface-2)] px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors cursor-pointer text-[var(--text-primary)] min-w-[120px]"
+                />
+                {due && (
+                  <button onClick={() => { setDue(""); setTimeout(save, 0); }} className="ml-2 opacity-0 group-hover:opacity-100 text-[var(--text-tertiary)] hover:text-[var(--accent-red)] transition-all">
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+            </div>
 
-          {/* Date */}
-          <div>
-            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
-              <CalendarIcon size={12} />
-              Date d&apos;echeance
-            </label>
-            <div className="flex items-center gap-2.5">
-              <input
-                type="date"
-                value={due}
-                onChange={(e) => setDue(e.target.value)}
-                onBlur={save}
-                className="flex-1 border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
-                style={{
-                  background: "var(--surface-2)",
-                  borderColor: "var(--border-primary)",
-                  outlineColor: "var(--focus-ring)",
-                }}
-              />
-              {due && (
-                <button
-                  onClick={() => { setDue(""); setTimeout(save, 0); }}
-                  className="text-[12px] font-medium px-3 py-2 rounded-xl transition-all hover:bg-[var(--accent-red-light)]"
-                  style={{ color: "var(--accent-red)" }}
+            {/* Project */}
+            <div className="flex items-center min-h-[36px]">
+              <div className="w-[140px] text-[13px] text-[var(--text-tertiary)] flex items-center gap-2 font-medium">
+                <Folder size={14} /> Projet
+              </div>
+              <div className="flex-1">
+                <select
+                  value={projectId}
+                  onChange={(e) => { setProjectId(e.target.value); setTimeout(save, 0); }}
+                  className="bg-transparent text-[13.5px] font-medium focus:outline-none hover:bg-[var(--surface-2)] px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors cursor-pointer text-[var(--text-primary)] appearance-none"
                 >
-                  Retirer
+                  <option value="">Aucun projet</option>
+                  {useAppStore.getState().projects.filter(p => p.status !== "archived" || p.id === projectId).map(pj => (
+                    <option key={pj.id} value={pj.id}>{pj.emoji} {pj.name}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Recurrence */}
+            <div className="flex items-center min-h-[36px]">
+              <div className="w-[140px] text-[13px] text-[var(--text-tertiary)] flex items-center gap-2 font-medium">
+                <RefreshCw size={14} /> Récurrence
+              </div>
+              <div className="flex-1">
+                <button
+                  onClick={() => { setIsRecurring(!isRecurring); setTimeout(save, 0); }}
+                  className={
+                    "text-[12.5px] font-medium px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors flex items-center gap-2 " + 
+                    (isRecurring ? "text-[var(--accent-blue)] bg-[var(--accent-blue-light)]" : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)]")
+                  }
+                >
+                  <div className={"w-1.5 h-1.5 rounded-full " + (isRecurring ? "bg-[var(--accent-blue)]" : "bg-[var(--text-ghost)]")} />
+                  {isRecurring ? "Affiché sur le Dashboard" : "Désactivé"}
                 </button>
-              )}
+              </div>
             </div>
           </div>
 
-          {/* Project Selector */}
-          <div>
-            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
-              <Folder size={12} />
-              Projet DopaTask
-            </label>
-            <select
-              value={projectId}
-              onChange={(e) => { setProjectId(e.target.value); setTimeout(save, 0); }}
-              className="w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] focus:outline-none focus:ring-2 text-[var(--text-primary)]"
-              style={{
-                background: "var(--surface-2)",
-                borderColor: "var(--border-primary)",
-                outlineColor: "var(--focus-ring)",
-              }}
-            >
-              <option value="">Aucun projet</option>
-              {useAppStore.getState().projects.filter(p => p.status !== "archived" || p.id === projectId).map(pj => (
-                <option key={pj.id} value={pj.id}>{pj.emoji} {pj.name}</option>
-              ))}
-            </select>
-          </div>
-
-          {/* Recurrence Toggle */}
-          <div>
-            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
-              <RefreshCw size={12} />
-              Récurrence Dashboard
-            </label>
-            <label 
-              className="flex items-center gap-3 w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] cursor-pointer transition-colors"
-              style={{
-                background: isRecurring ? "var(--accent-blue-light)" : "var(--surface-2)",
-                borderColor: isRecurring ? "var(--accent-blue)" : "var(--border-primary)",
-                color: isRecurring ? "var(--accent-blue)" : "var(--text-primary)",
-              }}
-            >
-              <input 
-                type="checkbox" 
-                checked={isRecurring} 
-                onChange={(e) => { setIsRecurring(e.target.checked); setTimeout(save, 0); }}
-                className="w-4 h-4 rounded border-[var(--border-primary)] accent-[var(--accent-blue)]"
-              />
-              <span className="font-medium">Afficher dans "Récurrentes" du Dashboard</span>
-            </label>
-          </div>
-
-          {/* Divider */}
-          <div className="divider-soft" />
-
-          {/* Notes */}
-          <div>
-            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
-              <FileText size={12} />
-              Description
-            </label>
+          <div className="mt-8 border-t border-[var(--border-primary)] pt-6">
             <textarea
+              ref={notesRef}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               onBlur={save}
-              rows={5}
               placeholder="Ajouter une description, des notes, un lien..."
-              className="w-full border rounded-2xl px-4 py-3.5 text-[13.5px] leading-relaxed focus:outline-none focus:ring-2 resize-y placeholder:text-[var(--text-ghost)]"
-              style={{
-                background: "var(--surface-2)",
-                borderColor: "var(--border-primary)",
-                color: "var(--text-primary)",
-                outlineColor: "var(--focus-ring)",
-                minHeight: "120px",
-              }}
+              className="w-full bg-transparent text-[14.5px] leading-relaxed focus:outline-none resize-none placeholder:text-[var(--text-ghost)] text-[var(--text-primary)]"
+              style={{ minHeight: "150px", overflow: "hidden" }}
             />
-          </div>
 
-          {/* Links */}
-          {t.links && t.links.length > 0 && (
-            <div>
-              <label className="block text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
-                Liens
+            {/* Subtasks */}
+            <div className="mt-6 mb-2">
+              <label className="flex items-center gap-2 text-[12px] uppercase tracking-wider text-[var(--text-tertiary)] mb-3 font-bold">
+                <Check size={14} /> Étapes (Sous-tâches)
               </label>
-              <ul className="space-y-2">
-                {t.links.map((l, i) => (
-                  <li key={i}>
-                    <a
-                      href={l.link}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-[13px] hover:underline break-all"
-                      style={{ color: "var(--accent-blue)" }}
+              <div className="flex flex-col gap-1">
+                {subtasks.map((st, i) => (
+                  <div key={st.id} className="flex items-start gap-2.5 group py-1">
+                    <button
+                      onClick={() => {
+                        const newSt = [...subtasks];
+                        newSt[i].completed = !newSt[i].completed;
+                        setSubtasks(newSt);
+                        setTimeout(save, 0);
+                      }}
+                      className={"shrink-0 mt-[3px] w-[18px] h-[18px] rounded-[5px] border transition-colors flex items-center justify-center " + (st.completed ? "bg-[var(--accent-blue)] border-[var(--accent-blue)]" : "border-[var(--border-secondary)] hover:border-[var(--text-ghost)]")}
                     >
-                      {l.description || l.link}
-                    </a>
-                  </li>
+                      {st.completed && <Check size={12} className="text-white" strokeWidth={3} />}
+                    </button>
+                    <textarea
+                      value={st.text}
+                      onChange={(e) => {
+                        const newSt = [...subtasks];
+                        newSt[i].text = e.target.value;
+                        setSubtasks(newSt);
+                        e.target.style.height = "auto";
+                        e.target.style.height = `${e.target.scrollHeight}px`;
+                      }}
+                      onBlur={save}
+                      rows={1}
+                      className={"flex-1 bg-transparent text-[14.5px] leading-snug focus:outline-none resize-none overflow-hidden transition-colors " + (st.completed ? "line-through text-[var(--text-tertiary)]" : "text-[var(--text-primary)]")}
+                      placeholder="Nouvelle étape..."
+                      style={{ minHeight: "22px" }}
+                    />
+                    <button
+                      onClick={() => {
+                        const newSt = subtasks.filter(s => s.id !== st.id);
+                        setSubtasks(newSt);
+                        setTimeout(save, 0);
+                      }}
+                      className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-ghost)] hover:text-[var(--accent-red)] transition-all"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 ))}
-              </ul>
+                
+                {/* Add new subtask */}
+                <div className="flex items-center gap-2.5 mt-1 py-1">
+                  <div className="shrink-0 w-[18px] h-[18px] rounded-[5px] border border-[var(--border-secondary)] opacity-50 flex items-center justify-center">
+                    <Plus size={12} className="text-[var(--text-ghost)]" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Ajouter une étape..."
+                    className="flex-1 bg-transparent text-[14.5px] text-[var(--text-primary)] placeholder:text-[var(--text-ghost)] focus:outline-none"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && e.currentTarget.value.trim()) {
+                        setSubtasks([...subtasks, { id: crypto.randomUUID(), text: e.currentTarget.value.trim(), completed: false }]);
+                        e.currentTarget.value = "";
+                        setTimeout(save, 0);
+                      }
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-          )}
+
+            {/* Links */}
+            {t.links && t.links.length > 0 && (
+              <div className="mt-6 p-4 rounded-xl border" style={{ borderColor: "var(--border-primary)", background: "var(--surface-2)" }}>
+                <label className="block text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
+                  Liens attachés
+                </label>
+                <ul className="space-y-2">
+                  {t.links.map((l, i) => (
+                    <li key={i}>
+                      <a
+                        href={l.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-[13px] hover:underline break-all"
+                        style={{ color: "var(--accent-blue)" }}
+                      >
+                        {l.description || l.link}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* Footer */}
-        <div
-          className="shrink-0 flex items-center justify-between px-6 py-4 border-t"
-          style={{ borderColor: "var(--border-primary)", background: "var(--surface-2)" }}
-        >
-          <button
-            onClick={onDelete}
-            className="inline-flex items-center gap-1.5 text-[13px] font-medium px-3.5 py-2 rounded-xl transition-all"
-            style={{ color: "var(--accent-red)" }}
-            onMouseEnter={(e) => { (e.currentTarget.style.background) = "var(--accent-red-light)"; }}
-            onMouseLeave={(e) => { (e.currentTarget.style.background) = "transparent"; }}
-          >
-            <Trash2 size={13} />
-            Supprimer
-          </button>
-          <button
-            onClick={() => { save(); onClose(); }}
-            className="px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white hover:opacity-90 transition-all"
-            style={{ background: "var(--accent-blue)" }}
-          >
-            Enregistrer & fermer
-          </button>
-        </div>
       </motion.div>
     </motion.div>
   );
