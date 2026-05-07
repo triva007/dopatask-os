@@ -307,17 +307,25 @@ function KanbanColumnComponent({
   selectedTasks,
   onSelectTask,
 }: KanbanColumnComponentProps) {
-  const { addTask } = useAppStore();
+  const { addTask, updateTask } = useAppStore();
   const [adding, setAdding] = useState(false);
   const [input, setInput] = useState("");
+  const [isToday, setIsToday] = useState(false);
+  const [isRecurring, setIsRecurring] = useState(false);
   const isOver = dragOverCol === column.id;
 
   const handleAdd = (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
-    addTask(input.trim(), column.id);
+    const initialStatus = isToday ? "today" : column.id;
+    const taskId = addTask(input.trim(), initialStatus);
+    if (isRecurring) {
+      updateTask(taskId, { recurrence: "daily" });
+    }
     setInput("");
     setAdding(false);
+    setIsToday(false);
+    setIsRecurring(false);
   };
 
   return (
@@ -383,17 +391,38 @@ function KanbanColumnComponent({
 
         {/* Add task inline */}
         {adding ? (
-          <form onSubmit={handleAdd} className="mt-1">
+          <form onSubmit={handleAdd} className="mt-1 flex flex-col gap-2">
             <input
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              onBlur={() => { if (!input.trim()) setAdding(false); }}
+              onBlur={(e) => {
+                // Don't close if clicking on the buttons below
+                if (!e.relatedTarget || !(e.relatedTarget as HTMLElement).closest('.quick-add-actions')) {
+                  if (!input.trim()) setAdding(false);
+                }
+              }}
               onKeyDown={(e) => { if (e.key === "Escape") { setAdding(false); setInput(""); } }}
               autoFocus
               placeholder="Nouvelle tâche…"
               className="w-full text-[13px] rounded-xl px-3.5 py-2.5 bg-[var(--card-bg)] border text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none transition-all"
               style={{ borderColor: column.accent, boxShadow: `0 0 0 3px ${column.accentSoft}` }}
             />
+            <div className="flex items-center gap-2 quick-add-actions px-1">
+              <button
+                type="button"
+                onClick={() => setIsToday(!isToday)}
+                className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${isToday ? 'bg-[var(--accent-red)] text-white border-[var(--accent-red)]' : 'text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--surface-2)]'}`}
+              >
+                Aujourd'hui
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsRecurring(!isRecurring)}
+                className={`text-[10px] px-2 py-1 rounded-md border transition-colors ${isRecurring ? 'bg-[var(--accent-blue)] text-white border-[var(--accent-blue)]' : 'text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--surface-2)]'}`}
+              >
+                Récurrent
+              </button>
+            </div>
           </form>
         ) : tasks.length === 0 ? (
           <button

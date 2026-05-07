@@ -217,6 +217,31 @@ export default function TaskDetailModal({ task, onClose }: { task: Task; onClose
               {new Date(task.createdAt).toLocaleDateString("fr-FR")}
             </span>
           </div>
+
+          {/* Quick Actions */}
+          <div className="flex items-center gap-2 mt-3">
+            <button
+              onClick={() => {
+                if (task.status === "today") {
+                  updateTaskStatus(task.id, "todo");
+                } else {
+                  updateTaskStatus(task.id, "today");
+                }
+              }}
+              className={`text-[10px] px-2.5 py-1.5 rounded-md border font-medium transition-colors ${task.status === "today" ? 'bg-[var(--accent-red)] text-white border-[var(--accent-red)]' : 'text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--surface-2)]'}`}
+            >
+              Pour aujourd'hui
+            </button>
+            <button
+              onClick={() => {
+                const newRec = (!task.recurrence || task.recurrence === "none") ? "daily" : "none";
+                updateTask(task.id, { recurrence: newRec });
+              }}
+              className={`text-[10px] px-2.5 py-1.5 rounded-md border font-medium transition-colors ${(task.recurrence && task.recurrence !== "none") ? 'bg-[var(--accent-blue)] text-white border-[var(--accent-blue)]' : 'text-[var(--text-secondary)] border-[var(--border-primary)] hover:bg-[var(--surface-2)]'}`}
+            >
+              Afficher en récurrente
+            </button>
+          </div>
         </div>
 
         {/* Divider */}

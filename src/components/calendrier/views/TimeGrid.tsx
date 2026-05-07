@@ -116,6 +116,7 @@ function layoutEvents(events: CalendarEvent[]): LayoutEvent[] {
 export default function TimeGrid({ days, events, calendars, onEventClick, onSlotClick, onSlotSelect, onEventDrop, onEventDelete, onEventColorChange, onTaskDrop }: TimeGridProps) {
   const gridRef = useRef<HTMLDivElement>(null);
   const [dragEvent, setDragEvent] = useState<{ ev: CalendarEvent; offsetY: number; currentY: number; currentX: number; startY: number; startX: number; hasMoved: boolean } | null>(null);
+  const [resizeEvent, setResizeEvent] = useState<{ ev: CalendarEvent; startY: number; startHeight: number; top: number; currentY: number; hasMoved: boolean } | null>(null);
   const [draggedTaskOver, setDraggedTaskOver] = useState<{ dayIndex: number; top: number } | null>(null);
   const [selection, setSelection] = useState<{ startY: number; currentY: number; dayIndex: number; startTop: number } | null>(null);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; ev: CalendarEvent } | null>(null);
@@ -162,6 +163,22 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
     });
   }, [onEventDrop]);
 
+  const handleResizeMouseDown = useCallback((ev: CalendarEvent, top: number, height: number, e: React.MouseEvent) => {
+    if (e.button === 2) return;
+    if (!onEventDrop) return;
+    e.stopPropagation();
+    e.preventDefault();
+    
+    setResizeEvent({
+      ev,
+      startY: e.clientY,
+      startHeight: height,
+      top,
+      currentY: e.clientY,
+      hasMoved: false
+    });
+  }, [onEventDrop]);
+
   const handleContextMenu = useCallback((ev: CalendarEvent, e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -175,6 +192,12 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
           if (!prev) return null;
           const moved = prev.hasMoved || Math.abs(e.clientY - prev.startY) > 3 || Math.abs(e.clientX - prev.startX) > 3;
           return { ...prev, currentY: e.clientY, currentX: e.clientX, hasMoved: moved };
+        });
+      } else if (resizeEvent) {
+        setResizeEvent(prev => {
+          if (!prev) return null;
+          const moved = prev.hasMoved || Math.abs(e.clientY - prev.startY) > 3;
+          return { ...prev, currentY: e.clientY, hasMoved: moved };
         });
       } else if (selection) {
         setSelection(prev => prev ? { ...prev, currentY: e.clientY } : null);
@@ -216,6 +239,23 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
           }
         }
         setDragEvent(null);
+      } else if (resizeEvent && onEventDrop && gridRef.current) {
+        const deltaY = resizeEvent.currentY - resizeEvent.startY;
+        const newHeight = Math.max(MIN_EVENT_HEIGHT, resizeEvent.startHeight + deltaY);
+        
+        const endTop = resizeEvent.top + newHeight;
+        const start = getEventStart(resizeEvent.ev);
+        
+        const endHour = Math.floor(endTop / HOUR_HEIGHT);
+        const endMinutes = Math.round(((endTop % HOUR_HEIGHT) / HOUR_HEIGHT) * 60 / 15) * 15;
+        
+        const newEnd = new Date(start);
+        newEnd.setHours(endHour, endMinutes, 0, 0);
+
+        if (resizeEvent.hasMoved && newEnd.getTime() !== getEventEnd(resizeEvent.ev).getTime()) {
+          onEventDrop(resizeEvent.ev, start, newEnd);
+        }
+        setResizeEvent(null);
       } else if (selection) {
         const deltaY = e.clientY - selection.startY;
         if (Math.abs(deltaY) < 5) {
@@ -243,7 +283,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       }
     };
 
-    if (dragEvent || selection) {
+    if (dragEvent || resizeEvent || selection) {
       window.addEventListener("mousemove", handleGlobalMouseMove);
       window.addEventListener("mouseup", handleGlobalMouseUp);
     }
@@ -251,7 +291,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       window.removeEventListener("mousemove", handleGlobalMouseMove);
       window.removeEventListener("mouseup", handleGlobalMouseUp);
     };
-  }, [dragEvent, selection, days, onEventDrop, onSlotClick, onSlotSelect]);
+  }, [dragEvent, resizeEvent, selection, days, onEventDrop, onSlotClick, onSlotSelect]);
 
   const allDayRows = days.map((day) => getAllDayEventsForDay(events, day).filter(ev => ev.type !== "task"));
   const hasAllDay = allDayRows.some((r) => r.length > 0);
@@ -457,44 +497,64 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                     top = Math.max(0, relativeY - dragEvent.offsetY);
                   }
                   
+                  const isResizing = resizeEvent?.ev.id === l.ev.id && (resizeEvent.hasMoved || false);
+                  
+                  let height = Math.max(l.height, MIN_EVENT_HEIGHT);
+                  if (isResizing) {
+                    height = Math.max(MIN_EVENT_HEIGHT, resizeEvent!.startHeight + (resizeEvent!.currentY - resizeEvent!.startY));
+                  }
+                  
                   return (
-                    <button
+                    <div
                       key={l.ev.id}
                       data-event-id={l.ev.id}
-                      className="cal-event absolute rounded-[4px] text-left overflow-hidden transition-all hover:opacity-90 group cursor-pointer"
+                      className="cal-event absolute rounded-[4px] text-left transition-all hover:opacity-90 group"
                       style={{
                         top: top,
-                        height: Math.max(l.height, MIN_EVENT_HEIGHT),
+                        height: height,
                         left: isDragging ? `calc(${l.col * colWidth}% + 1px + ${dragHorizontalOffset}px)` : `calc(${l.col * colWidth}% + 1px)`,
                         width: `calc(${colWidth}% - 2px)`,
                         background: isTask ? `var(--card-bg)` : `${color}25`,
                         border: isTask ? `1px solid var(--card-border)` : `1px solid ${color}40`,
                         borderLeft: `3px solid ${color}`,
-                        zIndex: isDragging ? 50 : 10,
+                        zIndex: isDragging || isResizing ? 50 : 10,
                         opacity: isDragging ? 0.8 : 1,
-                        pointerEvents: isDragging ? "none" : "auto",
+                        pointerEvents: isDragging || isResizing ? "none" : "auto",
                       }}
-                      onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); onEventClick(l.ev, { top: rect.top, left: rect.right }); }}
-                      onMouseDown={(e) => handleEventMouseDown(l.ev, e)}
-                      onContextMenu={(e) => handleContextMenu(l.ev, e)}
                     >
-                      <div className="px-1.5 py-0.5 h-full flex flex-col justify-start min-h-0">
-                        <div className="flex items-start gap-1">
-                          {(() => {
-                            const state = useAppStore.getState();
-                            const googleTaskProjects = state.googleTaskProjects || {};
-                            const googleEventProjects = state.googleEventProjects || {};
-                            const projectId = l.ev.type === "task" 
-                              ? googleTaskProjects[l.ev.id] 
-                              : googleEventProjects[l.ev.id];
-                            const project = projectId ? (state.projects || []).find(p => p.id === projectId) : null;
-                            return project && <span className="text-[11px] shrink-0">{project.emoji}</span>;
-                          })()}
-                          <span className="text-[11.5px] font-semibold leading-tight truncate" style={{ color: isTask ? "var(--text-primary)" : color }}>{l.ev.summary || "(sans titre)"}</span>
+                      <button
+                        className="absolute inset-0 w-full h-full text-left cursor-pointer z-10 overflow-hidden"
+                        onClick={(e) => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); onEventClick(l.ev, { top: rect.top, left: rect.right }); }}
+                        onMouseDown={(e) => handleEventMouseDown(l.ev, e)}
+                        onContextMenu={(e) => handleContextMenu(l.ev, e)}
+                      >
+                        <div className="px-1.5 py-0.5 h-full flex flex-col justify-start min-h-0 pointer-events-none">
+                          <div className="flex items-start gap-1">
+                            {(() => {
+                              const state = useAppStore.getState();
+                              const googleTaskProjects = state.googleTaskProjects || {};
+                              const googleEventProjects = state.googleEventProjects || {};
+                              const projectId = l.ev.type === "task" 
+                                ? googleTaskProjects[l.ev.id] 
+                                : googleEventProjects[l.ev.id];
+                              const project = projectId ? (state.projects || []).find(p => p.id === projectId) : null;
+                              return project && <span className="text-[11px] shrink-0">{project.emoji}</span>;
+                            })()}
+                            <span className="text-[11.5px] font-semibold leading-tight truncate" style={{ color: isTask ? "var(--text-primary)" : color }}>{l.ev.summary || "(sans titre)"}</span>
+                          </div>
+                          {height > 25 && <span className="text-[10px] opacity-80 mt-0.5 leading-none" style={{ color: isTask ? "var(--text-secondary)" : color }}>{formatTime(getEventStart(l.ev))} – {formatTime(getEventEnd(l.ev))}</span>}
                         </div>
-                        {l.height > 25 && <span className="text-[10px] opacity-80 mt-0.5 leading-none" style={{ color: isTask ? "var(--text-secondary)" : color }}>{formatTime(getEventStart(l.ev))} – {formatTime(getEventEnd(l.ev))}</span>}
-                      </div>
-                    </button>
+                      </button>
+                      
+                      {/* Resize Handle */}
+                      {!isTask && (
+                        <div
+                          className="absolute bottom-0 left-0 right-0 h-2 cursor-ns-resize z-20 group-hover:bg-black/10 transition-colors rounded-b-[4px]"
+                          onMouseDown={(e) => handleResizeMouseDown(l.ev, l.top, l.height, e)}
+                          style={{ pointerEvents: "auto" }}
+                        />
+                      )}
+                    </div>
                   );
                 })}
               </div>
