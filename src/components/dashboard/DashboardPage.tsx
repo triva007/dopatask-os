@@ -212,8 +212,15 @@ export default function DashboardPage() {
     const recurrent: any[] = [];
     const bientot: any[] = [];
 
-    // Add Google Kill tasks to "maintenant"
-    filteredGTasks.forEach(t => maintenant.push({ ...t, isGoogle: true, displayTitle: t.title }));
+    // Add Google Kill tasks
+    filteredGTasks.forEach(t => {
+      const isRecurring = useAppStore.getState().googleTaskRecurrence[t.id];
+      if (isRecurring) {
+        recurrent.push({ ...t, isGoogle: true, displayTitle: t.title });
+      } else {
+        maintenant.push({ ...t, isGoogle: true, displayTitle: t.title });
+      }
+    });
 
     // Add Local Kill tasks
     filteredLocalTasks.forEach((t) => {

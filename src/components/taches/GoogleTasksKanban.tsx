@@ -1119,6 +1119,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
   const [notes, setNotes] = useState(t.notes || "");
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
   const [projectId, setProjectId] = useState((useAppStore.getState().googleTaskProjects || {})[t.id] || "");
+  const [isRecurring, setIsRecurring] = useState((useAppStore.getState().googleTaskRecurrence || {})[t.id] || false);
   const [saved, setSaved] = useState(false);
   const c = colorForList(t.listId);
   const completed = t.status === "completed";
@@ -1131,6 +1132,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     if (newDueIso !== t.due) updates.due = newDueIso;
     
     useAppStore.getState().setGoogleTaskProject(t.id, projectId || null);
+    useAppStore.getState().setGoogleTaskRecurrence(t.id, isRecurring);
 
     if (Object.keys(updates).length > 0) {
       onUpdate(updates);
@@ -1293,6 +1295,30 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
                 <option key={pj.id} value={pj.id}>{pj.emoji} {pj.name}</option>
               ))}
             </select>
+          </div>
+
+          {/* Recurrence Toggle */}
+          <div>
+            <label className="flex items-center gap-2 text-[11px] uppercase tracking-wider text-[var(--text-tertiary)] mb-2.5 font-semibold">
+              <RefreshCw size={12} />
+              Récurrence Dashboard
+            </label>
+            <label 
+              className="flex items-center gap-3 w-full border rounded-xl px-3.5 py-2.5 text-[13.5px] cursor-pointer transition-colors"
+              style={{
+                background: isRecurring ? "var(--accent-blue-light)" : "var(--surface-2)",
+                borderColor: isRecurring ? "var(--accent-blue)" : "var(--border-primary)",
+                color: isRecurring ? "var(--accent-blue)" : "var(--text-primary)",
+              }}
+            >
+              <input 
+                type="checkbox" 
+                checked={isRecurring} 
+                onChange={(e) => { setIsRecurring(e.target.checked); setTimeout(save, 0); }}
+                className="w-4 h-4 rounded border-[var(--border-primary)] accent-[var(--accent-blue)]"
+              />
+              <span className="font-medium">Afficher dans "Récurrentes" du Dashboard</span>
+            </label>
           </div>
 
           {/* Divider */}
