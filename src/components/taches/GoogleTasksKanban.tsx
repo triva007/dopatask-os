@@ -14,7 +14,7 @@ interface GTask {
   title?: string;
   notes?: string;
   status?: "needsAction" | "completed";
-  due?: string;
+  due?: string | null;
   completed?: string;
   updated?: string;
   parent?: string;
@@ -1128,8 +1128,8 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
     const updates: Partial<GTask> = {};
     if (title !== t.title) updates.title = title;
     if (notes !== (t.notes || "")) updates.notes = notes;
-    const newDueIso = due ? due + "T00:00:00.000Z" : undefined;
-    if (newDueIso !== t.due) updates.due = newDueIso;
+    const newDueIso = due ? due + "T00:00:00.000Z" : null;
+    if (newDueIso !== (t.due || null)) updates.due = newDueIso;
     
     useAppStore.getState().setGoogleTaskProject(t.id, projectId || null);
     useAppStore.getState().setGoogleTaskRecurrence(t.id, isRecurring);
