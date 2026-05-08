@@ -5,6 +5,8 @@ import {
   Plus, Check, Loader2, Trash2, AlertCircle, RefreshCw, X,
   Calendar as CalendarIcon, Star, ChevronDown, ChevronRight,
   ListChecks, Eye, EyeOff, Filter, FileText, Folder,
+  Copy, ArrowRightLeft, Tag, Search, GripVertical,
+  MoreHorizontal, Palette, ChevronUp,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
@@ -28,6 +30,7 @@ interface GList { id: string; title?: string }
 
 const STAR_KEY   = "dopatask-starred-google-tasks";
 const HIDDEN_KEY = "dopatask-hidden-google-lists";
+const LABELS_KEY = "dopatask-task-labels";
 
 function loadSet(key: string): Set<string> {
   if (typeof window === "undefined") return new Set();
@@ -41,6 +44,28 @@ function saveSet(key: string, s: Set<string>) {
   if (typeof window === "undefined") return;
   localStorage.setItem(key, JSON.stringify(Array.from(s)));
 }
+
+function loadRecord<T>(key: string): Record<string, T> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : {};
+  } catch { return {}; }
+}
+function saveRecord(key: string, r: Record<string, unknown>) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(key, JSON.stringify(r));
+}
+
+// ─── Trello-style label colors ────────────────────────────────────────────────
+const LABEL_COLORS = [
+  { id: "green",  color: "#4BCE97", bg: "rgba(75,206,151,0.18)",  name: "Vert" },
+  { id: "yellow", color: "#F5CD47", bg: "rgba(245,205,71,0.18)",  name: "Jaune" },
+  { id: "orange", color: "#FEA362", bg: "rgba(254,163,98,0.18)",  name: "Orange" },
+  { id: "red",    color: "#F87168", bg: "rgba(248,113,104,0.18)", name: "Rouge" },
+  { id: "purple", color: "#9F8FEF", bg: "rgba(159,143,239,0.18)", name: "Violet" },
+  { id: "blue",   color: "#579DFF", bg: "rgba(87,157,255,0.18)",  name: "Bleu" },
+];
 
 const LIST_COLORS = [
   { hue: "var(--accent-blue)",   light: "var(--accent-blue-light)"   },
@@ -91,11 +116,21 @@ export default function GoogleTasksKanban() {
   const [creating, setCreating] = useState(false);
   const [contextMenu, setContextMenu] = useState<{ x: number; y: number; t: GTask } | null>(null);
 
+  // ─── Trello features state ────────────────────────────────────────
+  const [taskLabels, setTaskLabels] = useState<Record<string, string[]>>({});
+  const [searchText, setSearchText] = useState("");
+  const [filterLabel, setFilterLabel] = useState<string>("");
+  const [draggedTask, setDraggedTask] = useState<GTask | null>(null);
+  const [dragOverListId, setDragOverListId] = useState<string | null>(null);
+  const [collapsedLists, setCollapsedLists] = useState<Set<string>>(new Set());
+  const [showMoveMenu, setShowMoveMenu] = useState<{ taskId: string; listId: string } | null>(null);
+
   const addToast  = useAppStore((s) => s.addToast);
 
   useEffect(() => {
     setStarred(loadSet(STAR_KEY));
     setHiddenLists(loadSet(HIDDEN_KEY));
+    setTaskLabels(loadRecord<string[]>(LABELS_KEY));
   }, []);
 
   const markPending = (id: string, on: boolean) => {
@@ -245,8 +280,141 @@ export default function GoogleTasksKanban() {
     });
   };
 
+  // ─── Trello: Label management ─────────────────────────────────────
+  const toggleLabel = (taskId: string, labelId: string) => {
+    setTaskLabels((prev) => {
+      const curr = prev[taskId] || [];
+      const next = curr.includes(labelId) ? curr.filter((l) => l !== labelId) : [...curr, labelId];
+      const updated = { ...prev, [taskId]: next };
+      if (next.length === 0) delete updated[taskId];
+      saveRecord(LABELS_KEY, updated);
+      return updated;
+    });
+  };
+
+  // ─── Trello: Move task between lists ──────────────────────────────
+  const moveTaskToList = async (task: GTask, newListId: string) => {
+    if (task.listId === newListId) return;
+    const newListTitle = lists.find((l) => l.id === newListId)?.title || "";
+    markPending(task.id, true);
+    // Optimistic UI
+    setTasks((prev) => prev.map((t) => t.id === task.id ? { ...t, listId: newListId, listTitle: newListTitle } : t));
+    try {
+      // Create in new list
+      const payload: Record<string, unknown> = { title: task.title };
+      if (task.notes) payload.notes = task.notes;
+      if (task.due) payload.due = task.due;
+      if (task.status) payload.status = task.status;
+      const createRes = await fetch("/api/google/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ listId: newListId, ...payload }),
+      });
+      if (!createRes.ok) throw new Error("move_create_failed");
+      const { task: newTask } = await createRes.json();
+      // Delete from old list
+      await fetch(`/api/google/tasks?listId=${task.listId}&taskId=${task.id}`, { method: "DELETE" });
+      // Transfer local metadata to new task ID
+      const oldId = task.id;
+      const newId = newTask.id;
+      // Transfer labels
+      setTaskLabels((prev) => {
+        if (!prev[oldId]) return prev;
+        const updated: Record<string, string[]> = { ...prev, [newId]: prev[oldId] };
+        delete updated[oldId];
+        saveRecord(LABELS_KEY, updated as Record<string, unknown>);
+        return updated;
+      });
+      // Transfer starred
+      setStarred((prev) => {
+        if (!prev.has(oldId)) return prev;
+        const next = new Set(prev);
+        next.delete(oldId); next.add(newId);
+        saveSet(STAR_KEY, next);
+        return next;
+      });
+      // Transfer store data
+      const store = useAppStore.getState();
+      const proj = (store.googleTaskProjects || {})[oldId];
+      if (proj) { store.setGoogleTaskProject(newId, proj); store.setGoogleTaskProject(oldId, null); }
+      const rec = (store.googleTaskRecurrence || {})[oldId];
+      if (rec) { store.setGoogleTaskRecurrence(newId, rec); store.setGoogleTaskRecurrence(oldId, false); }
+      const subs = (store.googleTaskSubtasks || {})[oldId];
+      if (subs?.length) { store.setGoogleTaskSubtasks(newId, subs); store.setGoogleTaskSubtasks(oldId, []); }
+      // Update local task with new ID
+      setTasks((prev) => prev.map((t) => t.id === oldId ? { ...t, ...newTask, listId: newListId, listTitle: newListTitle } : t));
+      addToast(`Tâche déplacée vers ${newListTitle}`, "success");
+    } catch {
+      await fetchAll();
+      setError("Déplacement impossible");
+    } finally {
+      markPending(task.id, false);
+    }
+  };
+
+  // ─── Trello: Duplicate task ───────────────────────────────────────
+  const duplicateTask = async (task: GTask) => {
+    try {
+      const newTask = await createTask(task.listId, (task.title || "") + " (copie)");
+      if (newTask && task.notes) {
+        await updateTask({ ...newTask, listId: task.listId, listTitle: task.listTitle }, { notes: task.notes });
+      }
+      // Copy labels
+      const lbls = taskLabels[task.id];
+      if (lbls && newTask) {
+        setTaskLabels((prev) => {
+          const updated = { ...prev, [newTask.id]: [...lbls] };
+          saveRecord(LABELS_KEY, updated);
+          return updated;
+        });
+      }
+      addToast("Tâche dupliquée", "success");
+    } catch {
+      setError("Duplication impossible");
+    }
+  };
+
+  // ─── Trello: Drag & Drop handlers ─────────────────────────────────
+  const handleDragStart = (task: GTask) => setDraggedTask(task);
+  const handleDragEnd = () => { setDraggedTask(null); setDragOverListId(null); };
+  const handleDragOverList = (listId: string) => {
+    if (draggedTask && draggedTask.listId !== listId) setDragOverListId(listId);
+  };
+  const handleDropOnList = async (listId: string) => {
+    if (draggedTask && draggedTask.listId !== listId) {
+      await moveTaskToList(draggedTask, listId);
+    }
+    setDraggedTask(null);
+    setDragOverListId(null);
+  };
+
+  // ─── Trello: Toggle collapsed column ──────────────────────────────
+  const toggleCollapsed = (listId: string) => {
+    setCollapsedLists((prev) => {
+      const next = new Set(prev);
+      if (next.has(listId)) next.delete(listId); else next.add(listId);
+      return next;
+    });
+  };
+
+  // ─── Filtered tasks ───────────────────────────────────────────────
+  const filteredTasks = useMemo(() => {
+    let filtered = tasks;
+    if (searchText) {
+      const lower = searchText.toLowerCase();
+      filtered = filtered.filter((t) =>
+        (t.title || "").toLowerCase().includes(lower) ||
+        (t.notes || "").toLowerCase().includes(lower)
+      );
+    }
+    if (filterLabel) {
+      filtered = filtered.filter((t) => (taskLabels[t.id] || []).includes(filterLabel));
+    }
+    return filtered;
+  }, [tasks, searchText, filterLabel, taskLabels]);
+
   const visibleLists = useMemo(() => lists.filter((l) => !hiddenLists.has(l.id)), [lists, hiddenLists]);
-  const totalOpen   = useMemo(() => tasks.filter((t) => t.status !== "completed" && !hiddenLists.has(t.listId)).length, [tasks, hiddenLists]);
+  const totalOpen   = useMemo(() => filteredTasks.filter((t) => t.status !== "completed" && !hiddenLists.has(t.listId)).length, [filteredTasks, hiddenLists]);
 
   if (connected === false) {
     return (
@@ -420,6 +588,58 @@ export default function GoogleTasksKanban() {
         </div>
       </div>
 
+      {/* ─── Search & Label Filter Toolbar ──────────────────────────── */}
+      <div className="shrink-0 px-8 py-3 border-b flex items-center gap-3 flex-wrap" style={{ borderColor: "var(--border-primary)" }}>
+        {/* Search */}
+        <div className="flex items-center gap-2 h-9 px-3 rounded-xl border flex-1 min-w-0 max-w-xs transition-colors bg-[var(--surface-2)]" style={{ borderColor: "var(--border-primary)" }}>
+          <Search size={13} className="text-[var(--text-tertiary)] shrink-0" />
+          <input
+            type="text"
+            placeholder="Rechercher..."
+            value={searchText}
+            onChange={(e) => setSearchText(e.target.value)}
+            className="flex-1 min-w-0 text-[13px] bg-transparent text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)] focus:outline-none"
+          />
+          {searchText && (
+            <button onClick={() => setSearchText("")} className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]">
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        {/* Label filter pills */}
+        <div className="flex items-center gap-1.5">
+          <Tag size={12} className="text-[var(--text-tertiary)]" />
+          {LABEL_COLORS.map((lbl) => (
+            <button
+              key={lbl.id}
+              onClick={() => setFilterLabel(filterLabel === lbl.id ? "" : lbl.id)}
+              className="w-6 h-4 rounded-[4px] transition-all hover:scale-110"
+              style={{
+                background: lbl.color,
+                opacity: filterLabel && filterLabel !== lbl.id ? 0.3 : 1,
+                boxShadow: filterLabel === lbl.id ? `0 0 0 2px var(--surface-0), 0 0 0 4px ${lbl.color}` : "none",
+              }}
+              title={`Filtrer par ${lbl.name}`}
+            />
+          ))}
+          {filterLabel && (
+            <button
+              onClick={() => setFilterLabel("")}
+              className="text-[11px] text-[var(--text-tertiary)] hover:text-[var(--accent-red)] ml-1 transition-colors"
+            >
+              <X size={12} />
+            </button>
+          )}
+        </div>
+
+        {(searchText || filterLabel) && (
+          <span className="text-[11px] text-[var(--text-tertiary)] ml-auto">
+            {filteredTasks.filter(t => t.status !== "completed").length} résultat{filteredTasks.filter(t => t.status !== "completed").length > 1 ? "s" : ""}
+          </span>
+        )}
+      </div>
+
       {/* ─── Error ─────────────────────────────────────────────────────── */}
       {error && (
         <div className="shrink-0 px-8 pt-3">
@@ -447,12 +667,14 @@ export default function GoogleTasksKanban() {
             </div>
           ) : (
             visibleLists.map((list) => {
-              const listTasks = tasks
+              const listTasks = filteredTasks
                 .filter((t) => t.listId === list.id)
                 .sort((a, b) => (a.position || "").localeCompare(b.position || ""));
               const open = listTasks.filter((t) => t.status !== "completed");
               const done = listTasks.filter((t) => t.status === "completed");
               const isOpen = showCompleted[list.id] || false;
+              const isCollapsed = collapsedLists.has(list.id);
+              const isDragOver = dragOverListId === list.id;
 
               if (view === "kanban") {
                 return (
@@ -466,6 +688,13 @@ export default function GoogleTasksKanban() {
                     pending={pending}
                     editingId={editingId}
                     editValue={editValue}
+                    taskLabels={taskLabels}
+                    isCollapsed={isCollapsed}
+                    isDragOver={isDragOver}
+                    onToggleCollapsed={() => toggleCollapsed(list.id)}
+                    onDragOverList={() => handleDragOverList(list.id)}
+                    onDragLeaveList={() => setDragOverListId(null)}
+                    onDropOnList={() => handleDropOnList(list.id)}
                     onToggleCompleted={() => setShowCompleted((p) => ({ ...p, [list.id]: !p[list.id] }))}
                     onCreate={(title) => createTask(list.id, title)}
                     onCheck={toggleTask}
@@ -482,6 +711,8 @@ export default function GoogleTasksKanban() {
                     onCancelEdit={() => setEditingId(null)}
                     onUpdate={updateTask}
                     onOpenCard={setOpenCardId}
+                    onDragStart={handleDragStart}
+                    onDragEnd={handleDragEnd}
                     onContextMenu={(t, e) => {
                       e.preventDefault();
                       setContextMenu({ x: e.clientX, y: e.clientY, t });
@@ -506,6 +737,7 @@ export default function GoogleTasksKanban() {
                           isPending={pending.has(t.id)}
                           isEditing={editingId === t.id}
                           editValue={editValue}
+                          labels={taskLabels[t.id] || []}
                           onCheck={() => toggleTask(t)}
                           onDelete={() => removeTask(t)}
                           onStar={() => toggleStar(t.id)}
@@ -520,6 +752,8 @@ export default function GoogleTasksKanban() {
                           onCancelEdit={() => setEditingId(null)}
                           onSetDate={(iso) => updateTask(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
                           onOpenCard={() => setOpenCardId(t.id)}
+                          onDragStart={() => handleDragStart(t)}
+                          onDragEnd={handleDragEnd}
                           onContextMenu={(e) => {
                             e.preventDefault();
                             setContextMenu({ x: e.clientX, y: e.clientY, t });
@@ -550,10 +784,15 @@ export default function GoogleTasksKanban() {
           return (
             <DetailModal
               t={t}
+              lists={lists}
+              labels={taskLabels[t.id] || []}
               onClose={() => setOpenCardId(null)}
               onUpdate={(upd) => updateTask(t, upd)}
               onDelete={() => { removeTask(t); setOpenCardId(null); }}
               onCheck={() => toggleTask(t)}
+              onToggleLabel={(labelId) => toggleLabel(t.id, labelId)}
+              onMoveToList={(listId) => { moveTaskToList(t, listId); setOpenCardId(null); }}
+              onDuplicate={() => { duplicateTask(t); setOpenCardId(null); }}
             />
           );
         })()}
@@ -675,32 +914,86 @@ export default function GoogleTasksKanban() {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
               style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y }}
-              className="z-[101] min-w-[160px] bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl shadow-xl p-1.5"
+              className="z-[101] min-w-[200px] bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl shadow-xl p-1.5"
             >
               <button
                 className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
                 onClick={() => { toggleTask(contextMenu.t); setContextMenu(null); }}
               >
-                {contextMenu.t.status === "completed" ? "Marquer non terminée" : "Marquer terminée"}
+                {contextMenu.t.status === "completed" ? "Marquer non terminée" : "✅ Marquer terminée"}
               </button>
               <button
                 className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
                 onClick={() => { toggleStar(contextMenu.t.id); setContextMenu(null); }}
               >
-                {starred.has(contextMenu.t.id) ? "Retirer favori" : "Mettre en favori"}
+                {starred.has(contextMenu.t.id) ? "Retirer favori" : "⭐ Mettre en favori"}
               </button>
               <button
                 className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
                 onClick={() => { setEditingId(contextMenu.t.id); setEditValue(contextMenu.t.title || ""); setContextMenu(null); }}
               >
-                Renommer
+                ✏️ Renommer
               </button>
+
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
+
+              {/* Trello: Labels */}
+              <div className="px-3 py-2">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold">Étiquettes</span>
+                <div className="flex items-center gap-1.5 mt-1.5">
+                  {LABEL_COLORS.map((lbl) => {
+                    const active = (taskLabels[contextMenu.t.id] || []).includes(lbl.id);
+                    return (
+                      <button
+                        key={lbl.id}
+                        onClick={() => toggleLabel(contextMenu.t.id, lbl.id)}
+                        className="w-6 h-4 rounded-[3px] transition-all hover:scale-110"
+                        style={{
+                          background: lbl.color,
+                          opacity: active ? 1 : 0.4,
+                          boxShadow: active ? `0 0 0 2px var(--surface-1), 0 0 0 3px ${lbl.color}` : "none",
+                        }}
+                        title={lbl.name}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
+
+              {/* Trello: Move to list */}
+              <div className="px-3 py-1">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold flex items-center gap-1"><ArrowRightLeft size={10} /> Déplacer vers</span>
+                <div className="flex flex-col mt-1">
+                  {lists.filter((l) => l.id !== contextMenu.t.listId).map((l) => (
+                    <button
+                      key={l.id}
+                      className="text-left px-2 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-md transition-colors flex items-center gap-2"
+                      onClick={() => { moveTaskToList(contextMenu.t, l.id); setContextMenu(null); }}
+                    >
+                      <span className="w-2 h-2 rounded-full" style={{ background: colorForList(l.id).hue }} />
+                      {l.title || "(sans nom)"}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
+
+              {/* Trello: Duplicate */}
               <button
-                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--accent-red)]"
+                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors flex items-center gap-2"
+                onClick={() => { duplicateTask(contextMenu.t); setContextMenu(null); }}
+              >
+                <Copy size={12} /> Dupliquer
+              </button>
+
+              <button
+                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--accent-red)] flex items-center gap-2"
                 onClick={() => { removeTask(contextMenu.t); setContextMenu(null); }}
               >
-                Supprimer
+                <Trash2 size={12} /> Supprimer
               </button>
             </motion.div>
           </>
@@ -723,6 +1016,13 @@ interface ListColumnProps {
   pending: Set<string>;
   editingId: string | null;
   editValue: string;
+  taskLabels: Record<string, string[]>;
+  isCollapsed: boolean;
+  isDragOver: boolean;
+  onToggleCollapsed: () => void;
+  onDragOverList: () => void;
+  onDragLeaveList: () => void;
+  onDropOnList: () => void;
   onToggleCompleted: () => void;
   onCreate: (title: string) => void;
   onCheck: (t: GTask) => void;
@@ -734,6 +1034,8 @@ interface ListColumnProps {
   onCancelEdit: () => void;
   onUpdate: (t: GTask, updates: Partial<GTask>) => void;
   onOpenCard: (id: string) => void;
+  onDragStart: (t: GTask) => void;
+  onDragEnd: () => void;
   onContextMenu: (t: GTask, e: React.MouseEvent) => void;
 }
 
@@ -750,13 +1052,43 @@ function ListColumn(p: ListColumnProps) {
     setAdding(false);
   };
 
+  // Collapsed column
+  if (p.isCollapsed) {
+    return (
+      <div
+        className="shrink-0 w-[48px] h-full flex flex-col items-center rounded-2xl border cursor-pointer transition-all hover:bg-[var(--surface-2)]"
+        style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--card-shadow)" }}
+        onClick={p.onToggleCollapsed}
+        onDragOver={(e) => { e.preventDefault(); p.onDragOverList(); }}
+        onDrop={(e) => { e.preventDefault(); p.onDropOnList(); }}
+        onDragLeave={p.onDragLeaveList}
+      >
+        <div className="w-full h-[3px] rounded-b-full mx-2" style={{ background: c.hue, opacity: 0.8 }} />
+        <div className="mt-4 mb-2">
+          <ChevronRight size={14} className="text-[var(--text-tertiary)]" />
+        </div>
+        <span className="text-[11px] font-semibold tabular-nums text-[var(--text-secondary)]">{p.open.length}</span>
+        <span className="[writing-mode:vertical-lr] text-[13px] font-semibold text-[var(--text-primary)] mt-3 rotate-180">
+          {p.list.title || "(sans nom)"}
+        </span>
+      </div>
+    );
+  }
+
   return (
     <div
-      className="shrink-0 w-[340px] h-full flex flex-col rounded-2xl border overflow-hidden"
+      className={"shrink-0 w-[340px] h-full flex flex-col rounded-2xl border overflow-hidden transition-all " + (p.isDragOver ? "ring-2 ring-offset-2" : "")}
       style={{
-        background: "var(--card-bg)",
-        borderColor: "var(--card-border)",
+        background: p.isDragOver ? "var(--surface-2)" : "var(--card-bg)",
+        borderColor: p.isDragOver ? c.hue : "var(--card-border)",
         boxShadow: "var(--card-shadow)",
+        ...(p.isDragOver ? { outline: `2px solid ${c.hue}`, outlineOffset: "2px" } : {}),
+      }}
+      onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = "move"; p.onDragOverList(); }}
+      onDrop={(e) => { e.preventDefault(); p.onDropOnList(); }}
+      onDragLeave={(e) => {
+        const rect = e.currentTarget.getBoundingClientRect();
+        if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) p.onDragLeaveList();
       }}
     >
       {/* Header */}
@@ -780,6 +1112,13 @@ function ListColumn(p: ListColumnProps) {
           >
             {p.open.length}
           </span>
+          <button
+            onClick={p.onToggleCollapsed}
+            className="p-1 rounded-lg text-[var(--text-tertiary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] transition-colors"
+            title="Réduire"
+          >
+            <ChevronUp size={12} />
+          </button>
         </div>
       </div>
 
@@ -839,6 +1178,7 @@ function ListColumn(p: ListColumnProps) {
               isPending={p.pending.has(t.id)}
               isEditing={p.editingId === t.id}
               editValue={p.editValue}
+              labels={p.taskLabels[t.id] || []}
               onCheck={() => p.onCheck(t)}
               onDelete={() => p.onDelete(t)}
               onStar={() => p.onToggleStar(t.id)}
@@ -848,6 +1188,8 @@ function ListColumn(p: ListColumnProps) {
               onCancelEdit={p.onCancelEdit}
               onSetDate={(iso) => p.onUpdate(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
               onOpenCard={() => p.onOpenCard(t.id)}
+              onDragStart={() => p.onDragStart(t)}
+              onDragEnd={p.onDragEnd}
               onContextMenu={(e) => p.onContextMenu(t, e)}
             />
           ))}
@@ -873,6 +1215,7 @@ function ListColumn(p: ListColumnProps) {
                   isPending={p.pending.has(t.id)}
                   isEditing={false}
                   editValue=""
+                  labels={p.taskLabels[t.id] || []}
                   onCheck={() => p.onCheck(t)}
                   onDelete={() => p.onDelete(t)}
                   onStar={() => p.onToggleStar(t.id)}
@@ -882,6 +1225,8 @@ function ListColumn(p: ListColumnProps) {
                   onCancelEdit={() => {}}
                   onSetDate={() => {}}
                   onOpenCard={() => p.onOpenCard(t.id)}
+                  onDragStart={() => p.onDragStart(t)}
+                  onDragEnd={p.onDragEnd}
                   onContextMenu={(e) => p.onContextMenu(t, e)}
                 />
               ))}
@@ -905,6 +1250,7 @@ interface TaskCardProps {
   isPending: boolean;
   isEditing: boolean;
   editValue: string;
+  labels: string[];
   onCheck: () => void;
   onDelete: () => void;
   onStar: () => void;
@@ -914,11 +1260,17 @@ interface TaskCardProps {
   onCancelEdit: () => void;
   onSetDate: (iso: string | null) => void;
   onOpenCard: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
 }
 
 function TaskCard(p: TaskCardProps) {
   const completed = p.t.status === "completed";
+  const subtasks = (useAppStore.getState().googleTaskSubtasks || {})[p.t.id] || [];
+  const subtasksDone = subtasks.filter((s: { completed: boolean }) => s.completed).length;
+  const subtasksTotal = subtasks.length;
+  const activeLabels = LABEL_COLORS.filter((l) => p.labels.includes(l.id));
 
   const formatDue = (iso?: string) => {
     if (!iso) return "";
@@ -945,13 +1297,23 @@ function TaskCard(p: TaskCardProps) {
       animate="animate"
       exit="exit"
       transition={{ type: "spring", stiffness: 400, damping: 30 }}
+      draggable
+      onDragStart={(e) => {
+        p.onDragStart();
+        const de = e as unknown as DragEvent;
+        if (de.dataTransfer) {
+          de.dataTransfer.setData("text/plain", p.t.id);
+          de.dataTransfer.effectAllowed = "move";
+        }
+      }}
+      onDragEnd={() => p.onDragEnd()}
       onClick={(e) => {
         if ((e.target as HTMLElement).closest(".no-open")) return;
         p.onOpenCard();
       }}
       onContextMenu={p.onContextMenu}
       className={
-        "group relative px-4 py-3.5 rounded-2xl border transition-all cursor-pointer " +
+        "group relative rounded-2xl border transition-all cursor-grab active:cursor-grabbing overflow-hidden " +
         (p.isPending ? "opacity-60 " : "") +
         (completed
           ? "opacity-60 "
@@ -963,6 +1325,21 @@ function TaskCard(p: TaskCardProps) {
       }}
       whileHover={completed ? undefined : { borderColor: "rgba(79, 70, 229, 0.25)" }}
     >
+      {/* Trello-style label strips */}
+      {activeLabels.length > 0 && !completed && (
+        <div className="flex gap-1 px-3 pt-2.5 pb-0">
+          {activeLabels.map((lbl) => (
+            <span
+              key={lbl.id}
+              className="h-2 rounded-full transition-all group-hover:h-3 min-w-[40px] flex-1 max-w-[56px]"
+              style={{ background: lbl.color }}
+              title={lbl.name}
+            />
+          ))}
+        </div>
+      )}
+
+      <div className={"px-4 " + (activeLabels.length > 0 && !completed ? "pt-2 pb-3.5" : "py-3.5")}>
       <div className="flex items-start gap-3">
         {/* Checkbox */}
         <motion.button
@@ -1046,9 +1423,9 @@ function TaskCard(p: TaskCardProps) {
             </p>
           )}
 
-          {/* Date badge */}
+          {/* Badges row: date + notes + subtasks */}
           {!completed && (
-            <div className="mt-2.5 flex items-center gap-1.5 no-open">
+            <div className="mt-2.5 flex items-center gap-2 no-open flex-wrap">
               <label
                 onClick={(e) => e.stopPropagation()}
                 className={
@@ -1082,6 +1459,19 @@ function TaskCard(p: TaskCardProps) {
                   ×
                 </button>
               )}
+              {/* Notes badge */}
+              {p.t.notes && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-md" style={{ background: "var(--surface-2)" }}>
+                  <FileText size={10} /> Notes
+                </span>
+              )}
+              {/* Subtasks badge */}
+              {subtasksTotal > 0 && (
+                <span className={"inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md " + (subtasksDone === subtasksTotal ? "text-[var(--accent-green)]" : "text-[var(--text-tertiary)]")} style={{ background: subtasksDone === subtasksTotal ? "var(--accent-green-light)" : "var(--surface-2)" }}>
+                  <Check size={10} />
+                  {subtasksDone}/{subtasksTotal}
+                </span>
+              )}
             </div>
           )}
         </div>
@@ -1111,6 +1501,7 @@ function TaskCard(p: TaskCardProps) {
           </button>
         </div>
       </div>
+      </div>
     </motion.div>
   );
 }
@@ -1121,13 +1512,18 @@ function TaskCard(p: TaskCardProps) {
 
 interface DetailModalProps {
   t: GTask;
+  lists: GList[];
+  labels: string[];
   onClose: () => void;
   onUpdate: (updates: Partial<GTask>) => void;
   onDelete: () => void;
   onCheck: () => void;
+  onToggleLabel: (labelId: string) => void;
+  onMoveToList: (listId: string) => void;
+  onDuplicate: () => void;
 }
 
-function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalProps) {
+function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, onToggleLabel, onMoveToList, onDuplicate }: DetailModalProps) {
   const [title, setTitle] = useState(t.title || "");
   const [notes, setNotes] = useState(t.notes || "");
   const [due, setDue]     = useState(t.due ? t.due.slice(0, 10) : "");
@@ -1205,7 +1601,7 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
         exit={{ opacity: 0, scale: 0.96, y: 10 }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         onClick={(e) => e.stopPropagation()}
-        className="rounded-3xl max-w-lg w-full border overflow-hidden flex flex-col"
+        className="rounded-3xl max-w-3xl w-full border overflow-hidden flex flex-col"
         style={{
           background: "var(--card-bg)",
           borderColor: "var(--card-border)",
@@ -1260,8 +1656,10 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
           </div>
         </div>
 
-        {/* Body */}
-        <div className="flex-1 min-h-0 overflow-y-auto px-6 py-8">
+        {/* Body — Trello two-column layout */}
+        <div className="flex-1 min-h-0 overflow-y-auto flex">
+         {/* Left: Main content */}
+         <div className="flex-1 min-w-0 px-6 py-8">
           <textarea
             ref={titleRef}
             value={title}
@@ -1440,6 +1838,70 @@ function DetailModal({ t, onClose, onUpdate, onDelete, onCheck }: DetailModalPro
               </div>
             )}
           </div>
+         </div>
+
+         {/* Right: Trello-style sidebar */}
+         <div className="shrink-0 w-[200px] border-l px-4 py-8 flex flex-col gap-4" style={{ borderColor: "var(--border-primary)", background: "var(--surface-1)" }}>
+           <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-bold">Actions</div>
+
+           {/* Labels */}
+           <div>
+             <span className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 mb-2"><Tag size={12} /> Étiquettes</span>
+             <div className="flex flex-wrap gap-1.5">
+               {LABEL_COLORS.map((lbl) => {
+                 const active = labels.includes(lbl.id);
+                 return (
+                   <button
+                     key={lbl.id}
+                     onClick={() => onToggleLabel(lbl.id)}
+                     className="w-8 h-5 rounded-[4px] transition-all hover:scale-110"
+                     style={{
+                       background: lbl.color,
+                       opacity: active ? 1 : 0.35,
+                       boxShadow: active ? `0 0 0 2px var(--surface-1), 0 0 0 3px ${lbl.color}` : "none",
+                     }}
+                     title={lbl.name}
+                   />
+                 );
+               })}
+             </div>
+           </div>
+
+           {/* Move to list */}
+           <div>
+             <span className="text-[11px] font-semibold text-[var(--text-secondary)] flex items-center gap-1.5 mb-2"><ArrowRightLeft size={12} /> Déplacer</span>
+             <div className="flex flex-col gap-1">
+               {lists.filter((l) => l.id !== t.listId).map((l) => (
+                 <button
+                   key={l.id}
+                   onClick={() => onMoveToList(l.id)}
+                   className="text-left px-2.5 py-1.5 text-[12px] rounded-lg hover:bg-[var(--surface-2)] transition-colors flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                 >
+                   <span className="w-2 h-2 rounded-full" style={{ background: colorForList(l.id).hue }} />
+                   {l.title || "(sans nom)"}
+                 </button>
+               ))}
+             </div>
+           </div>
+
+           <div className="h-px" style={{ background: "var(--border-primary)" }} />
+
+           {/* Duplicate */}
+           <button
+             onClick={onDuplicate}
+             className="flex items-center gap-2 text-[12px] font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-2)] px-2.5 py-2 rounded-lg transition-colors"
+           >
+             <Copy size={13} /> Dupliquer
+           </button>
+
+           {/* Delete */}
+           <button
+             onClick={onDelete}
+             className="flex items-center gap-2 text-[12px] font-medium text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] px-2.5 py-2 rounded-lg transition-colors"
+           >
+             <Trash2 size={13} /> Supprimer
+           </button>
+         </div>
         </div>
 
       </motion.div>
