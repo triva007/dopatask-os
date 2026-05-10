@@ -1557,16 +1557,20 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
     return () => clearTimeout(id);
   }, [notes]);
 
-  const save = () => {
+  const save = (overrides?: { subtasks?: typeof subtasks, projectId?: string, isRecurring?: boolean }) => {
+    const currentSubtasks = overrides?.subtasks ?? subtasks;
+    const currentProjectId = overrides?.projectId ?? projectId;
+    const currentIsRecurring = overrides?.isRecurring ?? isRecurring;
+
     const updates: Partial<GTask> = {};
     if (title !== t.title) updates.title = title;
     if (notes !== (t.notes || "")) updates.notes = notes;
     const newDueIso = due ? due + "T00:00:00.000Z" : null;
     if (newDueIso !== (t.due || null)) updates.due = newDueIso;
     
-    useAppStore.getState().setGoogleTaskProject(t.id, projectId || null);
-    useAppStore.getState().setGoogleTaskRecurrence(t.id, isRecurring);
-    useAppStore.getState().setGoogleTaskSubtasks(t.id, subtasks);
+    useAppStore.getState().setGoogleTaskProject(t.id, currentProjectId || null);
+    useAppStore.getState().setGoogleTaskRecurrence(t.id, currentIsRecurring);
+    useAppStore.getState().setGoogleTaskSubtasks(t.id, currentSubtasks);
 
     if (Object.keys(updates).length > 0) {
       onUpdate(updates);
@@ -1704,7 +1708,11 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
               <div className="flex-1">
                 <select
                   value={projectId}
-                  onChange={(e) => { setProjectId(e.target.value); setTimeout(save, 0); }}
+                  onChange={(e) => { 
+                    const val = e.target.value;
+                    setProjectId(val); 
+                    save({ projectId: val }); 
+                  }}
                   className="bg-transparent text-[13.5px] font-medium focus:outline-none hover:bg-[var(--surface-2)] px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors cursor-pointer text-[var(--text-primary)] appearance-none"
                 >
                   <option value="">Aucun projet</option>
@@ -1722,7 +1730,11 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
               </div>
               <div className="flex-1">
                 <button
-                  onClick={() => { setIsRecurring(!isRecurring); setTimeout(save, 0); }}
+                  onClick={() => { 
+                    const val = !isRecurring;
+                    setIsRecurring(val); 
+                    save({ isRecurring: val }); 
+                  }}
                   className={
                     "text-[12.5px] font-medium px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors flex items-center gap-2 " + 
                     (isRecurring ? "text-[var(--accent-blue)] bg-[var(--accent-blue-light)]" : "text-[var(--text-secondary)] hover:bg-[var(--surface-2)]")
@@ -1759,7 +1771,7 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                         const newSt = [...subtasks];
                         newSt[i].completed = !newSt[i].completed;
                         setSubtasks(newSt);
-                        setTimeout(save, 0);
+                        save({ subtasks: newSt });
                       }}
                       className={"shrink-0 mt-[3px] w-[18px] h-[18px] rounded-[5px] border transition-colors flex items-center justify-center " + (st.completed ? "bg-[var(--accent-blue)] border-[var(--accent-blue)]" : "border-[var(--border-secondary)] hover:border-[var(--text-ghost)]")}
                     >
@@ -1784,7 +1796,7 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                       onClick={() => {
                         const newSt = subtasks.filter(s => s.id !== st.id);
                         setSubtasks(newSt);
-                        setTimeout(save, 0);
+                        save({ subtasks: newSt });
                       }}
                       className="opacity-0 group-hover:opacity-100 p-1 text-[var(--text-ghost)] hover:text-[var(--accent-red)] transition-all"
                     >
@@ -1804,9 +1816,10 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                     className="flex-1 bg-transparent text-[14.5px] text-[var(--text-primary)] placeholder:text-[var(--text-ghost)] focus:outline-none"
                     onKeyDown={(e) => {
                       if (e.key === 'Enter' && e.currentTarget.value.trim()) {
-                        setSubtasks([...subtasks, { id: crypto.randomUUID(), text: e.currentTarget.value.trim(), completed: false }]);
+                        const newSt = [...subtasks, { id: crypto.randomUUID(), text: e.currentTarget.value.trim(), completed: false }];
+                        setSubtasks(newSt);
                         e.currentTarget.value = "";
-                        setTimeout(save, 0);
+                        save({ subtasks: newSt });
                       }
                     }}
                   />
