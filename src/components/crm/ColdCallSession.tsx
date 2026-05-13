@@ -310,7 +310,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                     )}
                 </p>
                 
-                <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tight break-words mb-2 bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">
+                <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tight break-words mb-2 text-t-primary">
                   {current.entreprise}
                 </h1>
                 
@@ -340,7 +340,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               </div>
 
               {/* Téléphone (Enorme) */}
-              {tel ? (
+              {tel && (
                 <div className="flex items-center justify-center gap-3 mb-8">
                   <a
                     href={telHref}
@@ -357,11 +357,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                   >
                     <Copy size={20} />
                   </button>
-                </div>
-              ) : (
-                <div className="mb-8 px-6 py-4 rounded-xl text-[14px] mx-auto max-w-sm"
-                  style={{ background: "var(--accent-red-light)", border: "1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)", color: "var(--accent-red)" }}>
-                  Pas de téléphone enregistré pour ce prospect.
                 </div>
               )}
 

@@ -225,8 +225,7 @@ export function shouldArchive(statut: StatutProspect): boolean {
 }
 
 export function resultatCompteMission(resultat: ResultatAppel): boolean {
-  // REPONDEUR et RAPPEL_PLUS_TARD = pas de vrai contact humain, ne comptent pas
-  return resultat !== "REPONDEUR" && resultat !== "RAPPEL_PLUS_TARD";
+  return resultat === "RAPPEL_PLUS_TARD" || resultat === "RDV" || resultat === "REFUS";
 }
 
 // ============================================================
