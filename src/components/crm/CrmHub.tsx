@@ -202,43 +202,45 @@ export default function CrmHub() {
         <motion.button
           onClick={() => setColdCallMode(true)}
           disabled={aAppeler.length === 0}
-          whileHover={aAppeler.length > 0 ? { scale: 1.005, y: -1 } : undefined}
-          whileTap={aAppeler.length > 0 ? { scale: 0.995 } : undefined}
-          transition={{ type: "spring", stiffness: 400, damping: 22 }}
-          className="w-full group relative overflow-hidden rounded-2xl border-2 p-6 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          whileHover={aAppeler.length > 0 ? { scale: 1.01, y: -2 } : undefined}
+          whileTap={aAppeler.length > 0 ? { scale: 0.99 } : undefined}
+          transition={{ type: "spring", stiffness: 400, damping: 25 }}
+          className="w-full group relative overflow-hidden rounded-3xl p-8 transition-all disabled:opacity-40 disabled:cursor-not-allowed glass-card-3d glow-cyan"
           style={{ 
-            borderColor: "var(--accent-cyan)", 
-            background: "linear-gradient(135deg, var(--accent-cyan-light) 0%, transparent 100%)",
-            boxShadow: "0 0 40px color-mix(in srgb, var(--accent-cyan) 10%, transparent)"
+            background: "linear-gradient(135deg, var(--surface-1) 0%, var(--surface-2) 100%)",
+            borderColor: "color-mix(in srgb, var(--accent-cyan) 30%, transparent)"
           }}
         >
-          <div className="flex items-center justify-between gap-6">
-            <div className="flex items-center gap-4 text-left">
-              <div className="w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 group-hover:rotate-6 transition-transform"
+          {/* Subtle background glow */}
+          <div className="absolute inset-0 opacity-20 pointer-events-none" style={{ background: "radial-gradient(circle at 80% 50%, var(--accent-cyan) 0%, transparent 60%)" }} />
+          
+          <div className="flex items-center justify-between gap-6 relative z-10">
+            <div className="flex items-center gap-5 text-left">
+              <div className="w-16 h-16 rounded-2xl flex items-center justify-center shrink-0 group-hover:rotate-[10deg] group-hover:scale-110 transition-all shadow-lg"
                 style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}>
-                <Phone size={24} strokeWidth={2.5} />
+                <Phone size={28} strokeWidth={2.5} />
               </div>
               <div>
-                <p className="text-[11px] uppercase tracking-widest font-bold mb-1" style={{ color: "var(--accent-cyan)" }}>
-                  Mode focus · Zéro distraction
+                <p className="text-[12px] uppercase tracking-[0.2em] font-extrabold mb-1.5" style={{ color: "var(--accent-cyan)" }}>
+                  Mode Focus · Zéro distraction
                 </p>
-                <h2 className="text-[22px] font-bold leading-tight">
-                  {aAppeler.length > 0 ? "Démarrer session cold-call" : "Aucun prospect à appeler"}
+                <h2 className="text-[26px] font-black leading-tight text-t-primary">
+                  {aAppeler.length > 0 ? "Lancer la session Cold-Call" : "Aucun prospect à appeler"}
                 </h2>
-                <p className="text-[12.5px] text-t-tertiary mt-1">
+                <p className="text-[13.5px] font-medium text-t-tertiary mt-1">
                   {aAppeler.length > 0
-                    ? `${aAppeler.length} prospects en file · boutons XL · raccourcis clavier · auto-advance`
+                    ? `${aAppeler.length} prospects en file · Interface XL · Auto-advance`
                     : "Importe un CSV pour lancer une session"}
                 </p>
               </div>
             </div>
             {aAppeler.length > 0 && (
-              <div className="text-right shrink-0">
-                <p className="text-[44px] font-black leading-none tabular-nums" style={{ color: "var(--accent-cyan)" }}>
+              <div className="text-right shrink-0 bg-surface-0/40 backdrop-blur px-6 py-4 rounded-2xl border border-surface-3">
+                <p className="text-[48px] font-black leading-none tabular-nums" style={{ color: "var(--accent-cyan)" }}>
                   {aAppeler.length}
                 </p>
-                <p className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold">
-                  à appeler
+                <p className="text-[11px] uppercase tracking-wider text-t-secondary font-bold mt-1">
+                  En attente
                 </p>
               </div>
             )}
@@ -269,7 +271,7 @@ export default function CrmHub() {
         {/* 2 PANELS : PROCHAINS A APPELER + PROCHAINS RDV */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
           {/* Left : prochains a appeler */}
-          <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
+          <div className="rounded-2xl glass-card p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Phone size={15} className="text-dopa-orange" />
@@ -307,7 +309,7 @@ export default function CrmHub() {
           </div>
 
           {/* Right : prochains RDV */}
-          <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5">
+          <div className="rounded-2xl glass-card p-6">
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Calendar size={15} className="text-dopa-cyan" />
@@ -381,19 +383,18 @@ function MiniStat({
       }}
       whileHover={{ y: -2 }}
       transition={{ type: "spring", stiffness: 400, damping: 24 }}
-      className={`rounded-xl border p-4 ${highlight ? "ring-1 ring-dopa-orange/30" : ""}`}
+      className={`rounded-2xl glass-card p-5 ${highlight ? "glow-amber border-dopa-orange/30" : ""}`}
       style={{
-        background: `linear-gradient(135deg, ${color}18 0%, ${color}08 100%)`,
-        borderColor: `${color}33`,
+        background: `linear-gradient(135deg, ${color}15 0%, var(--surface-1) 100%)`,
       }}
     >
-      <div className="flex items-center gap-1.5 mb-1" style={{ color }}>
+      <div className="flex items-center gap-2 mb-2" style={{ color }}>
         {icon}
-        <p className="text-[10px] uppercase tracking-wider font-semibold">{label}</p>
+        <p className="text-[11px] uppercase tracking-widest font-bold">{label}</p>
       </div>
-      <p className="text-[22px] font-black tabular-nums tracking-tight flex items-baseline gap-1" style={{ color }}>
+      <p className="text-[26px] font-black tabular-nums tracking-tight flex items-baseline gap-1.5" style={{ color }}>
         {value}
-        {suffix && <span className="text-[11px] font-semibold text-t-tertiary">{suffix}</span>}
+        {suffix && <span className="text-[12px] font-bold text-t-secondary">{suffix}</span>}
       </p>
     </motion.div>
   );

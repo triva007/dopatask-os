@@ -833,22 +833,21 @@ function KanbanView({
               onDragOver={(e) => { e.preventDefault(); setDragOverStatut(s); }}
               onDragLeave={() => setDragOverStatut(null)}
               onDrop={(e) => onDrop(e, s)}
-              className={`w-[280px] shrink-0 rounded-xl border flex flex-col transition-all ${
-                isDragOver ? "ring-2 ring-dopa-cyan scale-[1.01] shadow-glow-cyan" : ""
+              className={`w-[290px] shrink-0 rounded-2xl flex flex-col transition-all overflow-hidden ${
+                isDragOver ? "ring-2 ring-dopa-cyan scale-[1.01] shadow-glow-cyan" : "border border-surface-3"
               }`}
               style={{
-                borderColor: c.border,
-                background: `linear-gradient(180deg, ${c.bg}55 0%, transparent 100%)`,
+                background: `linear-gradient(180deg, ${c.bg}33 0%, var(--surface-1) 100%)`,
               }}
             >
               <div
-                className="px-3 py-2.5 border-b flex items-center justify-between sticky top-0 backdrop-blur z-10"
-                style={{ borderColor: c.border, background: `${c.bg}aa` }}
+                className="px-4 py-3 border-b flex items-center justify-between sticky top-0 z-10 backdrop-blur-md"
+                style={{ borderColor: c.border, background: `${c.bg}88` }}
               >
-                <div className="flex items-center gap-1.5 min-w-0">
-                  <span className="text-[14px]">{STATUT_EMOJI[s]}</span>
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="text-[15px]">{STATUT_EMOJI[s]}</span>
                   <span
-                    className="text-[10.5px] font-bold uppercase tracking-wider truncate"
+                    className="text-[11px] font-extrabold uppercase tracking-widest truncate"
                     style={{ color: c.text }}
                   >
                     {STATUT_LABEL[s]}
@@ -856,7 +855,7 @@ function KanbanView({
                 </div>
                 <motion.span
                   layout
-                  className="text-[11px] font-black tabular-nums px-1.5 py-0.5 rounded"
+                  className="text-[11.5px] font-black tabular-nums px-2 py-0.5 rounded-md"
                   style={{ color: c.text, background: `${c.text}22` }}
                 >
                   {list.length}
@@ -888,9 +887,9 @@ function KanbanView({
                           draggable
                           onDragStart={(e) => onDragStart(e, p)}
                           onClick={() => onSelect(p.id)}
-                          className="rounded-lg bg-surface-1 border border-surface-3 p-2.5 cursor-grab active:cursor-grabbing hover:border-dopa-cyan/40 hover:bg-surface-2/60 transition-colors"
+                          className="glass-card rounded-xl p-3 cursor-grab active:cursor-grabbing hover:border-dopa-cyan/50 hover:shadow-elevated transition-all"
                         >
-                          <p className="text-[12.5px] font-bold text-t-primary truncate leading-tight mb-1">
+                          <p className="text-[13px] font-bold text-t-primary truncate leading-tight mb-1.5">
                             {p.entreprise}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1.5 text-[9.5px] text-t-tertiary flex-wrap">

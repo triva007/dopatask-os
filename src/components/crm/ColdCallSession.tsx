@@ -283,23 +283,21 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
         )}
       </AnimatePresence>
 
-      <div className="max-w-[900px] mx-auto px-6 py-6">
+      <div className="max-w-[900px] mx-auto px-6 py-6 h-full flex items-center justify-center">
         <AnimatePresence mode="wait">
           <motion.div
             key={current.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.18 }}
-            className="flex flex-col lg:flex-row gap-6 items-start"
+            initial={{ opacity: 0, scale: 0.98, y: 10 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.98, y: -10 }}
+            transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+            className="w-full max-w-2xl mx-auto flex flex-col gap-6"
           >
-            <div className="flex-1 w-full lg:min-w-0">
-            {/* Card prospect */}
-            <div className="rounded-2xl border border-surface-3 bg-surface-1 p-7 mb-5">
-              <div className="flex items-start justify-between gap-4 mb-5">
-                <div className="min-w-0 flex-1">
-                  <p className="text-[11px] uppercase tracking-wider text-t-tertiary font-semibold mb-1">
-                    Prospect {cursor + 1} / {sessionQueue.length}
+            {/* Card prospect centrale (Focus Mode) */}
+            <div className="hero-card p-10 text-center relative">
+              <div className="flex flex-col items-center mb-8">
+                <p className="text-[12px] uppercase tracking-widest text-t-tertiary font-bold mb-3 flex items-center justify-center gap-2">
+                  Prospect {cursor + 1} / {sessionQueue.length}
                     {current.statut === "REPONDEUR" && (
                       <span className="ml-2 px-1.5 py-0.5 rounded bg-dopa-orange/15 text-dopa-orange text-[10px]">
                         Rappel répondeur
@@ -310,74 +308,80 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                         📅 Rappel prévu {new Date(current.date_relance + "T00:00:00").toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}
                       </span>
                     )}
+                </p>
+                
+                <h1 className="text-4xl md:text-5xl font-black leading-tight tracking-tight break-words mb-2 bg-gradient-to-br from-white to-white/60 bg-clip-text text-transparent">
+                  {current.entreprise}
+                </h1>
+                
+                {current.niche && (
+                  <p className="text-[14px] font-medium text-t-tertiary mt-2 px-3 py-1 rounded-full bg-surface-2 border border-surface-3">
+                    {current.niche}
                   </p>
-                  <h1 className="text-[28px] font-bold leading-tight tracking-tight break-words">
-                    {current.entreprise}
-                  </h1>
-                  {current.niche && (
-                    <p className="text-[12px] text-t-tertiary mt-1">{current.niche}</p>
-                  )}
-                </div>
-                <div className="flex gap-2 shrink-0">
-                  <button
-                    onClick={prev}
-                    disabled={cursor === 0}
-                    className="w-9 h-9 rounded-lg border border-surface-3 hover:bg-surface-2 text-t-tertiary disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center"
-                    title="Précédent"
-                  >
-                    <ArrowLeft size={14} />
-                  </button>
-                  <button
-                    onClick={next}
-                    className="w-9 h-9 rounded-lg border border-surface-3 hover:bg-surface-2 text-t-tertiary inline-flex items-center justify-center"
-                    title="Skip (sans logger)"
-                  >
-                    <SkipForward size={14} />
-                  </button>
-                </div>
+                )}
               </div>
 
-              {/* Téléphone */}
+              <div className="absolute top-6 right-6 flex gap-2">
+                <button
+                  onClick={prev}
+                  disabled={cursor === 0}
+                  className="w-10 h-10 rounded-xl glass-card hover:bg-surface-2 text-t-tertiary disabled:opacity-30 disabled:cursor-not-allowed inline-flex items-center justify-center transition-all hover:text-t-primary"
+                  title="Précédent"
+                >
+                  <ArrowLeft size={16} />
+                </button>
+                <button
+                  onClick={next}
+                  className="w-10 h-10 rounded-xl glass-card hover:bg-surface-2 text-t-tertiary inline-flex items-center justify-center transition-all hover:text-t-primary"
+                  title="Skip (sans logger)"
+                >
+                  <SkipForward size={16} />
+                </button>
+              </div>
+              </div>
+
+              {/* Téléphone (Enorme) */}
               {tel ? (
-                <div className="flex items-center gap-3 mb-4">
+                <div className="flex items-center justify-center gap-3 mb-8">
                   <a
                     href={telHref}
-                    className="flex-1 inline-flex items-center gap-3 px-5 py-4 rounded-xl font-bold text-[22px] tabular-nums transition-colors"
+                    className="inline-flex items-center justify-center gap-3 px-8 py-5 rounded-2xl font-black text-[28px] tabular-nums transition-all hover:scale-[1.02] active:scale-[0.98] glow-cyan"
                     style={{ background: "var(--accent-cyan)", color: "var(--surface-0)" }}
                   >
-                    <Phone size={20} />
+                    <Phone size={24} />
                     {tel}
                   </a>
                   <button
                     onClick={copyTel}
-                    className="w-12 h-14 rounded-xl border border-surface-3 hover:bg-surface-2 inline-flex items-center justify-center text-t-tertiary"
+                    className="w-14 h-14 rounded-2xl glass-card flex items-center justify-center text-t-tertiary hover:text-t-primary transition-all"
                     title="Copier"
                   >
-                    <Copy size={16} />
+                    <Copy size={20} />
                   </button>
                 </div>
               ) : (
-                <div className="mb-4 px-4 py-3 rounded-xl text-[12.5px]"
+                <div className="mb-8 px-6 py-4 rounded-xl text-[14px] mx-auto max-w-sm"
                   style={{ background: "var(--accent-red-light)", border: "1px solid color-mix(in srgb, var(--accent-red) 20%, transparent)", color: "var(--accent-red)" }}>
                   Pas de téléphone enregistré pour ce prospect.
                 </div>
               )}
 
               {/* Liens contexte */}
-              <div className="flex flex-wrap gap-2 text-[12px]">
+              <div className="flex flex-wrap justify-center gap-3 text-[13px] font-medium">
                 {current.gmb_url && (
                   <a href={current.gmb_url} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-surface-3 hover:bg-surface-3 text-t-secondary">
-                    <ExternalLink size={11} /> Google Maps
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl glass-card hover:border-dopa-cyan/40 text-t-secondary hover:text-dopa-cyan transition-colors">
+                    <ExternalLink size={13} /> Google Maps
                   </a>
                 )}
                 {current.site_url && (
                   <a href={current.site_url} target="_blank" rel="noreferrer"
-                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-surface-2 border border-surface-3 hover:bg-surface-3 text-t-secondary">
-                    <ExternalLink size={11} /> Site web
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl glass-card hover:border-dopa-cyan/40 text-t-secondary hover:text-dopa-cyan transition-colors">
+                    <ExternalLink size={13} /> Site web
                   </a>
                 )}
               </div>
+            </div>
 
 
 
@@ -424,29 +428,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                   )
                 )}
               </div>
-            </div>
-
-            {/* Zone note — sauvegarde auto sur blur */}
-            <div className="rounded-2xl border border-surface-3 bg-surface-1 p-5 mb-5">
-              <label className="text-[11px] uppercase tracking-wider text-t-tertiary font-semibold block mb-2">
-                Notes du prospect <span className="normal-case font-normal">(sauvegarde auto)</span>
-              </label>
-              <textarea
-                key={`note-${current.id}`}
-                defaultValue={current.notes || ""}
-                onBlur={async (e) => {
-                  if (current && e.target.value !== current.notes) {
-                    await useCrmStore.getState().updateProspect(current.id, { notes: e.target.value });
-                  }
-                }}
-                placeholder="Informations sur le prospect..."
-                rows={3}
-                className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] resize-y focus:outline-none focus:border-dopa-violet"
-              />
-            </div>
-
-            {/* Outcomes */}
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+            {/* Outcomes Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {OUTCOMES.map((o) => {
                 const Icon     = o.icon;
                 const isLoading = submitting === o.key;
@@ -492,18 +475,18 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                     key={o.key}
                     onClick={isRappel ? () => setRappelMode(true) : () => handleLog(o.key)}
                     disabled={!!submitting}
-                    className="flex flex-col items-center justify-center p-4 rounded-xl border border-surface-3 hover:brightness-110 active:scale-[0.98] transition-all group relative overflow-hidden"
-                    style={{ background: `${o.color}15`, borderColor: `${o.color}35` }}
+                    className="flex flex-col items-center justify-center p-5 rounded-2xl glass-card-3d hover:brightness-110 active:scale-[0.97] transition-all group relative overflow-hidden"
+                    style={{ background: `${o.color}10`, borderColor: `${o.color}40` }}
                   >
                     {isLoading && (
-                      <div className="absolute inset-0 bg-white/10 flex items-center justify-center backdrop-blur-[1px]">
-                        <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                      <div className="absolute inset-0 bg-white/10 flex items-center justify-center backdrop-blur-[2px]">
+                        <div className="w-6 h-6 border-2 border-current border-t-transparent rounded-full animate-spin" />
                       </div>
                     )}
-                    <Icon size={20} className="mb-2 transition-transform group-hover:scale-110" style={{ color: o.textColor }} />
-                    <span className="text-[13px] font-bold text-t-primary">{o.label}</span>
-                    <span className="text-[10px] text-t-tertiary mt-1 font-medium text-center">{o.desc}</span>
-                    <span className="absolute top-1 right-2 text-[9px] font-bold opacity-30 group-hover:opacity-60">{o.shortcut}</span>
+                    <Icon size={24} className="mb-3 transition-transform group-hover:scale-110" style={{ color: o.textColor }} />
+                    <span className="text-[14px] font-extrabold text-t-primary">{o.label}</span>
+                    <span className="text-[11px] text-t-tertiary mt-1 font-medium text-center">{o.desc}</span>
+                    <span className="absolute top-2 right-3 text-[10px] font-bold opacity-30 group-hover:opacity-60">{o.shortcut}</span>
                   </button>
                 );
               })}
@@ -512,12 +495,72 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             <p className="text-[11px] text-t-tertiary text-center mt-6">
               Raccourcis : <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">1</kbd>–<kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">6</kbd> pour logger · <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">→</kbd> skip · <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">Esc</kbd> quitter
             </p>
-          </div>
+            {/* Historique et Notes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] uppercase tracking-wider text-t-tertiary font-bold block">Historique</span>
+                  {!isEditingHistory && (
+                    <button onClick={() => { setIsEditingHistory(true); setHistoryDraft(current?.feedback || ""); }} className="text-t-tertiary hover:text-t-primary p-1">
+                      <Edit3 size={12} />
+                    </button>
+                  )}
+                </div>
+                {isEditingHistory ? (
+                  <div className="flex flex-col gap-2 h-full">
+                    <textarea 
+                      value={historyDraft} 
+                      onChange={e => setHistoryDraft(e.target.value)} 
+                      className="flex-1 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[12px] resize-none focus:outline-none focus:border-dopa-cyan/50"
+                      placeholder="Modifier l'historique ici..."
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button onClick={() => setIsEditingHistory(false)} className="text-[11px] px-3 py-1.5 bg-surface-3 hover:bg-surface-3/80 rounded-lg transition-colors font-medium">Annuler</button>
+                      <button 
+                        onClick={async () => { 
+                          if (current) {
+                            await useCrmStore.getState().updateProspect(current.id, { feedback: historyDraft || null }); 
+                          }
+                          setIsEditingHistory(false); 
+                        }} 
+                        className="text-[11px] px-3 py-1.5 bg-[var(--accent-cyan)] text-[var(--surface-0)] font-bold rounded-lg hover:brightness-110 transition-colors"
+                      >
+                        Enregistrer
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  current?.feedback ? (
+                    <div className="text-[13px] text-t-secondary whitespace-pre-wrap flex-1 overflow-auto">
+                      {current.feedback}
+                    </div>
+                  ) : (
+                    <div className="text-[12px] text-t-tertiary italic flex-1">Aucun historique.</div>
+                  )
+                )}
+              </div>
 
+              <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
+                <label className="text-[11px] uppercase tracking-wider text-t-tertiary font-bold block mb-3">
+                  Notes du prospect <span className="normal-case font-medium">(sauvegarde auto)</span>
+                </label>
+                <textarea
+                  key={`note-${current.id}`}
+                  defaultValue={current.notes || ""}
+                  onBlur={async (e) => {
+                    if (current && e.target.value !== current.notes) {
+                      await useCrmStore.getState().updateProspect(current.id, { notes: e.target.value });
+                    }
+                  }}
+                  placeholder="Informations sur le prospect..."
+                  className="flex-1 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-dopa-violet"
+                />
+              </div>
+            </div>
 
-        </motion.div>
-      </AnimatePresence>
-    </div>
+          </motion.div>
+        </AnimatePresence>
+      </div>
   </div>
 );
 }
