@@ -338,7 +338,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                   <SkipForward size={16} />
                 </button>
               </div>
-              </div>
 
               {/* Téléphone (Enorme) */}
               {tel ? (
