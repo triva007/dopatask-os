@@ -411,8 +411,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
 
 
-            </div>
-
             {/* Historique et Notes */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
               <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
