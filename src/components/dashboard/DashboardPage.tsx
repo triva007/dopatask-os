@@ -4,7 +4,7 @@ import { useEffect, useState, useMemo } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
-import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText, Phone, ChevronRight, CheckCircle2, Circle, Trophy, RotateCw, Calendar } from "lucide-react";
+import { Target, ListChecks, FolderKanban, Inbox, Skull, FileText, Phone, ChevronRight, CheckCircle2, Circle, Trophy, RotateCw, Calendar, Banknote } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { computeStatsMois, thermometreColor } from "@/lib/crmLogic";
 import UpcomingEventsWidget from "@/components/dashboard/UpcomingEventsWidget";
@@ -161,6 +161,20 @@ export default function DashboardPage() {
       return now - (lastCallTs.get(p.id) ?? 0) > H24;
     }).slice(0, 5);
   }, [prospects, calls, todayStr]);
+
+  const activeProspects = useMemo(() => prospects.filter(p => !p.archived), [prospects]);
+  const aAppeler = useMemo(() => {
+    return activeProspects.filter((p) => {
+      if (p.statut === "A_APPELER") return true;
+      if (p.statut === "REPONDEUR") {
+        if (p.date_relance) return p.date_relance <= todayStr;
+        return true;
+      }
+      return false;
+    });
+  }, [activeProspects, todayStr]);
+  const rdvEnStock = useMemo(() => activeProspects.filter((p) => p.statut === "RDV_BOOKE" || p.statut === "MAQUETTE_PRETE" || p.statut === "R1_EFFECTUE"), [activeProspects]);
+  const vendus = useMemo(() => prospects.filter((p) => p.statut === "VENDU"), [prospects]);
 
   // Fusion des tâches "Kill la task NOW" pour le widget du dashboard
   const combinedKillTasks = useMemo(() => {
@@ -387,29 +401,40 @@ export default function DashboardPage() {
 
 
 
-        {/* ═══ PROGRESS BAR ═══ */}
-        <div className="rounded-xl p-5 border bg-[var(--surface-1)]">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-[14px] font-bold text-[var(--text-primary)]">Progression du jour</h3>
-            <span className="text-[13px] font-semibold tabular-nums" style={{ color: progressPct === 100 ? "var(--accent-green)" : "var(--text-secondary)" }}>
-              {progressCurrent} / {progressTotal}
-            </span>
-          </div>
-          <div className="relative h-[8px] rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
-            <motion.div
-              initial={{ width: 0 }}
-              animate={{ width: `${progressPct}%` }}
-              transition={{ duration: 0.5, ease: "easeOut" }}
-              className="absolute inset-y-0 left-0 rounded-full"
-              style={{ background: progressPct === 100 ? "var(--accent-green)" : "var(--brand-primary)" }}
-            />
-          </div>
-          <p className="text-[11.5px] text-[var(--text-tertiary)] mt-3 italic text-center">
-            {progressPct === 0 && "C'est parti ! Une tâche à la fois."}
-            {progressPct > 0 && progressPct < 50 && "Beau début, on continue !"}
-            {progressPct >= 50 && progressPct < 100 && "Plus de la moitié ! Lâche rien."}
-            {progressPct === 100 && "TOUT EST FAIT ! Repos mérité 🏆"}
-          </p>
+        {/* ═══ MINI RECAP CRM ═══ */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <MiniStat
+            href="/crm?focus=true"
+            icon={<Phone size={14} />}
+            label="A appeler"
+            value={aAppeler.length}
+            sub="Prospects en attente"
+            accent="orange"
+          />
+          <MiniStat
+            href="/crm"
+            icon={<Calendar size={14} />}
+            label="RDV"
+            value={rdvEnStock.length}
+            sub="Rendez-vous en stock"
+            accent="blue"
+          />
+          <MiniStat
+            href="/crm"
+            icon={<Trophy size={14} />}
+            label="Vendus"
+            value={vendus.length}
+            sub="Deals clos"
+            accent="green"
+          />
+          <MiniStat
+            href="/crm"
+            icon={<Banknote size={14} />}
+            label="Revenu mois"
+            value={`${stats.revenuTotal.toLocaleString("fr-FR")} €`}
+            sub="Objectif en cours"
+            accent="cyan"
+          />
         </div>
 
         {/* ═══ COLONNES TOUR DE CONTRÔLE ═══ */}
