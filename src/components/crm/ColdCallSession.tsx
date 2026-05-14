@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
+import { useAppStore } from "@/store/useAppStore";
 import type { Prospect, ResultatAppel } from "@/lib/crmTypes";
 import { isToday } from "@/lib/crmLogic";
 
@@ -41,6 +42,9 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const prospects = useCrmStore((s) => s.prospects);
   const calls     = useCrmStore((s) => s.calls);
   const logCall   = useCrmStore((s) => s.logCall);
+
+  const [hideRepondeurs, setHideRepondeurs] = useState(false);
+  const lastHideRef = useRef(hideRepondeurs);
 
   /* ── Queue : A_APPELER + REPONDEUR dont le dernier appel date de >24h
      ET dont la date_relance (si présente) est aujourd'hui ou passée ── */
@@ -100,9 +104,11 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
   const [rappelMode, setRappelMode] = useState(false);
   const [rappelDate, setRappelDate] = useState(localDateOffset(3));
+  const [rdvMode, setRdvMode] = useState(false);
+  const [rdvDay, setRdvDay] = useState(localDateOffset(1));
+  const [rdvHour, setRdvHour] = useState("10:00");
   const [isEditingHistory, setIsEditingHistory] = useState(false);
   const [historyDraft, setHistoryDraft] = useState("");
-  const [hideRepondeurs, setHideRepondeurs] = useState(false);
 
   // On récupère le prospect actuel depuis le store via son ID pour avoir les données fraîches,
   // tout en gardant l'ordre de la sessionQueue stable.
@@ -122,14 +128,15 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   // Reset quand on change de prospect (via le curseur)
   useEffect(() => {
     setRappelMode(false);
+    setRdvMode(false);
     setRappelDate(localDateOffset(3));
+    setRdvDay(localDateOffset(1));
+    setRdvHour("10:00");
     setIsEditingHistory(false);
   }, [cursor, currentId]);
 
   const next = () => { if (cursor + 1 < sessionQueue.length) setCursor((c) => c + 1); };
   const prev = () => { if (cursor > 0) setCursor((c) => c - 1); };
-
-  const lastHideRef = useRef(hideRepondeurs);
 
   useEffect(() => {
     if (hideRepondeurs !== lastHideRef.current) {
@@ -152,6 +159,68 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setTimeout(() => setFlash(null), 1500);
     setSubmitting(null);
     setRappelMode(false);
+    setRdvMode(false);
+  };
+
+  const handleRdvSubmit = async () => {
+    if (!current || submitting) return;
+    setSubmitting("RDV");
+    
+    // 1. Logger l'appel
+    await logCall(current.id, "RDV");
+    // 2. Mettre a jour la date de RDV
+    await useCrmStore.getState().updateProspect(current.id, { date_rdv: rdvDay });
+
+    // 3. Creer event Calendar
+    const { addTimelineEvent, projects, addTask } = useAppStore.getState();
+    const agenceProject = projects.find(p => p.name.toLowerCase().includes("agence bizz"));
+    const hourFloat = parseInt(rdvHour.split(":")[0]) + parseInt(rdvHour.split(":")[1]) / 60;
+    
+    let targetCalendarId = "primary";
+    try {
+      const res = await fetch("/api/google/calendar/calendars");
+      if (res.ok) {
+        const { calendars } = await res.json() as { calendars: any[] };
+        const businessCal = calendars.find((c: any) => c.summary?.toLowerCase() === "business");
+        if (businessCal) targetCalendarId = businessCal.id;
+      }
+    } catch (e) {}
+    
+    addTimelineEvent({
+      label: `RDV : ${current.entreprise}`,
+      day: rdvDay,
+      hour: hourFloat,
+      duration: 1,
+      color: "blue",
+      linkedProspectId: current.id,
+      linkedProjectId: agenceProject?.id,
+      googleCalendarId: targetCalendarId
+    });
+
+    // 4. Tache 24h avant
+    const rdvDateObj = new Date(`${rdvDay}T${rdvHour}:00`);
+    const taskDateObj = new Date(rdvDateObj.getTime() - 24 * 60 * 60 * 1000);
+    const taskDay = taskDateObj.toISOString().slice(0, 10);
+    
+    addTask(
+      `Créer la maquette pour ${current.entreprise}`, 
+      "todo", 
+      agenceProject?.id, 
+      taskDay, 
+      undefined, 
+      current.id
+    );
+
+    try {
+      const { syncCalendar, syncTasks } = await import("@/lib/googleSync");
+      await syncCalendar();
+      await syncTasks();
+    } catch (e) {}
+
+    setFlash("RDV Booké ! Event & Tâche créés");
+    setTimeout(() => setFlash(null), 2500);
+    setSubmitting(null);
+    setRdvMode(false);
   };
 
   // Raccourcis clavier
@@ -159,7 +228,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "TEXTAREA" || tag === "INPUT") return;
-      if (e.key === "Escape")                        { if (rappelMode) { setRappelMode(false); } else { onExit(); } return; }
+      if (e.key === "Escape")                        { if (rappelMode) { setRappelMode(false); } else if (rdvMode) { setRdvMode(false); } else { onExit(); } return; }
       if (e.key === "ArrowRight" || e.key === "ArrowDown")  { next(); return; }
       if (e.key === "ArrowLeft"  || e.key === "ArrowUp")    { prev(); return; }
       const outcome = OUTCOMES.find((o) => o.shortcut === e.key);
@@ -167,6 +236,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
         e.preventDefault();
         if (outcome.key === "RAPPEL_PLUS_TARD") {
           setRappelMode(true);
+        } else if (outcome.key === "RDV") {
+          setRdvMode(true);
         } else {
           handleLog(outcome.key);
         }
@@ -175,7 +246,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, cursor, sessionQueue.length, rappelMode]);
+  }, [current?.id, cursor, sessionQueue.length, rappelMode, rdvMode]);
 
   const copyTel = () => {
     if (!current?.telephone) return;
@@ -448,6 +519,46 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 const Icon     = o.icon;
                 const isLoading = submitting === o.key;
                 const isRappel  = o.key === "RAPPEL_PLUS_TARD";
+                const isRdv     = o.key === "RDV";
+
+                if (isRdv && rdvMode) {
+                  return (
+                    <motion.div
+                      key={o.key}
+                      initial={{ scale: 0.97 }}
+                      animate={{ scale: 1 }}
+                      className="col-span-2 md:col-span-1 px-4 py-4 rounded-xl border-2 text-left"
+                      style={{ background: `${o.color}18`, borderColor: `${o.color}88` }}
+                    >
+                      <p className="text-[12px] font-semibold mb-2" style={{ color: o.textColor }}>
+                        📅 Planifier le RDV :
+                      </p>
+                      <input
+                        type="date"
+                        value={rdvDay}
+                        onChange={(e) => setRdvDay(e.target.value)}
+                        className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] mb-2 focus:outline-none focus:border-dopa-cyan"
+                        autoFocus
+                      />
+                      <input
+                        type="time"
+                        value={rdvHour}
+                        onChange={(e) => setRdvHour(e.target.value)}
+                        className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-dopa-cyan"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleRdvSubmit}
+                          disabled={!!submitting || !rdvDay || !rdvHour}
+                          className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold disabled:opacity-50 transition-colors"
+                          style={{ background: o.color, color: "#fff" }}
+                        >
+                          {isLoading ? "..." : "Confirmer"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  );
+                }
 
                 /* Bouton "Rappeler plus tard" → mode date picker si actif */
                 if (isRappel && rappelMode) {
@@ -487,7 +598,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 return (
                   <button
                     key={o.key}
-                    onClick={isRappel ? () => setRappelMode(true) : () => handleLog(o.key)}
+                    onClick={isRappel ? () => setRappelMode(true) : isRdv ? () => setRdvMode(true) : () => handleLog(o.key)}
                     disabled={!!submitting}
                     className="flex flex-col items-center justify-center p-5 rounded-2xl glass-card-3d hover:brightness-110 active:scale-[0.97] transition-all group relative overflow-hidden"
                     style={{ background: `${o.color}10`, borderColor: `${o.color}40` }}
