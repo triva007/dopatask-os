@@ -123,17 +123,21 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setPrioritizeRepondeur(prevVal => {
       const nextVal = !prevVal;
       setSessionQueue(currentQueue => {
-        const newQueue = [...currentQueue];
-        newQueue.sort((a, b) => {
+        // Garder ceux qu'on a déjà passés
+        const past = currentQueue.slice(0, cursor);
+        // Réorganiser ceux qui restent (y compris l'actuel)
+        const remaining = currentQueue.slice(cursor);
+        
+        remaining.sort((a, b) => {
           if (nextVal) {
             if (a.statut === "REPONDEUR" && b.statut !== "REPONDEUR") return -1;
             if (b.statut === "REPONDEUR" && a.statut !== "REPONDEUR") return 1;
           }
           return a.created_at < b.created_at ? -1 : 1;
         });
-        return newQueue;
+        
+        return [...past, ...remaining];
       });
-      setCursor(0); // Reset cursor to show the first prioritized item immediately
       return nextVal;
     });
   };
