@@ -92,6 +92,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const [rappelDate, setRappelDate] = useState(localDateOffset(3));
   const [isEditingHistory, setIsEditingHistory] = useState(false);
   const [historyDraft, setHistoryDraft] = useState("");
+  const [prioritizeRepondeur, setPrioritizeRepondeur] = useState(false);
 
   // Timer
   const [seconds, setSeconds] = useState(0);
@@ -139,6 +140,28 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
   const next = () => { if (cursor + 1 < sessionQueue.length) setCursor((c) => c + 1); };
   const prev = () => { if (cursor > 0) setCursor((c) => c - 1); };
+
+  const handleTogglePrioritize = () => {
+    setPrioritizeRepondeur(prevVal => {
+      const nextVal = !prevVal;
+      setSessionQueue(currentQueue => {
+        // Keep already processed ones intact
+        const past = currentQueue.slice(0, cursor);
+        const remaining = currentQueue.slice(cursor);
+        
+        remaining.sort((a, b) => {
+          if (nextVal) {
+            if (a.statut === "REPONDEUR" && b.statut !== "REPONDEUR") return -1;
+            if (b.statut === "REPONDEUR" && a.statut !== "REPONDEUR") return 1;
+          }
+          return a.created_at < b.created_at ? -1 : 1;
+        });
+        
+        return [...past, ...remaining];
+      });
+      return nextVal;
+    });
+  };
 
   const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
     if (!current || submitting) return;
@@ -243,6 +266,15 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
           </button>
 
           <div className="flex items-center gap-4 text-[12px]">
+            <label className="flex items-center gap-2 cursor-pointer text-t-tertiary hover:text-t-primary transition-colors border-r border-surface-3 pr-4">
+              <input
+                type="checkbox"
+                checked={prioritizeRepondeur}
+                onChange={handleTogglePrioritize}
+                className="rounded border-surface-3 text-[var(--accent-cyan)] focus:ring-[var(--accent-cyan)]"
+              />
+              Prioriser répondeurs
+            </label>
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">
               <Target size={13} style={{ color: "var(--accent-cyan)" }} />
               <span className="tabular-nums font-semibold text-t-primary">{missionToday}</span>
@@ -379,10 +411,13 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
 
 
 
-              {/* Historique appels */}
-              <div className="mt-2 rounded-lg bg-surface-2 border-l-2 border-dopa-cyan/40 flex flex-col">
-                <div className="flex items-center justify-between px-3.5 py-1.5">
-                  <span className="text-[10px] uppercase tracking-wider text-t-tertiary font-semibold block">Historique</span>
+            </div>
+
+            {/* Historique et Notes */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
+                <div className="flex items-center justify-between mb-3">
+                  <span className="text-[11px] uppercase tracking-wider text-t-tertiary font-bold block">Historique</span>
                   {!isEditingHistory && (
                     <button onClick={() => { setIsEditingHistory(true); setHistoryDraft(current?.feedback || ""); }} className="text-t-tertiary hover:text-t-primary p-1">
                       <Edit3 size={12} />
@@ -390,15 +425,15 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                   )}
                 </div>
                 {isEditingHistory ? (
-                  <div className="flex flex-col gap-2 px-3.5 pb-2.5">
+                  <div className="flex flex-col gap-2 h-full">
                     <textarea 
                       value={historyDraft} 
                       onChange={e => setHistoryDraft(e.target.value)} 
-                      className="w-full bg-surface-0 border border-surface-3 rounded px-2 py-1.5 text-[12px] resize-y min-h-[80px] focus:outline-none focus:border-dopa-cyan/50"
+                      className="flex-1 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[12px] resize-none focus:outline-none focus:border-dopa-cyan/50 min-h-[80px]"
                       placeholder="Modifier l'historique ici..."
                     />
                     <div className="flex justify-end gap-2">
-                      <button onClick={() => setIsEditingHistory(false)} className="text-[11px] px-2 py-1 bg-surface-3 hover:bg-surface-3/80 rounded transition-colors">Annuler</button>
+                      <button onClick={() => setIsEditingHistory(false)} className="text-[11px] px-3 py-1.5 bg-surface-3 hover:bg-surface-3/80 rounded-lg transition-colors font-medium">Annuler</button>
                       <button 
                         onClick={async () => { 
                           if (current) {
@@ -406,7 +441,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                           }
                           setIsEditingHistory(false); 
                         }} 
-                        className="text-[11px] px-2 py-1 bg-[var(--accent-cyan)] text-[var(--surface-0)] font-semibold rounded hover:brightness-110 transition-colors"
+                        className="text-[11px] px-3 py-1.5 bg-[var(--accent-cyan)] text-[var(--surface-0)] font-bold rounded-lg hover:brightness-110 transition-colors"
                       >
                         Enregistrer
                       </button>
@@ -414,14 +449,32 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                   </div>
                 ) : (
                   current?.feedback ? (
-                    <div className="px-3.5 pb-2.5 text-[12px] text-t-secondary whitespace-pre-wrap max-h-32 overflow-auto">
+                    <div className="text-[13px] text-t-secondary whitespace-pre-wrap flex-1 overflow-auto max-h-32">
                       {current.feedback}
                     </div>
                   ) : (
-                    <div className="px-3.5 pb-2.5 text-[11px] text-t-tertiary italic">Aucun historique.</div>
+                    <div className="text-[12px] text-t-tertiary italic flex-1">Aucun historique.</div>
                   )
                 )}
               </div>
+
+              <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
+                <label className="text-[11px] uppercase tracking-wider text-t-tertiary font-bold block mb-3">
+                  Notes du prospect <span className="normal-case font-medium">(sauvegarde auto)</span>
+                </label>
+                <textarea
+                  key={`note-${current.id}`}
+                  defaultValue={current.notes || ""}
+                  onBlur={async (e) => {
+                    if (current && e.target.value !== current.notes) {
+                      await useCrmStore.getState().updateProspect(current.id, { notes: e.target.value });
+                    }
+                  }}
+                  placeholder="Informations sur le prospect..."
+                  className="flex-1 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-dopa-violet min-h-[80px]"
+                />
+              </div>
+            </div>
             {/* Outcomes Grid */}
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {OUTCOMES.map((o) => {
@@ -489,69 +542,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             <p className="text-[11px] text-t-tertiary text-center mt-6">
               Raccourcis : <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">1</kbd>–<kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">6</kbd> pour logger · <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">→</kbd> skip · <kbd className="px-1 py-0.5 rounded bg-surface-2 border border-surface-3 font-mono">Esc</kbd> quitter
             </p>
-            {/* Historique et Notes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
-              <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="text-[11px] uppercase tracking-wider text-t-tertiary font-bold block">Historique</span>
-                  {!isEditingHistory && (
-                    <button onClick={() => { setIsEditingHistory(true); setHistoryDraft(current?.feedback || ""); }} className="text-t-tertiary hover:text-t-primary p-1">
-                      <Edit3 size={12} />
-                    </button>
-                  )}
-                </div>
-                {isEditingHistory ? (
-                  <div className="flex flex-col gap-2 h-full">
-                    <textarea 
-                      value={historyDraft} 
-                      onChange={e => setHistoryDraft(e.target.value)} 
-                      className="flex-1 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[12px] resize-none focus:outline-none focus:border-dopa-cyan/50"
-                      placeholder="Modifier l'historique ici..."
-                    />
-                    <div className="flex justify-end gap-2">
-                      <button onClick={() => setIsEditingHistory(false)} className="text-[11px] px-3 py-1.5 bg-surface-3 hover:bg-surface-3/80 rounded-lg transition-colors font-medium">Annuler</button>
-                      <button 
-                        onClick={async () => { 
-                          if (current) {
-                            await useCrmStore.getState().updateProspect(current.id, { feedback: historyDraft || null }); 
-                          }
-                          setIsEditingHistory(false); 
-                        }} 
-                        className="text-[11px] px-3 py-1.5 bg-[var(--accent-cyan)] text-[var(--surface-0)] font-bold rounded-lg hover:brightness-110 transition-colors"
-                      >
-                        Enregistrer
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  current?.feedback ? (
-                    <div className="text-[13px] text-t-secondary whitespace-pre-wrap flex-1 overflow-auto">
-                      {current.feedback}
-                    </div>
-                  ) : (
-                    <div className="text-[12px] text-t-tertiary italic flex-1">Aucun historique.</div>
-                  )
-                )}
-              </div>
-
-              <div className="glass-card p-5 rounded-2xl flex flex-col h-full">
-                <label className="text-[11px] uppercase tracking-wider text-t-tertiary font-bold block mb-3">
-                  Notes du prospect <span className="normal-case font-medium">(sauvegarde auto)</span>
-                </label>
-                <textarea
-                  key={`note-${current.id}`}
-                  defaultValue={current.notes || ""}
-                  onBlur={async (e) => {
-                    if (current && e.target.value !== current.notes) {
-                      await useCrmStore.getState().updateProspect(current.id, { notes: e.target.value });
-                    }
-                  }}
-                  placeholder="Informations sur le prospect..."
-                  className="flex-1 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] resize-none focus:outline-none focus:border-dopa-violet"
-                />
-              </div>
-            </div>
-
           </motion.div>
         </AnimatePresence>
       </div>
