@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useRef } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
   CheckCircle2, Target, Trophy, Copy, ExternalLink, Clock, Ban, FileText, ChevronDown, ChevronUp,
@@ -61,6 +61,8 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
         if (p.archived) return false;
         if (p.statut === "A_APPELER") return true;
         if (p.statut === "REPONDEUR") {
+          if (hideRepondeurs) return false;
+          
           // Si une date_relance est fixée, n'afficher qu'à partir de cette date
           if (p.date_relance) {
             const relance = new Date(p.date_relance + "T00:00:00").getTime();
@@ -81,7 +83,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
         return false;
       })
       .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
-  }, [prospects, calls]);
+  }, [prospects, calls, hideRepondeurs]);
 
   const [sessionQueue, setSessionQueue] = useState<Prospect[]>([]);
 
@@ -100,7 +102,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const [rappelDate, setRappelDate] = useState(localDateOffset(3));
   const [isEditingHistory, setIsEditingHistory] = useState(false);
   const [historyDraft, setHistoryDraft] = useState("");
-  const [prioritizeRepondeur, setPrioritizeRepondeur] = useState(false);
+  const [hideRepondeurs, setHideRepondeurs] = useState(false);
 
   // On récupère le prospect actuel depuis le store via son ID pour avoir les données fraîches,
   // tout en gardant l'ordre de la sessionQueue stable.
@@ -127,27 +129,18 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const next = () => { if (cursor + 1 < sessionQueue.length) setCursor((c) => c + 1); };
   const prev = () => { if (cursor > 0) setCursor((c) => c - 1); };
 
-  const handleTogglePrioritize = () => {
-    setPrioritizeRepondeur(prevVal => {
-      const nextVal = !prevVal;
-      setSessionQueue(currentQueue => {
-        // Garder ceux qu'on a déjà passés
-        const past = currentQueue.slice(0, cursor);
-        // Réorganiser ceux qui restent (y compris l'actuel)
-        const remaining = currentQueue.slice(cursor);
-        
-        remaining.sort((a, b) => {
-          if (nextVal) {
-            if (a.statut === "REPONDEUR" && b.statut !== "REPONDEUR") return -1;
-            if (b.statut === "REPONDEUR" && a.statut !== "REPONDEUR") return 1;
-          }
-          return a.created_at < b.created_at ? -1 : 1;
-        });
-        
-        return [...past, ...remaining];
-      });
-      return nextVal;
-    });
+  const lastHideRef = useRef(hideRepondeurs);
+
+  useEffect(() => {
+    if (hideRepondeurs !== lastHideRef.current) {
+      setSessionQueue(queue);
+      setCursor(0);
+      lastHideRef.current = hideRepondeurs;
+    }
+  }, [hideRepondeurs, queue]);
+
+  const handleToggleHide = () => {
+    setHideRepondeurs(p => !p);
   };
 
   const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
@@ -256,11 +249,11 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             <label className="flex items-center gap-2 cursor-pointer text-t-tertiary hover:text-t-primary transition-colors border-r border-surface-3 pr-4">
               <input
                 type="checkbox"
-                checked={prioritizeRepondeur}
-                onChange={handleTogglePrioritize}
+                checked={hideRepondeurs}
+                onChange={handleToggleHide}
                 className="rounded border-surface-3 text-[var(--accent-cyan)] focus:ring-[var(--accent-cyan)]"
               />
-              Prioriser répondeurs
+              Cacher répondeurs
             </label>
             <span className="inline-flex items-center gap-1.5 text-t-tertiary">
               <Target size={13} style={{ color: "var(--accent-cyan)" }} />
