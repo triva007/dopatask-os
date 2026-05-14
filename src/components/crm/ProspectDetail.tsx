@@ -516,7 +516,11 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
           <Field label="Statut">
             <select
               value={form.statut || prospect.statut}
-              onChange={(e) => setForm({ ...form, statut: e.target.value as Prospect["statut"] })}
+              onChange={async (e) => {
+                const val = e.target.value as Prospect["statut"];
+                setForm({ ...form, statut: val });
+                await updateProspect(id, { statut: val });
+              }}
               className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[13px] focus:outline-none cursor-pointer"
             >
               {STATUTS_ORDRE.map((s) => (
@@ -528,7 +532,11 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
             <input
               type="date"
               value={form.date_rdv || ""}
-              onChange={(e) => setForm({ ...form, date_rdv: e.target.value || null })}
+              onChange={async (e) => {
+                const val = e.target.value || null;
+                setForm({ ...form, date_rdv: val });
+                await updateProspect(id, { date_rdv: val });
+              }}
               className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
             />
           </Field>
@@ -540,7 +548,11 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
             <input
               type="date"
               value={form.date_relance || ""}
-              onChange={(e) => setForm({ ...form, date_relance: e.target.value || null })}
+              onChange={async (e) => {
+                const val = e.target.value || null;
+                setForm({ ...form, date_relance: val });
+                await updateProspect(id, { date_relance: val });
+              }}
               className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none"
               style={{ borderColor: form.date_relance ? "var(--accent-purple)" : undefined }}
             />
@@ -552,14 +564,19 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
           <Field label={
             <span className="inline-flex items-center gap-1.5">
               <Sparkles size={11} className="text-[var(--accent-purple)]" />
-              Lien maquette IA
+              Lien maquette IA (sauvegarde auto sur validation)
             </span>
           }>
             <input
               value={form.lien_maquette || ""}
               onChange={(e) => setForm({ ...form, lien_maquette: e.target.value })}
+              onBlur={async () => {
+                if (form.lien_maquette !== prospect.lien_maquette) {
+                  await updateProspect(id, { lien_maquette: form.lien_maquette || null });
+                }
+              }}
               placeholder="Colle ici le lien Google AI Studio"
-              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-var(--accent-purple)/50"
+              className="w-full bg-[var(--surface-2)] border border-[var(--border-primary)] rounded-lg px-3 py-2 text-[12px] focus:outline-none focus:border-[var(--accent-purple)]"
             />
           </Field>
         )}
@@ -587,7 +604,7 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
             className="inline-flex items-center gap-1.5 px-4 py-2 bg-[var(--accent-cyan-light)] text-[var(--accent-cyan)] rounded-lg text-[12px] font-semibold hover:bg-[var(--surface-2)] shrink-0"
           >
             {saving ? <Loader2 size={12} className="animate-spin" /> : savedPulse ? <Check size={12} /> : <Save size={12} />}
-            {savedPulse ? "Sauvé" : "Enregistrer notes"}
+            {savedPulse ? "Sauvé" : "Enregistrer"}
           </button>
         </div>
 

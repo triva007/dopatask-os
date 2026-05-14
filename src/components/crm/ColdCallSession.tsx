@@ -66,9 +66,17 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
             const relance = new Date(p.date_relance + "T00:00:00").getTime();
             return now >= relance;
           }
-          // Sinon, attendre au moins 24h depuis le dernier appel
+          // Sinon, si le dernier appel ne date pas d'aujourd'hui, on l'affiche.
           const lastTs = lastCallByProspect.get(p.id) ?? 0;
-          return now - lastTs > H24;
+          if (lastTs === 0) return true;
+          
+          const lastD = new Date(lastTs);
+          const today = new Date(now);
+          const isSameDay = lastD.getFullYear() === today.getFullYear() &&
+                            lastD.getMonth() === today.getMonth() &&
+                            lastD.getDate() === today.getDate();
+                            
+          return !isSameDay;
         }
         return false;
       })
