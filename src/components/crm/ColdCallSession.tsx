@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
-  CheckCircle2, Target, Flame, Trophy, Copy, ExternalLink, Clock, Ban, FileText, ChevronDown, ChevronUp,
+  CheckCircle2, Target, Trophy, Copy, ExternalLink, Ban, FileText, ChevronDown, ChevronUp,
   Edit3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -94,9 +94,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const [historyDraft, setHistoryDraft] = useState("");
   const [prioritizeRepondeur, setPrioritizeRepondeur] = useState(false);
 
-  // Timer
-  const [seconds, setSeconds] = useState(0);
-
   // On récupère le prospect actuel depuis le store via son ID pour avoir les données fraîches,
   // tout en gardant l'ordre de la sessionQueue stable.
   const currentId = sessionQueue[cursor]?.id;
@@ -105,25 +102,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     return prospects.find(p => p.id === currentId) || sessionQueue[cursor];
   }, [currentId, prospects, sessionQueue, cursor]);
 
-  // Store data
   const config  = useCrmStore((s) => s.config);
-
-  // Timer logic
-  useEffect(() => {
-    let interval: any;
-    if (current) {
-      interval = setInterval(() => {
-        setSeconds((s) => s + 1);
-      }, 1000);
-    }
-    return () => clearInterval(interval);
-  }, [current?.id]);
-
-  const formatTime = (s: number) => {
-    const mins = Math.floor(s / 60);
-    const secs = s % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
 
   // Stats session du jour
   const callsToday  = useMemo(() => calls.filter((c) => isToday(c.date)), [calls]);
@@ -135,7 +114,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setRappelMode(false);
     setRappelDate(localDateOffset(3));
     setIsEditingHistory(false);
-    setSeconds(0);
   }, [cursor, currentId]);
 
   const next = () => { if (cursor + 1 < sessionQueue.length) setCursor((c) => c + 1); };
@@ -145,20 +123,17 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     setPrioritizeRepondeur(prevVal => {
       const nextVal = !prevVal;
       setSessionQueue(currentQueue => {
-        // Keep already processed ones intact
-        const past = currentQueue.slice(0, cursor);
-        const remaining = currentQueue.slice(cursor);
-        
-        remaining.sort((a, b) => {
+        const newQueue = [...currentQueue];
+        newQueue.sort((a, b) => {
           if (nextVal) {
             if (a.statut === "REPONDEUR" && b.statut !== "REPONDEUR") return -1;
             if (b.statut === "REPONDEUR" && a.statut !== "REPONDEUR") return 1;
           }
           return a.created_at < b.created_at ? -1 : 1;
         });
-        
-        return [...past, ...remaining];
+        return newQueue;
       });
+      setCursor(0); // Reset cursor to show the first prioritized item immediately
       return nextVal;
     });
   };
@@ -166,7 +141,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const handleLog = async (resultat: ResultatAppel, dateRappel?: string) => {
     if (!current || submitting) return;
     setSubmitting(resultat);
-    await logCall(current.id, resultat, undefined, dateRappel, seconds);
+    await logCall(current.id, resultat, undefined, dateRappel);
     const outcome = OUTCOMES.find((o) => o.key === resultat);
     setFlash(outcome?.label || resultat);
     setTimeout(() => setFlash(null), 1500);
@@ -284,17 +259,6 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
               <Calendar size={13} style={{ color: "var(--accent-green)" }} />
               <span className="tabular-nums font-semibold" style={{ color: "var(--accent-green)" }}>{rdvToday}</span>
               <span>RDV</span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-t-tertiary">
-              <Clock size={13} className={seconds > 60 ? "text-dopa-orange" : "text-dopa-cyan"} />
-              <span className={`tabular-nums font-semibold ${seconds > 60 ? "text-dopa-orange" : "text-t-primary"}`}>
-                {formatTime(seconds)}
-              </span>
-            </span>
-            <span className="inline-flex items-center gap-1.5 text-t-tertiary">
-              <Flame size={13} className="text-dopa-orange" />
-              <span className="tabular-nums font-semibold text-t-primary">{cursor + 1}</span>
-              <span>/ {sessionQueue.length}</span>
             </span>
           </div>
         </div>
