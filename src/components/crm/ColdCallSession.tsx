@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
-  CheckCircle2, Target, Trophy, Copy, ExternalLink, Ban, FileText, ChevronDown, ChevronUp,
+  CheckCircle2, Target, Trophy, Copy, ExternalLink, Clock, Ban, FileText, ChevronDown, ChevronUp,
   Edit3
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
