@@ -7,20 +7,40 @@ import Sidebar from "@/components/sidebar/Sidebar";
 import SpotlightSearch from "@/components/spotlight/SpotlightSearch";
 import ToastSystem from "@/components/toast/ToastSystem";
 import { useAppStore } from "@/store/useAppStore";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { getActiveProfileId } from "@/lib/supabaseStorage";
 import AuthScreen from "@/components/auth/AuthScreen";
+
+function isMobileDevice(): boolean {
+  if (typeof window === "undefined") return false;
+  // Check screen width
+  if (window.innerWidth < 768) return true;
+  // Check touch-only device (no hover support)
+  if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) return true;
+  return false;
+}
 
 export default function AppShell({ children }: { children: React.ReactNode }) {
   const [focusMode, setFocusMode] = useState(false);
   const [profileId, setProfileId] = useState<number | null>(null);
   const pathname = usePathname();
+  const router = useRouter();
   const isLandingPage = pathname === "/landing" || pathname.startsWith("/landing/");
   const isMobileRoute = pathname.startsWith("/m");
 
   useEffect(() => {
     setProfileId(getActiveProfileId());
   }, []);
+
+  // ── Auto-redirect mobile devices to /m/crm ──
+  useEffect(() => {
+    if (isLandingPage || isMobileRoute) return;
+    // Don't redirect if user opted for desktop mode
+    if (localStorage.getItem("dopatask_force_desktop") === "1") return;
+    if (isMobileDevice()) {
+      router.replace("/m/crm");
+    }
+  }, [pathname, isLandingPage, isMobileRoute, router]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -30,7 +50,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         e.preventDefault();
         setFocusMode((prev) => !prev);
       }
-      // Cmd+K or Ctrl+K to trigger spotlight (SpotlightSearch listens too)
     };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
@@ -79,3 +98,4 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
+
