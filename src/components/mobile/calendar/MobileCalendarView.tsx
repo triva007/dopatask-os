@@ -117,10 +117,17 @@ export default function MobileCalendarView() {
 
   if (connected === false) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 px-6">
+      <div className="flex flex-col items-center justify-center h-full gap-4 px-6 text-center">
         <CalendarIcon size={32} className="text-[var(--accent-blue)] opacity-50" />
         <p className="text-[14px] font-semibold text-[var(--text-primary)]">Calendrier non connecté</p>
-        <p className="text-[12px] text-[var(--text-secondary)]">Connecte Google Agenda via Réglages sur PC.</p>
+        <p className="text-[12px] text-[var(--text-secondary)] mb-2">Sur ton iPhone, tu dois te connecter une fois pour autoriser l'accès.</p>
+        <a
+          href="/api/google/auth"
+          className="px-4 py-2.5 rounded-xl font-bold text-[12px] transition-all active:scale-95"
+          style={{ background: "var(--accent-blue)", color: "#fff" }}
+        >
+          Connecter Google
+        </a>
       </div>
     );
   }
