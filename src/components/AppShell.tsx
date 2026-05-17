@@ -16,6 +16,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [profileId, setProfileId] = useState<number | null>(null);
   const pathname = usePathname();
   const isLandingPage = pathname === "/landing" || pathname.startsWith("/landing/");
+  const isMobileRoute = pathname.startsWith("/m");
 
   useEffect(() => {
     setProfileId(getActiveProfileId());
@@ -49,6 +50,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   if (profileId === -1) {
     return <AuthScreen onLogin={() => window.location.reload()} />;
+  }
+
+  // ── Mobile routes: skip Sidebar, Spotlight, etc. ──
+  if (isMobileRoute) {
+    return <>{children}</>;
   }
 
   return (
