@@ -38,7 +38,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     // Don't redirect if user opted for desktop mode
     if (localStorage.getItem("dopatask_force_desktop") === "1") return;
     if (isMobileDevice()) {
-      router.replace("/m/crm");
+      router.replace("/m/dashboard");
     }
   }, [pathname, isLandingPage, isMobileRoute, router]);
 

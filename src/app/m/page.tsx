@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function MobileIndexPage() {
-  redirect("/m/crm");
+  redirect("/m/dashboard");
 }

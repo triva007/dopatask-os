@@ -5,12 +5,16 @@ import Link from "next/link";
 import {
   LayoutDashboard,
   Users,
+  ListChecks,
+  Calendar,
   Phone,
-  BarChart3,
 } from "lucide-react";
 
 const TABS = [
-  { href: "/m/crm", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/m/dashboard", label: "Accueil", icon: LayoutDashboard },
+  { href: "/m/crm", label: "CRM", icon: Phone },
+  { href: "/m/taches", label: "Tâches", icon: ListChecks },
+  { href: "/m/calendrier", label: "Agenda", icon: Calendar },
   { href: "/m/prospects", label: "Prospects", icon: Users },
 ] as const;
 
@@ -35,7 +39,7 @@ export default function MobileLayout({
           background: "var(--surface-1)",
           borderTop: "1px solid var(--border-primary)",
           paddingBottom: "env(safe-area-inset-bottom, 8px)",
-          paddingTop: "8px",
+          paddingTop: "6px",
         }}
       >
         {TABS.map((tab) => {
@@ -46,16 +50,16 @@ export default function MobileLayout({
             <Link
               key={tab.href}
               href={tab.href}
-              className="flex flex-col items-center gap-0.5 px-4 py-1 rounded-lg transition-colors"
+              className="flex flex-col items-center gap-0.5 px-2 py-1 rounded-lg transition-colors"
               style={{
                 color: isActive
                   ? "var(--accent-purple)"
                   : "var(--text-tertiary)",
               }}
             >
-              <Icon size={20} strokeWidth={isActive ? 2.4 : 1.8} />
+              <Icon size={18} strokeWidth={isActive ? 2.4 : 1.6} />
               <span
-                className="text-[10px] font-semibold tracking-wide"
+                className="text-[9px] font-semibold tracking-wide"
                 style={{
                   opacity: isActive ? 1 : 0.7,
                 }}
