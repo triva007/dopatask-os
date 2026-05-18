@@ -13,10 +13,23 @@ import AuthScreen from "@/components/auth/AuthScreen";
 
 function isMobileDevice(): boolean {
   if (typeof window === "undefined") return false;
-  // Check screen width
+  
+  // iPadOS 13+ identifies as Macintosh. We can detect iPads by checking for touch points on Mac.
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const isIpadOS = /macintosh/i.test(userAgent) && navigator.maxTouchPoints && navigator.maxTouchPoints > 1;
+  
+  if (isIpadOS || /ipad/i.test(userAgent)) {
+    return false; // Force desktop mode for iPads
+  }
+
+  // Handle mobile phones (small touch devices, even in landscape)
+  const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+  const smallerDimension = Math.min(window.innerWidth, window.innerHeight);
+  const isPhoneSized = smallerDimension < 768;
+
+  if (isTouchDevice && isPhoneSized) return true;
   if (window.innerWidth < 768) return true;
-  // Check touch-only device (no hover support)
-  if (window.matchMedia("(hover: none) and (pointer: coarse)").matches) return true;
+  
   return false;
 }
 
