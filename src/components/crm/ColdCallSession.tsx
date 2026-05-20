@@ -105,6 +105,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   const [rappelMode, setRappelMode] = useState(false);
   const [rappelDate, setRappelDate] = useState(localDateOffset(3));
   const [rdvMode, setRdvMode] = useState(false);
+  const [rdvConfirmedEmail, setRdvConfirmedEmail] = useState<string | null>(null);
   const [rdvDay, setRdvDay] = useState(localDateOffset(1));
   const [rdvHour, setRdvHour] = useState("10:00");
   const [isEditingHistory, setIsEditingHistory] = useState(false);
@@ -129,6 +130,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     setRappelMode(false);
     setRdvMode(false);
+    setRdvConfirmedEmail(null);
     setRappelDate(localDateOffset(3));
     setRdvDay(localDateOffset(1));
     setRdvHour("10:00");
@@ -217,10 +219,37 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
       await syncTasks();
     } catch (e) {}
 
+    const dateObj = new Date(`${rdvDay}T${rdvHour}:00`);
+    const jours = ["Dimanche", "Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi"];
+    const mois = ["janvier", "février", "mars", "avril", "mai", "juin", "juillet", "août", "septembre", "octobre", "novembre", "décembre"];
+    
+    const jourStr = jours[dateObj.getDay()];
+    const dateStr = `${dateObj.getDate()} ${mois[dateObj.getMonth()]}`;
+    const hStr = rdvHour;
+    
+    let prenom = "(Prénom)";
+    if (current.entreprise) {
+      prenom = current.entreprise.split(" ")[0];
+      prenom = prenom.charAt(0).toUpperCase() + prenom.slice(1).toLowerCase();
+    }
+
+    const emailTemplate = `Objet : Confirmation RDV ${jourStr} ${dateStr} - Aaron de Triva-Media et ${prenom}
+
+Bonjour ${prenom},
+
+Je vous confirme notre rendez-vous ${jourStr} ${dateStr} à ${hStr}. Pensez à le bloquer dans votre agenda.
+
+On fera ça en visio, je vous enverrai le lien un peu avant.
+
+Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau site. On la regarde ensemble et vous me dites ce que vous en pensez.
+
+À ${jourStr}`;
+
+    setRdvConfirmedEmail(emailTemplate);
+
     setFlash("RDV Booké ! Event & Tâche créés");
     setTimeout(() => setFlash(null), 2500);
     setSubmitting(null);
-    setRdvMode(false);
   };
 
   // Raccourcis clavier
@@ -228,7 +257,13 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     const onKey = (e: KeyboardEvent) => {
       const tag = (e.target as HTMLElement)?.tagName;
       if (tag === "TEXTAREA" || tag === "INPUT") return;
-      if (e.key === "Escape")                        { if (rappelMode) { setRappelMode(false); } else if (rdvMode) { setRdvMode(false); } else { onExit(); } return; }
+      if (e.key === "Escape") { 
+        if (rdvConfirmedEmail) { setRdvConfirmedEmail(null); setRdvMode(false); }
+        else if (rappelMode) { setRappelMode(false); }
+        else if (rdvMode) { setRdvMode(false); }
+        else { onExit(); }
+        return;
+      }
       if (e.key === "ArrowRight" || e.key === "ArrowDown")  { next(); return; }
       if (e.key === "ArrowLeft"  || e.key === "ArrowUp")    { prev(); return; }
       const outcome = OUTCOMES.find((o) => o.shortcut === e.key);
@@ -246,7 +281,7 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [current?.id, cursor, sessionQueue.length, rappelMode, rdvMode]);
+  }, [current?.id, cursor, sessionQueue.length, rappelMode, rdvMode, rdvConfirmedEmail]);
 
   const copyTel = () => {
     if (!current?.telephone) return;
@@ -521,7 +556,50 @@ export default function ColdCallSession({ onExit }: { onExit: () => void }) {
                 const isRappel  = o.key === "RAPPEL_PLUS_TARD";
                 const isRdv     = o.key === "RDV";
 
+                if (rdvConfirmedEmail && !isRdv) return null;
+
                 if (isRdv && rdvMode) {
+                  if (rdvConfirmedEmail) {
+                    return (
+                      <motion.div
+                        key={o.key}
+                        initial={{ scale: 0.97 }}
+                        animate={{ scale: 1 }}
+                        className="col-span-2 md:col-span-3 px-4 py-4 rounded-xl border-2 text-left bg-surface-1"
+                        style={{ borderColor: o.color }}
+                      >
+                         <p className="text-[13px] font-bold mb-2 text-t-primary">✅ RDV Confirmé ! Voici le mail à envoyer :</p>
+                         <textarea
+                           readOnly
+                           value={rdvConfirmedEmail}
+                           className="w-full h-48 bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[12px] font-mono text-t-secondary mb-3 resize-none focus:outline-none"
+                         />
+                         <div className="flex gap-2">
+                           <button
+                             onClick={() => {
+                               navigator.clipboard.writeText(rdvConfirmedEmail);
+                               setFlash("Mail copié !");
+                               setTimeout(() => setFlash(null), 1500);
+                             }}
+                             className="flex-1 py-2 bg-surface-2 hover:bg-surface-3 rounded-lg text-[12.5px] font-semibold text-t-primary transition-colors"
+                           >
+                             Copier le mail
+                           </button>
+                           <button
+                             onClick={() => {
+                               setRdvConfirmedEmail(null);
+                               setRdvMode(false);
+                             }}
+                             className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold transition-colors"
+                             style={{ background: o.color, color: "#fff" }}
+                           >
+                             Fermer
+                           </button>
+                         </div>
+                      </motion.div>
+                    );
+                  }
+
                   return (
                     <motion.div
                       key={o.key}
