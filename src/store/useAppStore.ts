@@ -107,8 +107,8 @@ interface AppState {
   setGoogleTaskProject: (taskId: string, projectId: string | null) => void;
   googleTaskPriorities: Record<string, string>;
   setGoogleTaskPriority: (taskId: string, priority: string | null) => void;
-  googleTaskDurations: Record<string, number>;
-  setGoogleTaskDuration: (taskId: string, duration: number | null) => void;
+  googleTaskDurations: Record<string, string>;
+  setGoogleTaskDuration: (taskId: string, duration: string | null) => void;
   googleTaskRecurrence: Record<string, boolean>;
   setGoogleTaskRecurrence: (taskId: string, recurring: boolean) => void;
   googleTaskSubtasks: Record<string, { id: string; text: string; completed: boolean }[]>;
