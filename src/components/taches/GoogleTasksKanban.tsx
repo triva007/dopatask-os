@@ -917,23 +917,28 @@ export default function GoogleTasksKanban() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              style={{ position: 'fixed', left: contextMenu.x, top: contextMenu.y }}
-              className="z-[101] min-w-[200px] bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl shadow-xl p-1.5"
+              style={{
+                position: 'fixed',
+                left: Math.min(contextMenu.x, window.innerWidth - 240),
+                top: Math.min(contextMenu.y, window.innerHeight - 380),
+                maxHeight: '80vh',
+              }}
+              className="z-[101] w-[230px] bg-[var(--surface-1)] border border-[var(--border-primary)] rounded-xl shadow-xl p-1.5 overflow-y-auto"
             >
               <button
-                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
+                className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
                 onClick={() => { toggleTask(contextMenu.t); setContextMenu(null); }}
               >
-                {contextMenu.t.status === "completed" ? "Marquer non terminée" : "✅ Marquer terminée"}
+                {contextMenu.t.status === "completed" ? "↩ Non terminée" : "✅ Terminée"}
               </button>
               <button
-                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
+                className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
                 onClick={() => { toggleStar(contextMenu.t.id); setContextMenu(null); }}
               >
-                {starred.has(contextMenu.t.id) ? "Retirer favori" : "⭐ Mettre en favori"}
+                {starred.has(contextMenu.t.id) ? "☆ Retirer favori" : "⭐ Favori"}
               </button>
               <button
-                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
+                className="w-full text-left px-3 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-lg transition-colors"
                 onClick={() => { setEditingId(contextMenu.t.id); setEditValue(contextMenu.t.title || ""); setContextMenu(null); }}
               >
                 ✏️ Renommer
@@ -941,42 +946,18 @@ export default function GoogleTasksKanban() {
 
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
 
-              {/* Trello: Labels */}
-              <div className="px-3 py-2">
-                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold">Étiquettes</span>
-                <div className="flex items-center gap-1.5 mt-1.5">
-                  {LABEL_COLORS.map((lbl) => {
-                    const active = (taskLabels[contextMenu.t.id] || []).includes(lbl.id);
-                    return (
-                      <button
-                        key={lbl.id}
-                        onClick={() => toggleLabel(contextMenu.t.id, lbl.id)}
-                        className="w-6 h-4 rounded-[3px] transition-all hover:scale-110"
-                        style={{
-                          background: lbl.color,
-                          opacity: active ? 1 : 0.4,
-                          boxShadow: active ? `0 0 0 2px var(--surface-1), 0 0 0 3px ${lbl.color}` : "none",
-                        }}
-                        title={lbl.name}
-                      />
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
-
-              {/* Trello: Move to list */}
-              <div className="px-3 py-1">
-                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold flex items-center gap-1"><ArrowRightLeft size={10} /> Déplacer vers</span>
-                <div className="flex flex-col mt-1">
+              {/* Move to list — compact */}
+              <div className="px-2 py-1">
+                <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold px-1">Déplacer vers</span>
+                <div className="flex flex-wrap gap-1 mt-1">
                   {lists.filter((l) => l.id !== contextMenu.t.listId).map((l) => (
                     <button
                       key={l.id}
-                      className="text-left px-2 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-md transition-colors flex items-center gap-2"
+                      className="text-[11px] px-2 py-0.5 rounded-md hover:bg-[var(--surface-2)] transition-colors flex items-center gap-1"
+                      style={{ color: colorForList(l.id).hue }}
                       onClick={() => { moveTaskToList(contextMenu.t, l.id); setContextMenu(null); }}
                     >
-                      <span className="w-2 h-2 rounded-full" style={{ background: colorForList(l.id).hue }} />
+                      <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: colorForList(l.id).hue }} />
                       {l.title || "(sans nom)"}
                     </button>
                   ))}
@@ -985,93 +966,86 @@ export default function GoogleTasksKanban() {
 
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
 
-              {/* Priority */}
-              <div className="px-3 py-1">
-                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold flex items-center gap-1 mb-1.5">Importance</span>
-                <div className="flex flex-col gap-1">
+              {/* Importance — compact inline */}
+              <div className="px-2 py-1">
+                <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold px-1">Importance</span>
+                <div className="grid grid-cols-2 gap-1 mt-1">
                   {([
-                    { id: "urgent-important",    emoji: "🔴", label: "Important et urgent" },
-                    { id: "important",            emoji: "🟠", label: "Important, pas urgent" },
-                    { id: "urgent",               emoji: "🟡", label: "Urgent, pas important" },
-                    { id: "none",                 emoji: "⚪", label: "Ni l'un ni l'autre" },
+                    { id: "urgent-important", emoji: "🔴", label: "Imp. & Urgent" },
+                    { id: "important",        emoji: "🟠", label: "Important" },
+                    { id: "urgent",           emoji: "🟡", label: "Urgent" },
+                    { id: "none",             emoji: "⚪", label: "Aucun" },
                   ] as const).map(opt => {
                     const isActive = (googleTaskPriorities || {})[contextMenu.t.id] === opt.id;
                     return (
                       <button key={opt.id}
                         onClick={() => { setGoogleTaskPriority(contextMenu.t.id, isActive ? null : opt.id); setContextMenu(null); }}
-                        className="text-left text-[12px] py-1.5 px-2 rounded-lg transition-colors flex items-center gap-2 font-medium"
+                        className="text-left text-[11px] py-1 px-1.5 rounded-md transition-colors flex items-center gap-1"
                         style={{
                           background: isActive ? "var(--surface-2)" : "transparent",
                           color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
                           fontWeight: isActive ? 600 : 400,
                         }}
                       >
-                        <span>{opt.emoji}</span> {opt.label}
-                        {isActive && <span className="ml-auto text-[10px] text-[var(--accent-blue)]">✓</span>}
+                        {opt.emoji} {opt.label}
                       </button>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Duration */}
-              <div className="px-3 py-1">
-                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold flex items-center gap-1 mb-1.5">Durée estimée</span>
-                <div className="flex flex-col gap-1">
+              {/* Durée — compact inline */}
+              <div className="px-2 py-1">
+                <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold px-1">Durée</span>
+                <div className="grid grid-cols-2 gap-1 mt-1">
                   {([
-                    { id: "<5",   label: "⚡ Moins de 5 min" },
-                    { id: "10-15", label: "🕐 10 – 15 min" },
+                    { id: "<5",   label: "⚡ <5 min" },
+                    { id: "10-15", label: "🕐 10-15 min" },
                     { id: "30",   label: "⏱ 30 min" },
-                    { id: "+1h",  label: "⏳ Plus d'1 heure" },
+                    { id: "+1h",  label: "⏳ +1h" },
                   ] as const).map(opt => {
-                    const isActive = (googleTaskDurations || {})[contextMenu.t.id] === (opt.id as any);
+                    const isActive = (googleTaskDurations || {})[contextMenu.t.id] === opt.id;
                     return (
                       <button key={opt.id}
                         onClick={() => { setGoogleTaskDuration(contextMenu.t.id, isActive ? null : opt.id as any); setContextMenu(null); }}
-                        className="text-left text-[12px] py-1.5 px-2 rounded-lg transition-colors flex items-center gap-2"
+                        className="text-left text-[11px] py-1 px-1.5 rounded-md transition-colors flex items-center gap-1"
                         style={{
-                          background: isActive ? "var(--surface-2)" : "transparent",
-                          color: isActive ? "var(--text-primary)" : "var(--text-secondary)",
+                          background: isActive ? "var(--accent-blue-light)" : "transparent",
+                          color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
                           fontWeight: isActive ? 600 : 400,
                         }}
                       >
                         {opt.label}
-                        {isActive && <span className="ml-auto text-[10px] text-[var(--accent-blue)]">✓</span>}
                       </button>
                     );
                   })}
-                  {/* Custom duration */}
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <input
-                      type="text"
-                      placeholder="Personnalisé (ex: 45min)"
-                      defaultValue={typeof (googleTaskDurations || {})[contextMenu.t.id] === "string" && !["<5","10-15","30","+1h"].includes((googleTaskDurations || {})[contextMenu.t.id] as any) ? (googleTaskDurations || {})[contextMenu.t.id] as string : ""}
-                      className="flex-1 text-[11px] px-2 py-1 rounded border bg-transparent focus:outline-none"
-                      style={{ borderColor: "var(--border-primary)", color: "var(--text-primary)" }}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          const val = (e.target as HTMLInputElement).value.trim();
-                          if (val) { setGoogleTaskDuration(contextMenu.t.id, val as any); setContextMenu(null); }
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                    />
-                  </div>
                 </div>
+                <input
+                  type="text"
+                  placeholder="Personnalisé..."
+                  defaultValue={typeof (googleTaskDurations || {})[contextMenu.t.id] === "string" && !["<5","10-15","30","+1h"].includes((googleTaskDurations || {})[contextMenu.t.id] as any) ? (googleTaskDurations || {})[contextMenu.t.id] as string : ""}
+                  className="w-full mt-1 text-[11px] px-2 py-1 rounded border bg-transparent focus:outline-none"
+                  style={{ borderColor: "var(--border-primary)", color: "var(--text-primary)" }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      const val = (e.target as HTMLInputElement).value.trim();
+                      if (val) { setGoogleTaskDuration(contextMenu.t.id, val as any); setContextMenu(null); }
+                    }
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                />
               </div>
 
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
 
-              {/* Trello: Duplicate */}
               <button
-                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors flex items-center gap-2"
+                className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-lg transition-colors flex items-center gap-2"
                 onClick={() => { duplicateTask(contextMenu.t); setContextMenu(null); }}
               >
                 <Copy size={12} /> Dupliquer
               </button>
-
               <button
-                className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--accent-red)] flex items-center gap-2"
+                className="w-full text-left px-2 py-1.5 text-[12px] hover:bg-[var(--surface-2)] rounded-lg transition-colors text-[var(--accent-red)] flex items-center gap-2"
                 onClick={() => { removeTask(contextMenu.t); setContextMenu(null); }}
               >
                 <Trash2 size={12} /> Supprimer
@@ -1406,19 +1380,6 @@ function TaskCard(p: TaskCardProps) {
       }}
       whileHover={completed ? undefined : { borderColor: "rgba(79, 70, 229, 0.25)" }}
     >
-      {/* Trello-style label strips */}
-      {activeLabels.length > 0 && !completed && (
-        <div className="flex gap-1 px-3 pt-2.5 pb-0">
-          {activeLabels.map((lbl) => (
-            <span
-              key={lbl.id}
-              className="h-2 rounded-full transition-all group-hover:h-3 min-w-[40px] flex-1 max-w-[56px]"
-              style={{ background: lbl.color }}
-              title={lbl.name}
-            />
-          ))}
-        </div>
-      )}
 
       <div className={"px-4 " + (activeLabels.length > 0 && !completed ? "pt-2 pb-3.5" : "py-3.5")}>
       <div className="flex items-start gap-3">
@@ -1557,45 +1518,80 @@ function TaskCard(p: TaskCardProps) {
           )}
 
           {/* Priority + Duration row — always visible if set */}
-          {!completed && (() => {
-            const priority = (useAppStore.getState().googleTaskPriorities || {})[p.t.id];
-            const duration = (useAppStore.getState().googleTaskDurations || {})[p.t.id];
-            if (!priority && !duration) return null;
-            const PRIORITY_META: Record<string, { emoji: string; label: string; color: string; bg: string }> = {
-              "urgent-important": { emoji: "🔴", label: "Important & Urgent",   color: "var(--accent-red)",    bg: "var(--accent-red-light)" },
-              "important":        { emoji: "🟠", label: "Important",             color: "var(--accent-orange)", bg: "var(--accent-orange-light, rgba(254,163,98,0.12))" },
-              "urgent":           { emoji: "🟡", label: "Urgent",                color: "var(--accent-yellow, #e6b100)", bg: "rgba(230,177,0,0.10)" },
-              "none":             { emoji: "⚪", label: "Ni l'un ni l'autre",   color: "var(--text-tertiary)", bg: "var(--surface-2)" },
-            };
-            const DURATION_LABELS: Record<string, string> = {
-              "<5":   "⚡ <5 min",
-              "10-15": "🕐 10-15 min",
-              "30":   "⏱ 30 min",
-              "+1h":  "⏳ +1h",
-            };
-            const pm = priority ? PRIORITY_META[priority] : null;
-            const dl = duration ? (DURATION_LABELS[String(duration)] ?? `⏱ ${duration}`) : null;
-            return (
-              <div className="mt-2 flex items-center gap-1.5 flex-wrap no-open">
-                {pm && (
-                  <span
-                    className="inline-flex items-center gap-1 text-[11px] font-semibold px-2 py-0.5 rounded-full"
-                    style={{ background: pm.bg, color: pm.color }}
-                  >
-                    {pm.emoji} {pm.label}
-                  </span>
-                )}
-                {dl && (
-                  <span
-                    className="inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded-full"
-                    style={{ background: "var(--accent-blue-light)", color: "var(--accent-blue)" }}
-                  >
-                    {dl}
-                  </span>
-                )}
+          {/* Inline priority + duration pickers (visible on hover) */}
+          {!completed && (
+            <div className="mt-2 no-open">
+              {/* Badges affichés si définis */}
+              {(() => {
+                const priority = (useAppStore.getState().googleTaskPriorities || {})[p.t.id];
+                const duration = (useAppStore.getState().googleTaskDurations || {})[p.t.id];
+                const PRIORITY_META: Record<string, { emoji: string; label: string; color: string; bg: string }> = {
+                  "urgent-important": { emoji: "🔴", label: "Imp. & Urgent",  color: "var(--accent-red)",    bg: "var(--accent-red-light)" },
+                  "important":        { emoji: "🟠", label: "Important",      color: "var(--accent-orange)", bg: "rgba(254,163,98,0.12)" },
+                  "urgent":           { emoji: "🟡", label: "Urgent",         color: "#a07800",               bg: "rgba(230,177,0,0.10)" },
+                  "none":             { emoji: "⚪", label: "Sans priorité",  color: "var(--text-tertiary)", bg: "var(--surface-2)" },
+                };
+                const DURATION_LABELS: Record<string, string> = {
+                  "<5": "⚡ <5m", "10-15": "🕐 10-15m", "30": "⏱ 30m", "+1h": "⏳ +1h",
+                };
+                const pm = priority ? PRIORITY_META[priority] : null;
+                const dl = duration ? (DURATION_LABELS[String(duration)] ?? `⏱ ${duration}`) : null;
+                return (pm || dl) ? (
+                  <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                    {pm && <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-full" style={{ background: pm.bg, color: pm.color }}>{pm.emoji} {pm.label}</span>}
+                    {dl && <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded-full" style={{ background: "var(--accent-blue-light)", color: "var(--accent-blue)" }}>{dl}</span>}
+                  </div>
+                ) : null;
+              })()}
+              {/* Pickers — visibles au hover */}
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 flex-wrap">
+                {/* Priority picker */}
+                {([
+                  { id: "urgent-important", emoji: "🔴", title: "Important & Urgent" },
+                  { id: "important",        emoji: "🟠", title: "Important" },
+                  { id: "urgent",           emoji: "🟡", title: "Urgent" },
+                  { id: "none",             emoji: "⚪", title: "Aucun" },
+                ] as const).map(opt => {
+                  const isActive = (useAppStore.getState().googleTaskPriorities || {})[p.t.id] === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      title={opt.title}
+                      onClick={(e) => { e.stopPropagation(); setGoogleTaskPriority(p.t.id, isActive ? null : opt.id); }}
+                      className="text-[13px] leading-none rounded-md p-0.5 transition-all hover:scale-110"
+                      style={{ opacity: isActive ? 1 : 0.4, filter: isActive ? "none" : "grayscale(40%)" }}
+                    >
+                      {opt.emoji}
+                    </button>
+                  );
+                })}
+                <span className="w-px h-3 bg-[var(--border-primary)] mx-0.5" />
+                {/* Duration picker */}
+                {([
+                  { id: "<5", label: "<5m" },
+                  { id: "10-15", label: "15m" },
+                  { id: "30", label: "30m" },
+                  { id: "+1h", label: "+1h" },
+                ] as const).map(opt => {
+                  const isActive = (useAppStore.getState().googleTaskDurations || {})[p.t.id] === opt.id;
+                  return (
+                    <button
+                      key={opt.id}
+                      onClick={(e) => { e.stopPropagation(); setGoogleTaskDuration(p.t.id, isActive ? null : opt.id as any); }}
+                      className="text-[10px] px-1.5 py-0.5 rounded-md border transition-all font-medium"
+                      style={{
+                        background: isActive ? "var(--accent-blue-light)" : "transparent",
+                        color: isActive ? "var(--accent-blue)" : "var(--text-ghost)",
+                        borderColor: isActive ? "var(--accent-blue)" : "transparent",
+                      }}
+                    >
+                      {opt.label}
+                    </button>
+                  );
+                })}
               </div>
-            );
-          })()}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
