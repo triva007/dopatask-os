@@ -6,7 +6,7 @@ import {
   Calendar as CalendarIcon, Star, ChevronDown, ChevronRight,
   ListChecks, Eye, EyeOff, Filter, FileText, Folder,
   Copy, ArrowRightLeft, Tag, Search, GripVertical,
-  MoreHorizontal, Palette, ChevronUp,
+  MoreHorizontal, Palette, ChevronUp, Clock,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
@@ -1633,6 +1633,29 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
   const c = colorForList(t.listId);
   const completed = t.status === "completed";
 
+  const storeDuration = (useAppStore.getState().googleTaskDurations || {})[t.id];
+  const [selDuration, setSelDuration] = useState<string>(() => {
+    if (!storeDuration) return "none";
+    if (["<5", "10-15", "30", "+1h"].includes(storeDuration as string)) return storeDuration as string;
+    return "custom";
+  });
+  const [customDurVal, setCustomDurVal] = useState<string>(() => {
+    if (!storeDuration || ["<5", "10-15", "30", "+1h"].includes(storeDuration as string)) return "";
+    return storeDuration as string;
+  });
+
+  useEffect(() => {
+    setSelDuration(() => {
+      if (!storeDuration) return "none";
+      if (["<5", "10-15", "30", "+1h"].includes(storeDuration as string)) return storeDuration as string;
+      return "custom";
+    });
+    setCustomDurVal(() => {
+      if (!storeDuration || ["<5", "10-15", "30", "+1h"].includes(storeDuration as string)) return "";
+      return storeDuration as string;
+    });
+  }, [storeDuration]);
+
   const titleRef = useRef<HTMLTextAreaElement>(null);
   const notesRef = useRef<HTMLTextAreaElement>(null);
 
@@ -1851,9 +1874,10 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
               </div>
               <div className="flex-1 flex items-center">
                 <select
-                  value={["<5", "10-15", "30", "+1h"].includes((useAppStore.getState().googleTaskDurations || {})[t.id] as string) ? ((useAppStore.getState().googleTaskDurations || {})[t.id] as string) : "custom"}
+                  value={selDuration}
                   onChange={(e) => { 
                     const val = e.target.value;
+                    setSelDuration(val);
                     if (val !== "custom") {
                       useAppStore.getState().setGoogleTaskDuration(t.id, val === "none" ? null : val);
                       setSaved(true); setTimeout(() => setSaved(false), 2000);
@@ -1868,17 +1892,22 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                   <option value="+1h">⏳ Plus d'1 heure</option>
                   <option value="custom">Personnalisé...</option>
                 </select>
-                {(!["<5", "10-15", "30", "+1h", "none", null, undefined].includes((useAppStore.getState().googleTaskDurations || {})[t.id] as any) || ((useAppStore.getState().googleTaskDurations || {})[t.id] as any) === "custom") && (
+                {selDuration === "custom" && (
                   <input
                     type="text"
                     placeholder="ex: 45min"
-                    defaultValue={(useAppStore.getState().googleTaskDurations || {})[t.id] !== "custom" && !["<5", "10-15", "30", "+1h"].includes((useAppStore.getState().googleTaskDurations || {})[t.id] as string) ? (useAppStore.getState().googleTaskDurations || {})[t.id] as string : ""}
+                    value={customDurVal}
+                    onChange={(e) => setCustomDurVal(e.target.value)}
                     className="ml-2 text-[13px] px-2 py-1 rounded border bg-transparent focus:outline-none"
                     style={{ borderColor: "var(--border-primary)", color: "var(--text-primary)", width: "100px" }}
                     onBlur={(e) => {
                       const val = e.target.value.trim();
                       if (val) {
                         useAppStore.getState().setGoogleTaskDuration(t.id, val);
+                        setSaved(true); setTimeout(() => setSaved(false), 2000);
+                      } else {
+                        setSelDuration("none");
+                        useAppStore.getState().setGoogleTaskDuration(t.id, null);
                         setSaved(true); setTimeout(() => setSaved(false), 2000);
                       }
                     }}
