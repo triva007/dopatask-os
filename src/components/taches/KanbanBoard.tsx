@@ -176,8 +176,17 @@ function KanbanCard({ task, onOpenDetail, isSelected, onSelect, accent }: Kanban
           </p>
 
           {/* Meta row */}
-          {(task.estimatedMinutes || task.tags.length > 0) && (
+          {(task.estimatedMinutes || task.priority || task.tags.length > 0) && (
             <div className="flex flex-wrap items-center gap-1.5 mt-2">
+              {task.priority && (
+                <span className="inline-flex items-center gap-1 text-[10px] px-1.5 py-[2px] rounded-md font-medium tracking-wide"
+                  style={{
+                    color: task.priority === "high" ? "var(--accent-red)" : task.priority === "medium" ? "var(--accent-orange)" : "var(--accent-green)",
+                    background: `color-mix(in srgb, ${task.priority === "high" ? "var(--accent-red)" : task.priority === "medium" ? "var(--accent-orange)" : "var(--accent-green)"} 15%, transparent)`
+                  }}>
+                  <Flag size={9} /> {task.priority === "high" ? "Haute" : task.priority === "medium" ? "Moy." : "Basse"}
+                </span>
+              )}
               {task.estimatedMinutes && (
                 <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-tertiary)] tabular-nums">
                   <Timer size={10} strokeWidth={2} />
@@ -267,6 +276,42 @@ function KanbanCard({ task, onOpenDetail, isSelected, onSelect, accent }: Kanban
                   {c.label}
                 </button>
               ))}
+              <div className="h-px bg-[var(--border-primary)] my-1" />
+              <div className="px-3 pt-1 pb-1 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">
+                Priorité
+              </div>
+              <div className="flex px-2 gap-1 pb-1">
+                {(["low", "medium", "high"] as const).map(p => (
+                  <button key={p} onClick={() => { updateTask(task.id, { priority: task.priority === p ? undefined : p }); setMenuOpen(false); }}
+                    className="flex-1 text-[10px] py-1 rounded border transition-colors flex justify-center items-center font-medium"
+                    style={{
+                      background: task.priority === p ? `color-mix(in srgb, var(--accent-${p === "high" ? "red" : p === "medium" ? "orange" : "green"}) 15%, transparent)` : "transparent",
+                      color: task.priority === p ? `var(--accent-${p === "high" ? "red" : p === "medium" ? "orange" : "green"})` : "var(--text-secondary)",
+                      borderColor: task.priority === p ? `var(--accent-${p === "high" ? "red" : p === "medium" ? "orange" : "green"})` : "var(--border-primary)",
+                    }}
+                  >
+                    {p === "high" ? "Haute" : p === "medium" ? "Moy." : "Basse"}
+                  </button>
+                ))}
+              </div>
+              <div className="h-px bg-[var(--border-primary)] my-1" />
+              <div className="px-3 pt-1 pb-1 text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">
+                Durée (min)
+              </div>
+              <div className="flex px-2 gap-1 pb-1">
+                {[15, 30, 45, 60].map(m => (
+                  <button key={m} onClick={() => { updateTask(task.id, { estimatedMinutes: task.estimatedMinutes === m ? undefined : m }); setMenuOpen(false); }}
+                    className="flex-1 text-[10px] py-1 rounded border transition-colors flex justify-center items-center font-medium"
+                    style={{
+                      background: task.estimatedMinutes === m ? "var(--accent-blue-light)" : "transparent",
+                      color: task.estimatedMinutes === m ? "var(--accent-blue)" : "var(--text-secondary)",
+                      borderColor: task.estimatedMinutes === m ? "var(--accent-blue)" : "var(--border-primary)",
+                    }}
+                  >
+                    {m}
+                  </button>
+                ))}
+              </div>
               <div className="h-px bg-[var(--border-primary)] my-1" />
               <button
                 onClick={() => { deleteTask(task.id); setMenuOpen(false); }}
