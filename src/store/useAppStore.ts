@@ -105,6 +105,10 @@ interface AppState {
   setGoogleEventProject: (eventId: string, projectId: string | null) => void;
   googleTaskProjects: Record<string, string>;
   setGoogleTaskProject: (taskId: string, projectId: string | null) => void;
+  googleTaskPriorities: Record<string, string>;
+  setGoogleTaskPriority: (taskId: string, priority: string | null) => void;
+  googleTaskDurations: Record<string, number>;
+  setGoogleTaskDuration: (taskId: string, duration: number | null) => void;
   googleTaskRecurrence: Record<string, boolean>;
   setGoogleTaskRecurrence: (taskId: string, recurring: boolean) => void;
   googleTaskSubtasks: Record<string, { id: string; text: string; completed: boolean }[]>;
@@ -142,6 +146,8 @@ export const useAppStore = create<AppState>()(
         if (!persistedState.state) persistedState.state = {};
         if (!persistedState.state.googleEventProjects) persistedState.state.googleEventProjects = {};
         if (!persistedState.state.googleTaskProjects) persistedState.state.googleTaskProjects = {};
+        if (!persistedState.state.googleTaskPriorities) persistedState.state.googleTaskPriorities = {};
+        if (!persistedState.state.googleTaskDurations) persistedState.state.googleTaskDurations = {};
         if (!persistedState.state.googleTaskRecurrence) persistedState.state.googleTaskRecurrence = {};
         if (!persistedState.state.googleTaskSubtasks) persistedState.state.googleTaskSubtasks = {};
         if (!persistedState.state.weeklyRoutine) persistedState.state.weeklyRoutine = DEFAULT_WEEKLY_ROUTINE;

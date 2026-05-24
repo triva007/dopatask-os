@@ -126,6 +126,10 @@ export default function GoogleTasksKanban() {
   const [showMoveMenu, setShowMoveMenu] = useState<{ taskId: string; listId: string } | null>(null);
 
   const addToast  = useAppStore((s) => s.addToast);
+  const googleTaskPriorities = useAppStore((s) => s.googleTaskPriorities);
+  const googleTaskDurations = useAppStore((s) => s.googleTaskDurations);
+  const setGoogleTaskPriority = useAppStore((s) => s.setGoogleTaskPriority);
+  const setGoogleTaskDuration = useAppStore((s) => s.setGoogleTaskDuration);
 
   useEffect(() => {
     setStarred(loadSet(STAR_KEY));
@@ -981,6 +985,52 @@ export default function GoogleTasksKanban() {
 
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
 
+              {/* Priority */}
+              <div className="px-3 py-1">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold flex items-center gap-1 mb-1.5">Priorité</span>
+                <div className="flex gap-1">
+                  {(["low", "medium", "high"] as const).map(p => {
+                    const isActive = (googleTaskPriorities || {})[contextMenu.t.id] === p;
+                    return (
+                    <button key={p} onClick={() => { setGoogleTaskPriority(contextMenu.t.id, isActive ? null : p); setContextMenu(null); }}
+                      className="flex-1 text-[10px] py-1 rounded border transition-colors flex justify-center items-center font-medium"
+                      style={{
+                        background: isActive ? `color-mix(in srgb, var(--accent-${p === "high" ? "red" : p === "medium" ? "orange" : "green"}) 15%, transparent)` : "transparent",
+                        color: isActive ? `var(--accent-${p === "high" ? "red" : p === "medium" ? "orange" : "green"})` : "var(--text-secondary)",
+                        borderColor: isActive ? `var(--accent-${p === "high" ? "red" : p === "medium" ? "orange" : "green"})` : "var(--border-primary)",
+                      }}
+                    >
+                      {p === "high" ? "Haute" : p === "medium" ? "Moy." : "Basse"}
+                    </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Duration */}
+              <div className="px-3 py-1">
+                <span className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold flex items-center gap-1 mb-1.5">Durée (min)</span>
+                <div className="flex gap-1">
+                  {[15, 30, 45, 60].map(m => {
+                    const isActive = (googleTaskDurations || {})[contextMenu.t.id] === m;
+                    return (
+                    <button key={m} onClick={() => { setGoogleTaskDuration(contextMenu.t.id, isActive ? null : m); setContextMenu(null); }}
+                      className="flex-1 text-[10px] py-1 rounded border transition-colors flex justify-center items-center font-medium"
+                      style={{
+                        background: isActive ? "var(--accent-blue-light)" : "transparent",
+                        color: isActive ? "var(--accent-blue)" : "var(--text-secondary)",
+                        borderColor: isActive ? "var(--accent-blue)" : "var(--border-primary)",
+                      }}
+                    >
+                      {m}
+                    </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
+
               {/* Trello: Duplicate */}
               <button
                 className="w-full text-left px-3 py-2 text-[13px] hover:bg-[var(--surface-2)] rounded-lg transition-colors flex items-center gap-2"
@@ -1472,6 +1522,31 @@ function TaskCard(p: TaskCardProps) {
                   {subtasksDone}/{subtasksTotal}
                 </span>
               )}
+              {/* Priority badge */}
+              {(() => {
+                const priority = (useAppStore.getState().googleTaskPriorities || {})[p.t.id];
+                if (!priority) return null;
+                return (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md"
+                        style={{
+                          background: `color-mix(in srgb, var(--accent-${priority === "high" ? "red" : priority === "medium" ? "orange" : "green"}) 15%, transparent)`,
+                          color: `var(--accent-${priority === "high" ? "red" : priority === "medium" ? "orange" : "green"})`
+                        }}>
+                    {priority === "high" ? "Haute" : priority === "medium" ? "Moy." : "Basse"}
+                  </span>
+                );
+              })()}
+              {/* Duration badge */}
+              {(() => {
+                const duration = (useAppStore.getState().googleTaskDurations || {})[p.t.id];
+                if (!duration) return null;
+                return (
+                  <span className="inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md"
+                        style={{ background: "var(--accent-blue-light)", color: "var(--accent-blue)" }}>
+                    ~{duration}m
+                  </span>
+                );
+              })()}
             </div>
           )}
         </div>
