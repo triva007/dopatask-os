@@ -946,32 +946,12 @@ export default function GoogleTasksKanban() {
 
               <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
 
-              {/* Move to list — compact */}
-              <div className="px-2 py-1">
-                <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold px-1">Déplacer vers</span>
-                <div className="flex flex-wrap gap-1 mt-1">
-                  {lists.filter((l) => l.id !== contextMenu.t.listId).map((l) => (
-                    <button
-                      key={l.id}
-                      className="text-[11px] px-2 py-0.5 rounded-md hover:bg-[var(--surface-2)] transition-colors flex items-center gap-1"
-                      style={{ color: colorForList(l.id).hue }}
-                      onClick={() => { moveTaskToList(contextMenu.t, l.id); setContextMenu(null); }}
-                    >
-                      <span className="w-1.5 h-1.5 rounded-full inline-block" style={{ background: colorForList(l.id).hue }} />
-                      {l.title || "(sans nom)"}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="h-px bg-[var(--border-primary)] my-1 mx-1" />
-
               {/* Importance — compact inline */}
               <div className="px-2 py-1">
                 <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold px-1">Importance</span>
                 <div className="grid grid-cols-2 gap-1 mt-1">
                   {([
-                    { id: "urgent-important", emoji: "🔴", label: "Imp. & Urgent" },
+                    { id: "urgent-important", emoji: "🔴", label: "Important et urgent" },
                     { id: "important",        emoji: "🟠", label: "Important" },
                     { id: "urgent",           emoji: "🟡", label: "Urgent" },
                     { id: "none",             emoji: "⚪", label: "Aucun" },
@@ -1838,6 +1818,75 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                     <option key={pj.id} value={pj.id}>{pj.emoji} {pj.name}</option>
                   ))}
                 </select>
+              </div>
+            </div>
+
+            {/* Importance */}
+            <div className="flex items-center min-h-[36px]">
+              <div className="w-[140px] text-[13px] text-[var(--text-tertiary)] flex items-center gap-2 font-medium">
+                <Star size={14} /> Importance
+              </div>
+              <div className="flex-1">
+                <select
+                  value={useAppStore.getState().googleTaskPriorities[t.id] || "none"}
+                  onChange={(e) => { 
+                    const val = e.target.value;
+                    useAppStore.getState().setGoogleTaskPriority(t.id, val === "none" ? null : val);
+                    setSaved(true); setTimeout(() => setSaved(false), 2000);
+                  }}
+                  className="bg-transparent text-[13.5px] font-medium focus:outline-none hover:bg-[var(--surface-2)] px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors cursor-pointer text-[var(--text-primary)] appearance-none"
+                >
+                  <option value="none">⚪ Aucun</option>
+                  <option value="urgent-important">🔴 Important et urgent</option>
+                  <option value="important">🟠 Important, pas urgent</option>
+                  <option value="urgent">🟡 Urgent, pas important</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Duration */}
+            <div className="flex items-center min-h-[36px]">
+              <div className="w-[140px] text-[13px] text-[var(--text-tertiary)] flex items-center gap-2 font-medium">
+                <Clock size={14} /> Durée estimée
+              </div>
+              <div className="flex-1 flex items-center">
+                <select
+                  value={["<5", "10-15", "30", "+1h"].includes(useAppStore.getState().googleTaskDurations[t.id] as string) ? (useAppStore.getState().googleTaskDurations[t.id] as string) : "custom"}
+                  onChange={(e) => { 
+                    const val = e.target.value;
+                    if (val !== "custom") {
+                      useAppStore.getState().setGoogleTaskDuration(t.id, val === "none" ? null : val);
+                      setSaved(true); setTimeout(() => setSaved(false), 2000);
+                    }
+                  }}
+                  className="bg-transparent text-[13.5px] font-medium focus:outline-none hover:bg-[var(--surface-2)] px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors cursor-pointer text-[var(--text-primary)] appearance-none"
+                >
+                  <option value="none">Aucune</option>
+                  <option value="<5">⚡ Moins de 5 min</option>
+                  <option value="10-15">🕐 10 – 15 min</option>
+                  <option value="30">⏱ 30 min</option>
+                  <option value="+1h">⏳ Plus d'1 heure</option>
+                  <option value="custom">Personnalisé...</option>
+                </select>
+                {(!["<5", "10-15", "30", "+1h", "none", null, undefined].includes(useAppStore.getState().googleTaskDurations[t.id] as any) || (useAppStore.getState().googleTaskDurations[t.id] as any) === "custom") && (
+                  <input
+                    type="text"
+                    placeholder="ex: 45min"
+                    defaultValue={useAppStore.getState().googleTaskDurations[t.id] !== "custom" && !["<5", "10-15", "30", "+1h"].includes(useAppStore.getState().googleTaskDurations[t.id] as string) ? useAppStore.getState().googleTaskDurations[t.id] as string : ""}
+                    className="ml-2 text-[13px] px-2 py-1 rounded border bg-transparent focus:outline-none"
+                    style={{ borderColor: "var(--border-primary)", color: "var(--text-primary)", width: "100px" }}
+                    onBlur={(e) => {
+                      const val = e.target.value.trim();
+                      if (val) {
+                        useAppStore.getState().setGoogleTaskDuration(t.id, val);
+                        setSaved(true); setTimeout(() => setSaved(false), 2000);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") e.currentTarget.blur();
+                    }}
+                  />
+                )}
               </div>
             </div>
 
