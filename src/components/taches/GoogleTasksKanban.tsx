@@ -695,6 +695,7 @@ export default function GoogleTasksKanban() {
                 quadId: "urgent-important" | "important" | "urgent" | "none",
                 title: string,
                 subtitle: string,
+                description: string,
                 emoji: string,
                 accentColor: string,
                 bgColor: string,
@@ -734,6 +735,7 @@ export default function GoogleTasksKanban() {
                           <span>{title}</span>
                         </h3>
                         <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">{subtitle}</p>
+                        <p className="text-[10px] text-[var(--text-tertiary)] italic mt-1 font-normal leading-relaxed max-w-[280px]">{description}</p>
                       </div>
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--surface-2)] text-[var(--text-secondary)] font-bold">
                         {quadTasks.length}
@@ -788,8 +790,9 @@ export default function GoogleTasksKanban() {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0 overflow-y-auto xl:overflow-hidden">
                   {renderQuadrant(
                     "urgent-important",
-                    "1. Faire immédiatement",
-                    "Important et urgent",
+                    "1. Focus absolu",
+                    "Important & Urgent",
+                    "🔥 Votre priorité n°1. Pas de distraction, une seule tâche à la fois pour éviter la surcharge mentale.",
                     "🔴",
                     "var(--accent-red)",
                     "var(--accent-red-light)",
@@ -798,8 +801,9 @@ export default function GoogleTasksKanban() {
                   )}
                   {renderQuadrant(
                     "important",
-                    "2. Planifier",
-                    "Important, pas urgent",
+                    "2. Projets de fond",
+                    "Important, pas urgent (Deep Work)",
+                    "🧠 Le cœur de votre activité d'indépendant. À planifier pour éviter la procrastination et progresser.",
                     "🟠",
                     "var(--accent-orange)",
                     "rgba(254,163,98,0.12)",
@@ -808,8 +812,9 @@ export default function GoogleTasksKanban() {
                   )}
                   {renderQuadrant(
                     "urgent",
-                    "3. Déléguer",
-                    "Urgent, pas important",
+                    "3. Routine & Batching",
+                    "Urgent, pas de valeur créative",
+                    "⚡ Regroupez ces tâches rapides (mails, factures...) lors de vos moments de baisse d'énergie.",
                     "🟡",
                     "#d4a000",
                     "rgba(230,177,0,0.10)",
@@ -818,8 +823,9 @@ export default function GoogleTasksKanban() {
                   )}
                   {renderQuadrant(
                     "none",
-                    "4. Autres / Plus tard",
-                    "Sans priorité",
+                    "4. Vide-cerveau / Idées",
+                    "Boîte de déchargement mental",
+                    "📥 Liberez votre esprit ! Notez-y tout ce qui vous passe par la tête pour rester concentré.",
                     "⚪",
                     "var(--text-tertiary)",
                     "var(--surface-2)",
