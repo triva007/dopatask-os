@@ -1828,7 +1828,7 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
               </div>
               <div className="flex-1">
                 <select
-                  value={useAppStore.getState().googleTaskPriorities[t.id] || "none"}
+                  value={(useAppStore.getState().googleTaskPriorities || {})[t.id] || "none"}
                   onChange={(e) => { 
                     const val = e.target.value;
                     useAppStore.getState().setGoogleTaskPriority(t.id, val === "none" ? null : val);
@@ -1851,7 +1851,7 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
               </div>
               <div className="flex-1 flex items-center">
                 <select
-                  value={["<5", "10-15", "30", "+1h"].includes(useAppStore.getState().googleTaskDurations[t.id] as string) ? (useAppStore.getState().googleTaskDurations[t.id] as string) : "custom"}
+                  value={["<5", "10-15", "30", "+1h"].includes((useAppStore.getState().googleTaskDurations || {})[t.id] as string) ? ((useAppStore.getState().googleTaskDurations || {})[t.id] as string) : "custom"}
                   onChange={(e) => { 
                     const val = e.target.value;
                     if (val !== "custom") {
@@ -1868,11 +1868,11 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                   <option value="+1h">⏳ Plus d'1 heure</option>
                   <option value="custom">Personnalisé...</option>
                 </select>
-                {(!["<5", "10-15", "30", "+1h", "none", null, undefined].includes(useAppStore.getState().googleTaskDurations[t.id] as any) || (useAppStore.getState().googleTaskDurations[t.id] as any) === "custom") && (
+                {(!["<5", "10-15", "30", "+1h", "none", null, undefined].includes((useAppStore.getState().googleTaskDurations || {})[t.id] as any) || ((useAppStore.getState().googleTaskDurations || {})[t.id] as any) === "custom") && (
                   <input
                     type="text"
                     placeholder="ex: 45min"
-                    defaultValue={useAppStore.getState().googleTaskDurations[t.id] !== "custom" && !["<5", "10-15", "30", "+1h"].includes(useAppStore.getState().googleTaskDurations[t.id] as string) ? useAppStore.getState().googleTaskDurations[t.id] as string : ""}
+                    defaultValue={(useAppStore.getState().googleTaskDurations || {})[t.id] !== "custom" && !["<5", "10-15", "30", "+1h"].includes((useAppStore.getState().googleTaskDurations || {})[t.id] as string) ? (useAppStore.getState().googleTaskDurations || {})[t.id] as string : ""}
                     className="ml-2 text-[13px] px-2 py-1 rounded border bg-transparent focus:outline-none"
                     style={{ borderColor: "var(--border-primary)", color: "var(--text-primary)", width: "100px" }}
                     onBlur={(e) => {
