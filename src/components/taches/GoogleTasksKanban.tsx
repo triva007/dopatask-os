@@ -6,7 +6,7 @@ import {
   Calendar as CalendarIcon, Star, ChevronDown, ChevronRight,
   ListChecks, Eye, EyeOff, Filter, FileText, Folder,
   Copy, ArrowRightLeft, Tag, Search, GripVertical,
-  MoreHorizontal, Palette, ChevronUp, Clock,
+  MoreHorizontal, Palette, ChevronUp, Clock, LayoutGrid,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAppStore } from "@/store/useAppStore";
@@ -106,7 +106,8 @@ export default function GoogleTasksKanban() {
   const [editValue, setEditValue] = useState("");
   const [openCardId, setOpenCardId] = useState<string | null>(null);
   const [showListFilter, setShowListFilter] = useState(false);
-  const [view, setView] = useState<"kanban" | "list">("kanban");
+  const [view, setView] = useState<"kanban" | "list" | "matrix">("kanban");
+  const [dragOverQuadrant, setDragOverQuadrant] = useState<string | null>(null);
   
   // New task modal state
   const [isNewTaskModalOpen, setIsNewTaskModalOpen] = useState(false);
@@ -494,14 +495,23 @@ export default function GoogleTasksKanban() {
             <button
               onClick={() => setView("kanban")}
               className={`p-1.5 rounded-lg transition-all ${view === "kanban" ? "bg-[var(--card-bg)] shadow-sm text-[var(--accent-blue)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"}`}
+              title="Vue Tableau Kanban"
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/></svg>
             </button>
             <button
               onClick={() => setView("list")}
               className={`p-1.5 rounded-lg transition-all ${view === "list" ? "bg-[var(--card-bg)] shadow-sm text-[var(--accent-blue)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"}`}
+              title="Vue Liste"
             >
               <ListChecks size={14} />
+            </button>
+            <button
+              onClick={() => setView("matrix")}
+              className={`p-1.5 rounded-lg transition-all ${view === "matrix" ? "bg-[var(--card-bg)] shadow-sm text-[var(--accent-blue)]" : "text-[var(--text-tertiary)] hover:text-[var(--text-secondary)]"}`}
+              title="Matrice d'Eisenhower"
+            >
+              <LayoutGrid size={14} />
             </button>
           </div>
 
@@ -660,83 +670,83 @@ export default function GoogleTasksKanban() {
         </div>
       )}
 
-      {/* ─── Kanban / List ────────────────────────────────────────────────────── */}
-      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-auto">
-        <div className={view === "kanban" ? "flex gap-5 px-8 py-6 h-full min-w-min" : "flex flex-col gap-5 px-8 py-6 max-w-[800px] mx-auto"}>
-          {visibleLists.length === 0 ? (
-            <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
-              <Filter size={28} className="text-[var(--text-tertiary)] opacity-50" />
-              <p className="text-[14px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquées</p>
-              <p className="text-[12.5px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
-            </div>
-          ) : (
-            visibleLists.map((list) => {
-              const listTasks = filteredTasks
-                .filter((t) => t.listId === list.id)
-                .sort((a, b) => (a.position || "").localeCompare(b.position || ""));
-              const open = listTasks.filter((t) => t.status !== "completed");
-              const done = listTasks.filter((t) => t.status === "completed");
-              const isOpen = showCompleted[list.id] || false;
-              const isCollapsed = collapsedLists.has(list.id);
-              const isDragOver = dragOverListId === list.id;
+      {/* ─── Kanban / List / Matrix ────────────────────────────────────────────────────── */}
+      <div className="flex-1 min-h-0 overflow-auto">
+        {view === "matrix" ? (
+          <div className="h-full flex flex-col p-6 overflow-hidden">
+            {visibleLists.length === 0 ? (
+              <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
+                <Filter size={28} className="text-[var(--text-tertiary)] opacity-50" />
+                <p className="text-[14px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquées</p>
+                <p className="text-[12.5px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
+              </div>
+            ) : (() => {
+              // Group tasks
+              const activeTasks = filteredTasks.filter(t => t.status !== "completed" && !hiddenLists.has(t.listId));
+              const q1Tasks = activeTasks.filter(t => (googleTaskPriorities || {})[t.id] === "urgent-important");
+              const q2Tasks = activeTasks.filter(t => (googleTaskPriorities || {})[t.id] === "important");
+              const q3Tasks = activeTasks.filter(t => (googleTaskPriorities || {})[t.id] === "urgent");
+              const q4Tasks = activeTasks.filter(t => {
+                const prio = (googleTaskPriorities || {})[t.id];
+                return !prio || prio === "none";
+              });
 
-              if (view === "kanban") {
+              const renderQuadrant = (
+                quadId: "urgent-important" | "important" | "urgent" | "none",
+                title: string,
+                subtitle: string,
+                emoji: string,
+                accentColor: string,
+                bgColor: string,
+                hoverBg: string,
+                quadTasks: GTask[]
+              ) => {
+                const isOver = dragOverQuadrant === quadId;
                 return (
-                  <ListColumn
-                    key={list.id}
-                    list={list}
-                    open={open}
-                    done={done}
-                    isCompletedOpen={isOpen}
-                    starred={starred}
-                    pending={pending}
-                    editingId={editingId}
-                    editValue={editValue}
-                    taskLabels={taskLabels}
-                    isCollapsed={isCollapsed}
-                    isDragOver={isDragOver}
-                    onToggleCollapsed={() => toggleCollapsed(list.id)}
-                    onDragOverList={() => handleDragOverList(list.id)}
-                    onDragLeaveList={() => setDragOverListId(null)}
-                    onDropOnList={() => handleDropOnList(list.id)}
-                    onToggleCompleted={() => setShowCompleted((p) => ({ ...p, [list.id]: !p[list.id] }))}
-                    onCreate={(title) => createTask(list.id, title)}
-                    onCheck={toggleTask}
-                    onDelete={removeTask}
-                    onToggleStar={toggleStar}
-                    onStartEdit={(t) => { setEditingId(t.id); setEditValue(t.title || ""); }}
-                    onChangeEdit={setEditValue}
-                    onSaveEdit={(t) => {
-                      if (editValue.trim() && editValue !== t.title) {
-                        updateTask(t, { title: editValue.trim() });
-                      }
-                      setEditingId(null);
-                    }}
-                    onCancelEdit={() => setEditingId(null)}
-                    onUpdate={updateTask}
-                    onOpenCard={setOpenCardId}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onContextMenu={(t, e) => {
+                  <div
+                    onDragOver={(e) => {
                       e.preventDefault();
-                      setContextMenu({ x: e.clientX, y: e.clientY, t });
+                      if (dragOverQuadrant !== quadId) setDragOverQuadrant(quadId);
                     }}
-                  />
-                );
-              } else {
-                return (
-                  <div key={list.id} className="mb-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="w-2.5 h-2.5 rounded-full" style={{ background: colorForList(list.id).hue }} />
-                      <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">{list.title || "(sans nom)"}</h2>
-                      <span className="text-[11px] px-2 py-0.5 rounded-lg bg-[var(--surface-2)] text-[var(--text-secondary)]">{open.length}</span>
+                    onDragLeave={() => setDragOverQuadrant(null)}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      setDragOverQuadrant(null);
+                      const taskId = e.dataTransfer.getData("text/plain");
+                      if (taskId) {
+                        setGoogleTaskPriority(taskId, quadId === "none" ? null : quadId);
+                        addToast(`Priorité mise à jour : ${title}`, "success");
+                      }
+                    }}
+                    className="flex flex-col rounded-2xl border p-5 min-h-[280px] xl:h-full transition-all duration-200"
+                    style={{
+                      background: isOver ? hoverBg : "var(--card-bg)",
+                      borderColor: isOver ? accentColor : "var(--card-border)",
+                      boxShadow: isOver ? "var(--shadow-elevated)" : "var(--card-shadow)",
+                      ...(isOver ? { outline: `2px solid ${accentColor}`, outlineOffset: "2px" } : {})
+                    }}
+                  >
+                    {/* Title */}
+                    <div className="flex items-center justify-between mb-4 border-b pb-2 shrink-0" style={{ borderColor: "var(--border-primary)" }}>
+                      <div>
+                        <h3 className="text-[14px] font-bold flex items-center gap-2" style={{ color: accentColor }}>
+                          <span>{emoji}</span>
+                          <span>{title}</span>
+                        </h3>
+                        <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">{subtitle}</p>
+                      </div>
+                      <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--surface-2)] text-[var(--text-secondary)] font-bold">
+                        {quadTasks.length}
+                      </span>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      {open.map((t) => (
+
+                    {/* Task cards list */}
+                    <div className="flex-1 min-h-0 overflow-y-auto flex flex-col gap-2.5 pr-1">
+                      {quadTasks.map((t) => (
                         <TaskCard
                           key={t.id}
                           t={t}
-                          accent={colorForList(list.id).hue}
+                          accent={colorForList(t.listId).hue}
                           starred={starred.has(t.id)}
                           isPending={pending.has(t.id)}
                           isEditing={editingId === t.id}
@@ -764,20 +774,180 @@ export default function GoogleTasksKanban() {
                           }}
                         />
                       ))}
-                      {open.length === 0 && <p className="text-[12px] text-[var(--text-tertiary)] italic">Aucune tâche</p>}
-                      <button onClick={() => {
-                        const title = window.prompt("Nouvelle tâche dans " + (list.title || "cette liste") + " :");
-                        if (title && title.trim()) createTask(list.id, title);
-                      }} className="text-[12px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 py-2 transition-colors">
-                        <Plus size={12} /> Ajouter une tâche
-                      </button>
+                      {quadTasks.length === 0 && (
+                        <div className="flex-1 flex flex-col items-center justify-center border-2 border-dashed border-[var(--border-secondary)] rounded-2xl py-8 px-4 text-center">
+                          <p className="text-[12px] text-[var(--text-tertiary)] italic">Glisser-déposer une tâche ici</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 );
-              }
-            })
-          )}
-        </div>
+              };
+
+              return (
+                <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0 overflow-y-auto xl:overflow-hidden">
+                  {renderQuadrant(
+                    "urgent-important",
+                    "1. Faire immédiatement",
+                    "Important et urgent",
+                    "🔴",
+                    "var(--accent-red)",
+                    "var(--accent-red-light)",
+                    "rgba(248, 113, 104, 0.08)",
+                    q1Tasks
+                  )}
+                  {renderQuadrant(
+                    "important",
+                    "2. Planifier",
+                    "Important, pas urgent",
+                    "🟠",
+                    "var(--accent-orange)",
+                    "rgba(254,163,98,0.12)",
+                    "rgba(254, 163, 98, 0.08)",
+                    q2Tasks
+                  )}
+                  {renderQuadrant(
+                    "urgent",
+                    "3. Déléguer",
+                    "Urgent, pas important",
+                    "🟡",
+                    "#d4a000",
+                    "rgba(230,177,0,0.10)",
+                    "rgba(230, 177, 0, 0.08)",
+                    q3Tasks
+                  )}
+                  {renderQuadrant(
+                    "none",
+                    "4. Autres / Plus tard",
+                    "Sans priorité",
+                    "⚪",
+                    "var(--text-tertiary)",
+                    "var(--surface-2)",
+                    "rgba(120, 120, 120, 0.08)",
+                    q4Tasks
+                  )}
+                </div>
+              );
+            })()}
+          </div>
+        ) : (
+          <div className={view === "kanban" ? "flex gap-5 px-8 py-6 h-full min-w-min" : "flex flex-col gap-5 px-8 py-6 max-w-[800px] mx-auto"}>
+            {visibleLists.length === 0 ? (
+              <div className="flex flex-col items-center justify-center w-full text-center gap-3 py-16">
+                <Filter size={28} className="text-[var(--text-tertiary)] opacity-50" />
+                <p className="text-[14px] text-[var(--text-primary)] font-medium">Toutes les listes sont masquées</p>
+                <p className="text-[12.5px] text-[var(--text-secondary)]">Active au moins une liste via le filtre en haut a droite</p>
+              </div>
+            ) : (
+              visibleLists.map((list) => {
+                const listTasks = filteredTasks
+                  .filter((t) => t.listId === list.id)
+                  .sort((a, b) => (a.position || "").localeCompare(b.position || ""));
+                const open = listTasks.filter((t) => t.status !== "completed");
+                const done = listTasks.filter((t) => t.status === "completed");
+                const isOpen = showCompleted[list.id] || false;
+                const isCollapsed = collapsedLists.has(list.id);
+                const isDragOver = dragOverListId === list.id;
+
+                if (view === "kanban") {
+                  return (
+                    <ListColumn
+                      key={list.id}
+                      list={list}
+                      open={open}
+                      done={done}
+                      isCompletedOpen={isOpen}
+                      starred={starred}
+                      pending={pending}
+                      editingId={editingId}
+                      editValue={editValue}
+                      taskLabels={taskLabels}
+                      isCollapsed={isCollapsed}
+                      isDragOver={isDragOver}
+                      onToggleCollapsed={() => toggleCollapsed(list.id)}
+                      onDragOverList={() => handleDragOverList(list.id)}
+                      onDragLeaveList={() => setDragOverListId(null)}
+                      onDropOnList={() => handleDropOnList(list.id)}
+                      onToggleCompleted={() => setShowCompleted((p) => ({ ...p, [list.id]: !p[list.id] }))}
+                      onCreate={(title) => createTask(list.id, title)}
+                      onCheck={toggleTask}
+                      onDelete={removeTask}
+                      onToggleStar={toggleStar}
+                      onStartEdit={(t) => { setEditingId(t.id); setEditValue(t.title || ""); }}
+                      onChangeEdit={setEditValue}
+                      onSaveEdit={(t) => {
+                        if (editValue.trim() && editValue !== t.title) {
+                          updateTask(t, { title: editValue.trim() });
+                        }
+                        setEditingId(null);
+                      }}
+                      onCancelEdit={() => setEditingId(null)}
+                      onUpdate={updateTask}
+                      onOpenCard={setOpenCardId}
+                      onDragStart={handleDragStart}
+                      onDragEnd={handleDragEnd}
+                      onContextMenu={(t, e) => {
+                        e.preventDefault();
+                        setContextMenu({ x: e.clientX, y: e.clientY, t });
+                      }}
+                    />
+                  );
+                } else {
+                  return (
+                    <div key={list.id} className="mb-4">
+                      <div className="flex items-center gap-2 mb-3">
+                        <div className="w-2.5 h-2.5 rounded-full" style={{ background: colorForList(list.id).hue }} />
+                        <h2 className="text-[15px] font-semibold text-[var(--text-primary)]">{list.title || "(sans nom)"}</h2>
+                        <span className="text-[11px] px-2 py-0.5 rounded-lg bg-[var(--surface-2)] text-[var(--text-secondary)]">{open.length}</span>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        {open.map((t) => (
+                          <TaskCard
+                            key={t.id}
+                            t={t}
+                            accent={colorForList(list.id).hue}
+                            starred={starred.has(t.id)}
+                            isPending={pending.has(t.id)}
+                            isEditing={editingId === t.id}
+                            editValue={editValue}
+                            labels={taskLabels[t.id] || []}
+                            onCheck={() => toggleTask(t)}
+                            onDelete={() => removeTask(t)}
+                            onStar={() => toggleStar(t.id)}
+                            onStartEdit={() => { setEditingId(t.id); setEditValue(t.title || ""); }}
+                            onChangeEdit={setEditValue}
+                            onSaveEdit={() => {
+                              if (editValue.trim() && editValue !== t.title) {
+                                updateTask(t, { title: editValue.trim() });
+                              }
+                              setEditingId(null);
+                            }}
+                            onCancelEdit={() => setEditingId(null)}
+                            onSetDate={(iso) => updateTask(t, { due: iso ? iso + "T00:00:00.000Z" : undefined })}
+                            onOpenCard={() => setOpenCardId(t.id)}
+                            onDragStart={() => handleDragStart(t)}
+                            onDragEnd={handleDragEnd}
+                            onContextMenu={(e) => {
+                              e.preventDefault();
+                              setContextMenu({ x: e.clientX, y: e.clientY, t });
+                            }}
+                          />
+                        ))}
+                        {open.length === 0 && <p className="text-[12px] text-[var(--text-tertiary)] italic">Aucune tâche</p>}
+                        <button onClick={() => {
+                          const title = window.prompt("Nouvelle tâche dans " + (list.title || "cette liste") + " :");
+                          if (title && title.trim()) createTask(list.id, title);
+                        }} className="text-[12px] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] flex items-center gap-1.5 py-2 transition-colors">
+                          <Plus size={12} /> Ajouter une tâche
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+              })
+            )}
+          </div>
+        )}
       </div>
 
       {/* ─── Detail Modal ──────────────────────────────────────────────── */}
