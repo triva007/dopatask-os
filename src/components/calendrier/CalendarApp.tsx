@@ -80,6 +80,8 @@ export default function CalendarApp() {
   // DopaTask local tasks (read-only for calendar display)
   const dopaTasks = useAppStore((s) => s.tasks);
   const dopaProjects = useAppStore((s) => s.projects);
+  const googleTaskPriorities = useAppStore((s) => s.googleTaskPriorities);
+  const googleTaskDurations = useAppStore((s) => s.googleTaskDurations);
 
   // Visible events
   const visibleEvents = useMemo(() => {
@@ -91,14 +93,40 @@ export default function CalendarApp() {
     const taskEvs = googleTasks
       .filter((t) => t.due && t.status !== "completed")
       .map((t) => {
+        const priority = (googleTaskPriorities || {})[t.id];
+        const duration = (googleTaskDurations || {})[t.id];
+
+        const PRIORITY_PREFIXES: Record<string, string> = {
+          "urgent-important": "🔴 [Important et urgent] ",
+          "important": "🟠 [Important, pas urgent] ",
+          "urgent": "🟡 [Urgent, pas important] ",
+        };
+        const DURATION_LABELS: Record<string, string> = {
+          "<5": "<5 min",
+          "10-15": "10-15 min",
+          "30": "30 min",
+          "+1h": "+1h",
+        };
+        const pref = priority ? (PRIORITY_PREFIXES[priority] || "") : "";
+        const durSuff = duration ? ` (${DURATION_LABELS[String(duration)] || duration})` : "";
+        const summary = `${pref}${t.title || "(sans titre)"}${durSuff}`;
+
+        const priorityColors: Record<string, string> = {
+          "urgent-important": "#ef4444",
+          "important": "#f59e0b",
+          "urgent": "#e6b100",
+        };
+        const backgroundColor = priority ? priorityColors[priority] : undefined;
+
         return {
           id: `task-${t.id}`,
           calendarId: "tasks",
-          summary: t.title || "(sans titre)",
+          summary,
           description: t.notes,
           start: { date: t.due ? t.due.slice(0, 10) : undefined },
           end: { date: t.due ? t.due.slice(0, 10) : undefined },
           type: "task" as const,
+          backgroundColor,
           taskInfo: t,
         };
       });
@@ -123,7 +151,7 @@ export default function CalendarApp() {
       });
 
     return [...evs, ...taskEvs, ...dopaEvs];
-  }, [events, hiddenCalendarIds, googleTasks, dopaTasks, dopaProjects]);
+  }, [events, hiddenCalendarIds, googleTasks, dopaTasks, dopaProjects, googleTaskPriorities, googleTaskDurations]);
 
   // Load data
   const loadData = useCallback(async () => {

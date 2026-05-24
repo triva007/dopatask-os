@@ -125,6 +125,7 @@ const GCAL_COLORS: Record<string, string> = {
 };
 
 export function getEventColor(ev: CalendarEvent, calendars: CalendarInfo[]): string {
+  if (ev.backgroundColor) return ev.backgroundColor;
   if (ev.colorId && GCAL_COLORS[ev.colorId]) return GCAL_COLORS[ev.colorId];
   const cal = calendars.find((c) => c.id === ev.calendarId);
   return cal?.backgroundColor || "#4285f4";

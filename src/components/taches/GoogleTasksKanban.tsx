@@ -952,8 +952,8 @@ export default function GoogleTasksKanban() {
                 <div className="grid grid-cols-2 gap-1 mt-1">
                   {([
                     { id: "urgent-important", emoji: "🔴", label: "Important et urgent" },
-                    { id: "important",        emoji: "🟠", label: "Important" },
-                    { id: "urgent",           emoji: "🟡", label: "Urgent" },
+                    { id: "important",        emoji: "🟠", label: "Important, pas urgent" },
+                    { id: "urgent",           emoji: "🟡", label: "Urgent, pas important" },
                     { id: "none",             emoji: "⚪", label: "Aucun" },
                   ] as const).map(opt => {
                     const isActive = (googleTaskPriorities || {})[contextMenu.t.id] === opt.id;
@@ -1506,10 +1506,10 @@ function TaskCard(p: TaskCardProps) {
                 const priority = (useAppStore.getState().googleTaskPriorities || {})[p.t.id];
                 const duration = (useAppStore.getState().googleTaskDurations || {})[p.t.id];
                 const PRIORITY_META: Record<string, { emoji: string; label: string; color: string; bg: string }> = {
-                  "urgent-important": { emoji: "🔴", label: "Imp. & Urgent",  color: "var(--accent-red)",    bg: "var(--accent-red-light)" },
-                  "important":        { emoji: "🟠", label: "Important",      color: "var(--accent-orange)", bg: "rgba(254,163,98,0.12)" },
-                  "urgent":           { emoji: "🟡", label: "Urgent",         color: "#a07800",               bg: "rgba(230,177,0,0.10)" },
-                  "none":             { emoji: "⚪", label: "Sans priorité",  color: "var(--text-tertiary)", bg: "var(--surface-2)" },
+                  "urgent-important": { emoji: "🔴", label: "Important et urgent",  color: "var(--accent-red)",    bg: "var(--accent-red-light)" },
+                  "important":        { emoji: "🟠", label: "Important, pas urgent", color: "var(--accent-orange)", bg: "rgba(254,163,98,0.12)" },
+                  "urgent":           { emoji: "🟡", label: "Urgent, pas important", color: "#a07800",               bg: "rgba(230,177,0,0.10)" },
+                  "none":             { emoji: "⚪", label: "Sans priorité",         color: "var(--text-tertiary)", bg: "var(--surface-2)" },
                 };
                 const DURATION_LABELS: Record<string, string> = {
                   "<5": "⚡ <5m", "10-15": "🕐 10-15m", "30": "⏱ 30m", "+1h": "⏳ +1h",
@@ -1527,9 +1527,9 @@ function TaskCard(p: TaskCardProps) {
               <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 flex-wrap">
                 {/* Priority picker */}
                 {([
-                  { id: "urgent-important", emoji: "🔴", title: "Important & Urgent" },
-                  { id: "important",        emoji: "🟠", title: "Important" },
-                  { id: "urgent",           emoji: "🟡", title: "Urgent" },
+                  { id: "urgent-important", emoji: "🔴", title: "Important et urgent" },
+                  { id: "important",        emoji: "🟠", title: "Important, pas urgent" },
+                  { id: "urgent",           emoji: "🟡", title: "Urgent, pas important" },
                   { id: "none",             emoji: "⚪", title: "Aucun" },
                 ] as const).map(opt => {
                   const isActive = (useAppStore.getState().googleTaskPriorities || {})[p.t.id] === opt.id;
