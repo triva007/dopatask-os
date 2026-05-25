@@ -8,13 +8,14 @@ import {
   Search, Upload, MapPin, Plus, Loader2, Calendar,
   AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, RotateCcw,
   List as ListIcon, LayoutGrid, Columns3, Filter, ArrowUpDown,
-  ExternalLink, Sparkles, Clock, ListChecks,
+  ExternalLink, Sparkles, Clock, ListChecks, Download,
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
 import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI, STATUT_COLORS } from "@/lib/crmLabels";
 import type { StatutProspect, Prospect } from "@/lib/crmTypes";
 import ImportCsvModal from "./ImportCsvModal";
+import { exportCsv } from "@/utils/exportCsv";
 
 export type ViewMode = "list" | "cards" | "kanban";
 type SortMode = "recent" | "alpha" | "priority" | "calls";
@@ -117,11 +118,23 @@ export default function ProspectsListCompact({
   }, [allTasks, prospects]);
   const taskCountFor = (id: string) => tasksByProspect.get(id) || 0;
 
+  const interiorKeywords = useMemo(() => ["interieur", "intérieur", "interior"], []);
+
   const niches = useMemo(() => {
     const set = new Set<string>();
     for (const p of prospects) if (p.niche) set.add(p.niche);
-    return Array.from(set).sort();
-  }, [prospects]);
+    const allNiches = Array.from(set).sort();
+    const interiorNiches = allNiches.filter((n) =>
+      interiorKeywords.some((k) => n.toLowerCase().includes(k))
+    );
+    const otherNiches = allNiches.filter((n) =>
+      !interiorKeywords.some((k) => n.toLowerCase().includes(k))
+    );
+    const list = [];
+    if (interiorNiches.length > 0) list.push("Architecture d'intérieur");
+    list.push(...otherNiches);
+    return list;
+  }, [prospects, interiorKeywords]);
 
   const filtered = useMemo(() => {
     let arr = prospects;
@@ -137,7 +150,9 @@ export default function ProspectsListCompact({
 
     if (filterNiche !== "ALL") {
       if (filterNiche === "__NONE__") arr = arr.filter((p) => !p.niche);
-      else arr = arr.filter((p) => p.niche === filterNiche);
+      else if (filterNiche === "Architecture d'intérieur") {
+        arr = arr.filter((p) => p.niche && interiorKeywords.some((k) => p.niche.toLowerCase().includes(k)));
+      } else arr = arr.filter((p) => p.niche === filterNiche);
     }
 
     if (query.trim()) {
@@ -168,7 +183,7 @@ export default function ProspectsListCompact({
     }
     return sorted;
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [prospects, query, filterStatut, filterNiche, callsByProspect, sort]);
+  }, [prospects, query, filterStatut, filterNiche, callsByProspect, sort, interiorKeywords]);
 
   const onQuickCreate = async () => {
     if (!newName.trim()) return;
@@ -224,6 +239,21 @@ export default function ProspectsListCompact({
     setFlash(`${n} supprimé(s)`);
     setTimeout(() => setFlash(null), 2500);
     clearSelection();
+  };
+
+  const handleExport = () => {
+    const selectedProspects = prospects.filter(p => selected.has(p.id));
+    if (selectedProspects.length === 0) return;
+    const header = "Nom,Site URL\n";
+    const rows = selectedProspects.map(p => {
+      const name = p.entreprise?.replace(/"/g, '""') ?? "";
+      const site = p.site_url?.replace(/"/g, '""') ?? "";
+      return `"${name}","${site}"`;
+    }).join("\n");
+    const csvContent = header + rows;
+    const timestamp = new Date().toISOString().slice(0, 10);
+    const filename = `prospects_export_${timestamp}.csv`;
+    exportCsv(csvContent, filename);
   };
 
   const counts = useMemo(() => {
@@ -395,6 +425,13 @@ export default function ProspectsListCompact({
               className="inline-flex items-center gap-1 px-2 py-1 bg-dopa-red/15 text-dopa-red rounded-md text-[10.5px] font-semibold hover:bg-dopa-red/25"
             >
               <Trash2 size={11} /> Supp.
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={bulkBusy}
+              className="inline-flex items-center gap-1 px-2 py-1 bg-dopa-green/15 text-dopa-green rounded-md text-[10.5px] font-semibold hover:bg-dopa-green/25"
+            >
+              <Download size={11} /> Exporter CSV
             </button>
           </div>
         </div>
