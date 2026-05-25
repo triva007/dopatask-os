@@ -706,8 +706,8 @@ export default function GoogleTasksKanban() {
                 return (
                   <div
                     onDragOver={(e) => {
-                      e.preventDefault();
-                      if (dragOverQuadrant !== quadId) setDragOverQuadrant(quadId);
+                       e.preventDefault();
+                       if (dragOverQuadrant !== quadId) setDragOverQuadrant(quadId);
                     }}
                     onDragLeave={() => setDragOverQuadrant(null)}
                     onDrop={(e) => {
@@ -728,14 +728,13 @@ export default function GoogleTasksKanban() {
                     }}
                   >
                     {/* Title */}
-                    <div className="flex items-center justify-between mb-4 border-b pb-2 shrink-0" style={{ borderColor: "var(--border-primary)" }}>
+                    <div className="flex items-center justify-between mb-4 border-b pb-2.5 shrink-0" style={{ borderColor: "var(--border-primary)" }}>
                       <div>
                         <h3 className="text-[14px] font-bold flex items-center gap-2" style={{ color: accentColor }}>
-                          <span>{emoji}</span>
                           <span>{title}</span>
                         </h3>
-                        <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">{subtitle}</p>
-                        <p className="text-[10px] text-[var(--text-tertiary)] italic mt-1 font-normal leading-relaxed max-w-[280px]">{description}</p>
+                        {subtitle && <p className="text-[11px] text-[var(--text-secondary)] font-medium mt-0.5">{subtitle}</p>}
+                        {description && <p className="text-[10px] text-[var(--text-tertiary)] italic mt-1 font-normal leading-relaxed max-w-[280px]">{description}</p>}
                       </div>
                       <span className="text-[11px] font-semibold px-2 py-0.5 rounded-lg bg-[var(--surface-2)] text-[var(--text-secondary)] font-bold">
                         {quadTasks.length}
@@ -790,10 +789,10 @@ export default function GoogleTasksKanban() {
                 <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 h-full min-h-0 overflow-y-auto xl:overflow-hidden">
                   {renderQuadrant(
                     "urgent-important",
-                    "1. Focus absolu",
-                    "Important & Urgent",
-                    "🔥 Votre priorité n°1. Pas de distraction, une seule tâche à la fois pour éviter la surcharge mentale.",
-                    "🔴",
+                    "🔥 IMPORTANT & URGENT",
+                    "",
+                    "",
+                    "🔥",
                     "var(--accent-red)",
                     "var(--accent-red-light)",
                     "rgba(248, 113, 104, 0.08)",
@@ -801,10 +800,10 @@ export default function GoogleTasksKanban() {
                   )}
                   {renderQuadrant(
                     "important",
-                    "2. Projets de fond",
-                    "Important, pas urgent (Deep Work)",
-                    "🧠 Le cœur de votre activité d'indépendant. À planifier pour éviter la procrastination et progresser.",
-                    "🟠",
+                    "🧠 IMPORTANT mais pas urgent",
+                    "",
+                    "",
+                    "🧠",
                     "var(--accent-orange)",
                     "rgba(254,163,98,0.12)",
                     "rgba(254, 163, 98, 0.08)",
@@ -812,10 +811,10 @@ export default function GoogleTasksKanban() {
                   )}
                   {renderQuadrant(
                     "urgent",
-                    "3. Routine & Batching",
-                    "Urgent, pas de valeur créative",
-                    "⚡ Regroupez ces tâches rapides (mails, factures...) lors de vos moments de baisse d'énergie.",
-                    "🟡",
+                    "⏱️ URGENT mais facile",
+                    "",
+                    "",
+                    "⏱️",
                     "#d4a000",
                     "rgba(230,177,0,0.10)",
                     "rgba(230, 177, 0, 0.08)",
@@ -823,10 +822,10 @@ export default function GoogleTasksKanban() {
                   )}
                   {renderQuadrant(
                     "none",
-                    "4. Vide-cerveau / Idées",
-                    "Boîte de déchargement mental",
-                    "📥 Liberez votre esprit ! Notez-y tout ce qui vous passe par la tête pour rester concentré.",
-                    "⚪",
+                    "☁️ PAS URGENT & PAS IMPORTANT",
+                    "",
+                    "",
+                    "☁️",
                     "var(--text-tertiary)",
                     "var(--surface-2)",
                     "rgba(120, 120, 120, 0.08)",
@@ -1127,10 +1126,10 @@ export default function GoogleTasksKanban() {
                 <span className="text-[9px] uppercase tracking-wider text-[var(--text-tertiary)] font-semibold px-1">Importance</span>
                 <div className="grid grid-cols-2 gap-1 mt-1">
                   {([
-                    { id: "urgent-important", emoji: "🔴", label: "Important et urgent" },
-                    { id: "important",        emoji: "🟠", label: "Important, pas urgent" },
-                    { id: "urgent",           emoji: "🟡", label: "Urgent, pas important" },
-                    { id: "none",             emoji: "⚪", label: "Aucun" },
+                    { id: "urgent-important", emoji: "🔥", label: "IMPORTANT & URGENT" },
+                    { id: "important",        emoji: "🧠", label: "IMPORTANT mais pas urgent" },
+                    { id: "urgent",           emoji: "⏱️", label: "URGENT mais facile" },
+                    { id: "none",             emoji: "☁️", label: "PAS URGENT & PAS IMPORTANT" },
                   ] as const).map(opt => {
                     const isActive = (googleTaskPriorities || {})[contextMenu.t.id] === opt.id;
                     return (
@@ -1621,24 +1620,17 @@ function TaskCard(p: TaskCardProps) {
             </p>
           )}
 
-          {/* Badges row: date + notes + subtasks */}
+          {/* Badges row: date + subtasks */}
           {!completed && (
-            <div className="mt-2.5 flex items-center gap-2 no-open flex-wrap">
+            <div className="mt-2.5 flex items-center gap-2.5 no-open flex-wrap">
               <label
                 onClick={(e) => e.stopPropagation()}
                 className={
-                  "inline-flex items-center gap-1.5 text-[11px] cursor-pointer rounded-lg px-2 py-1 transition-all relative font-medium " +
-                  (overdue ? "text-[var(--accent-red)]" :
+                  "inline-flex items-center gap-1.5 text-[11px] cursor-pointer rounded px-1.5 py-0.5 transition-all relative font-medium " +
+                  (overdue ? "text-[var(--accent-red)] bg-[var(--accent-red-light)]" :
                    p.t.due ? "text-[var(--accent-blue)]" :
                    "text-[var(--text-ghost)] opacity-0 group-hover:opacity-100")
                 }
-                style={{
-                  background: overdue
-                    ? "var(--accent-red-light)"
-                    : p.t.due
-                      ? "var(--accent-blue-light)"
-                      : "transparent",
-                }}
               >
                 <CalendarIcon size={11} />
                 {p.t.due ? formatDue(p.t.due) : "Date"}
@@ -1657,16 +1649,10 @@ function TaskCard(p: TaskCardProps) {
                   ×
                 </button>
               )}
-              {/* Notes badge */}
-              {p.t.notes && (
-                <span className="inline-flex items-center gap-1 text-[11px] text-[var(--text-tertiary)] px-1.5 py-0.5 rounded-md" style={{ background: "var(--surface-2)" }}>
-                  <FileText size={10} /> Notes
-                </span>
-              )}
               {/* Subtasks badge */}
               {subtasksTotal > 0 && (
-                <span className={"inline-flex items-center gap-1 text-[11px] font-medium px-1.5 py-0.5 rounded-md " + (subtasksDone === subtasksTotal ? "text-[var(--accent-green)]" : "text-[var(--text-tertiary)]")} style={{ background: subtasksDone === subtasksTotal ? "var(--accent-green-light)" : "var(--surface-2)" }}>
-                  <Check size={10} />
+                <span className={"inline-flex items-center gap-1 text-[11px] font-medium " + (subtasksDone === subtasksTotal ? "text-[var(--accent-green)]" : "text-[var(--text-tertiary)]")}>
+                  <Check size={11} strokeWidth={2.5} />
                   {subtasksDone}/{subtasksTotal}
                 </span>
               )}
@@ -1674,7 +1660,6 @@ function TaskCard(p: TaskCardProps) {
           )}
 
           {/* Priority + Duration row — always visible if set */}
-          {/* Inline priority + duration pickers (visible on hover) */}
           {!completed && (
             <div className="mt-2 no-open">
               {/* Badges affichés si définis */}
@@ -1682,15 +1667,15 @@ function TaskCard(p: TaskCardProps) {
                 const priority = (useAppStore.getState().googleTaskPriorities || {})[p.t.id];
                 const duration = (useAppStore.getState().googleTaskDurations || {})[p.t.id];
                 const PRIORITY_META: Record<string, { emoji: string; label: string; color: string; bg: string }> = {
-                  "urgent-important": { emoji: "🔴", label: "Important et urgent",  color: "var(--accent-red)",    bg: "var(--accent-red-light)" },
-                  "important":        { emoji: "🟠", label: "Important, pas urgent", color: "var(--accent-orange)", bg: "rgba(254,163,98,0.12)" },
-                  "urgent":           { emoji: "🟡", label: "Urgent, pas important", color: "#a07800",               bg: "rgba(230,177,0,0.10)" },
-                  "none":             { emoji: "⚪", label: "Sans priorité",         color: "var(--text-tertiary)", bg: "var(--surface-2)" },
+                  "urgent-important": { emoji: "🔥", label: "IMPORTANT & URGENT",  color: "var(--accent-red)",    bg: "var(--accent-red-light)" },
+                  "important":        { emoji: "🧠", label: "IMPORTANT mais pas urgent", color: "var(--accent-orange)", bg: "rgba(254,163,98,0.12)" },
+                  "urgent":           { emoji: "⏱️", label: "URGENT mais facile", color: "#a07800",               bg: "rgba(230,177,0,0.10)" },
+                  "none":             { emoji: "☁️", label: "PAS URGENT & PAS IMPORTANT",         color: "var(--text-tertiary)", bg: "var(--surface-2)" },
                 };
                 const DURATION_LABELS: Record<string, string> = {
                   "<5": "⚡ <5m", "10-15": "🕐 10-15m", "30": "⏱ 30m", "+1h": "⏳ +1h",
                 };
-                const pm = priority ? PRIORITY_META[priority] : null;
+                const pm = priority && priority !== "none" ? PRIORITY_META[priority] : null;
                 const dl = duration ? (DURATION_LABELS[String(duration)] ?? `⏱ ${duration}`) : null;
                 return (pm || dl) ? (
                   <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
@@ -1699,53 +1684,6 @@ function TaskCard(p: TaskCardProps) {
                   </div>
                 ) : null;
               })()}
-              {/* Pickers — visibles au hover */}
-              <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1.5 flex-wrap">
-                {/* Priority picker */}
-                {([
-                  { id: "urgent-important", emoji: "🔴", title: "Important et urgent" },
-                  { id: "important",        emoji: "🟠", title: "Important, pas urgent" },
-                  { id: "urgent",           emoji: "🟡", title: "Urgent, pas important" },
-                  { id: "none",             emoji: "⚪", title: "Aucun" },
-                ] as const).map(opt => {
-                  const isActive = (useAppStore.getState().googleTaskPriorities || {})[p.t.id] === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      title={opt.title}
-                      onClick={(e) => { e.stopPropagation(); setGoogleTaskPriority(p.t.id, isActive ? null : opt.id); }}
-                      className="text-[13px] leading-none rounded-md p-0.5 transition-all hover:scale-110"
-                      style={{ opacity: isActive ? 1 : 0.4, filter: isActive ? "none" : "grayscale(40%)" }}
-                    >
-                      {opt.emoji}
-                    </button>
-                  );
-                })}
-                <span className="w-px h-3 bg-[var(--border-primary)] mx-0.5" />
-                {/* Duration picker */}
-                {([
-                  { id: "<5", label: "<5m" },
-                  { id: "10-15", label: "15m" },
-                  { id: "30", label: "30m" },
-                  { id: "+1h", label: "+1h" },
-                ] as const).map(opt => {
-                  const isActive = (useAppStore.getState().googleTaskDurations || {})[p.t.id] === opt.id;
-                  return (
-                    <button
-                      key={opt.id}
-                      onClick={(e) => { e.stopPropagation(); setGoogleTaskDuration(p.t.id, isActive ? null : opt.id as any); }}
-                      className="text-[10px] px-1.5 py-0.5 rounded-md border transition-all font-medium"
-                      style={{
-                        background: isActive ? "var(--accent-blue-light)" : "transparent",
-                        color: isActive ? "var(--accent-blue)" : "var(--text-ghost)",
-                        borderColor: isActive ? "var(--accent-blue)" : "transparent",
-                      }}
-                    >
-                      {opt.label}
-                    </button>
-                  );
-                })}
-              </div>
             </div>
           )}
         </div>
@@ -2035,10 +1973,10 @@ function DetailModal({ t, lists, labels, onClose, onUpdate, onDelete, onCheck, o
                   }}
                   className="bg-transparent text-[13.5px] font-medium focus:outline-none hover:bg-[var(--surface-2)] px-2.5 py-1.5 -ml-2.5 rounded-md transition-colors cursor-pointer text-[var(--text-primary)] appearance-none"
                 >
-                  <option value="none">⚪ Aucun</option>
-                  <option value="urgent-important">🔴 Important et urgent</option>
-                  <option value="important">🟠 Important, pas urgent</option>
-                  <option value="urgent">🟡 Urgent, pas important</option>
+                  <option value="none">☁️ PAS URGENT & PAS IMPORTANT</option>
+                  <option value="urgent-important">🔥 IMPORTANT & URGENT</option>
+                  <option value="important">🧠 IMPORTANT mais pas urgent</option>
+                  <option value="urgent">⏱️ URGENT mais facile</option>
                 </select>
               </div>
             </div>

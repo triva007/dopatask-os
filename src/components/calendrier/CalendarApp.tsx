@@ -97,9 +97,10 @@ export default function CalendarApp() {
         const duration = (googleTaskDurations || {})[t.id];
 
         const PRIORITY_PREFIXES: Record<string, string> = {
-          "urgent-important": "🔴 [Important et urgent] ",
-          "important": "🟠 [Important, pas urgent] ",
-          "urgent": "🟡 [Urgent, pas important] ",
+          "urgent-important": "🔥 [IMPORTANT & URGENT] ",
+          "important": "🧠 [IMPORTANT mais pas urgent] ",
+          "urgent": "⏱️ [URGENT mais facile] ",
+          "none": "☁️ [PAS URGENT & PAS IMPORTANT] ",
         };
         const DURATION_LABELS: Record<string, string> = {
           "<5": "<5 min",
@@ -115,6 +116,7 @@ export default function CalendarApp() {
           "urgent-important": "#ef4444",
           "important": "#f59e0b",
           "urgent": "#e6b100",
+          "none": "#9ca3af",
         };
         const backgroundColor = priority ? priorityColors[priority] : undefined;
 
