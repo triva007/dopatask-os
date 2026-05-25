@@ -4,10 +4,9 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  Search, Filter, Upload, Phone, MapPin, ExternalLink, Plus, Loader2,
-  AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, Clock,
-} from "lucide-react";
+import { Search, Filter, Upload, Phone, MapPin, ExternalLink, Plus, Loader2,
+    AlertTriangle, ArrowLeft, Archive, Trash2, Check, X, Clock, Download, } from "lucide-react";
+import { exportCsv } from "@/utils/exportCsv";
 import { useCrmStore } from "@/store/useCrmStore";
 import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI } from "@/lib/crmLabels";
 import type { StatutProspect } from "@/lib/crmTypes";
@@ -72,12 +71,30 @@ export default function ProspectsTable() {
   };
   const callCountFor = (id: string) => callsByProspect.get(id)?.length || 0;
 
-  // Niches distinctes pour le filtre
-  const niches = useMemo(() => {
-    const set = new Set<string>();
-    for (const p of prospects) if (p.niche) set.add(p.niche);
-    return Array.from(set).sort();
-  }, [prospects]);
+// Niches distinctes pour le filtre, avec regroupement des niches d'architecture d'intérieur
+const allNiches = useMemo(() => {
+  const set = new Set<string>();
+  for (const p of prospects) if (p.niche) set.add(p.niche);
+  return Array.from(set).sort();
+}, [prospects]);
+
+// Mots-clés pour détecter les niches d'intérieur
+const interiorKeywords = ["interieur", "intérieur", "interior"];
+// Niches d'intérieur détectées
+const interiorNiches = useMemo(() =>
+  allNiches.filter((n) => interiorKeywords.some((k) => n.toLowerCase().includes(k)))
+, [allNiches]);
+// Autres niches
+const otherNiches = useMemo(() =>
+  allNiches.filter((n) => !interiorKeywords.some((k) => n.toLowerCase().includes(k)))
+, [allNiches]);
+// Niche list for filter dropdown, incluant un groupe consolidé
+const niches = useMemo(() => {
+  const list = [];
+  if (interiorNiches.length > 0) list.push("Architecture d'intérieur");
+  list.push(...otherNiches);
+  return list;
+}, [interiorNiches, otherNiches]);
 
   const filtered = useMemo(() => {
     let arr = prospects;
@@ -97,7 +114,9 @@ export default function ProspectsTable() {
     // Filtrage par niche
     if (filterNiche !== "ALL") {
       if (filterNiche === "__NONE__") arr = arr.filter((p) => !p.niche);
-      else arr = arr.filter((p) => p.niche === filterNiche);
+      else if (filterNiche === "Architecture d'intérieur") {
+        arr = arr.filter((p) => p.niche && interiorKeywords.some((k) => p.niche.toLowerCase().includes(k)));
+      } else arr = arr.filter((p) => p.niche === filterNiche);
     }
     // Recherche plein texte
     if (query.trim()) {
@@ -160,27 +179,6 @@ export default function ProspectsTable() {
     setCreating(false);
   };
 
-  // Selection helpers
-  const allSelectedInView = filtered.length > 0 && filtered.every((p) => selected.has(p.id));
-  const someSelectedInView = filtered.some((p) => selected.has(p.id));
-  const toggleSelectAll = () => {
-    if (allSelectedInView) {
-      const next = new Set(selected);
-      for (const p of filtered) next.delete(p.id);
-      setSelected(next);
-    } else {
-      const next = new Set(selected);
-      for (const p of filtered) next.add(p.id);
-      setSelected(next);
-    }
-  };
-  const toggleSelectOne = (id: string) => {
-    const next = new Set(selected);
-    if (next.has(id)) next.delete(id);
-    else next.add(id);
-    setSelected(next);
-  };
-  const clearSelection = () => setSelected(new Set());
 
   const doBulkArchive = async () => {
     if (selected.size === 0) return;
@@ -221,15 +219,22 @@ export default function ProspectsTable() {
     setTimeout(() => setFlash(null), 2500);
     clearSelection();
   };
-  const doBulkDelete = async () => {
-    if (selected.size === 0) return;
-    if (!confirm(`SUPPRIMER DÉFINITIVEMENT ${selected.size} prospect(s) ? (calls associés supprimés aussi)`)) return;
-    setBulkBusy(true);
-    const n = await bulkDeleteProspects(Array.from(selected));
-    setBulkBusy(false);
-    setFlash(`${n} prospect(s) supprimé(s)`);
-    setTimeout(() => setFlash(null), 2500);
-    clearSelection();
+  const handleExport = () => {
+    // Gather selected prospects data
+    const selectedProspects = prospects.filter(p => selected.has(p.id));
+    if (selectedProspects.length === 0) return;
+    // Build CSV header
+    const header = "Nom,Site URL\n";
+    // Build CSV rows
+    const rows = selectedProspects.map(p => {
+      const name = p.entreprise?.replace(/"/g, '""') ?? "";
+      const site = p.site_url?.replace(/"/g, '""') ?? "";
+      return `"${name}","${site}"`;
+    }).join("\n");
+    const csvContent = header + rows;
+    const timestamp = new Date().toISOString().slice(0,10);
+    const filename = `prospects_export_${timestamp}.csv`;
+    exportCsv(csvContent, filename);
   };
 
   return (
@@ -342,6 +347,8 @@ export default function ProspectsTable() {
                     {n}
                   </option>
                 ))}
+                {/* Ajout du groupe d'architecture d'intérieur si présent */}
+
               </select>
             </div>
           )}
@@ -416,6 +423,13 @@ export default function ProspectsTable() {
               className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dopa-red/15 text-dopa-red rounded-lg text-[12px] font-semibold hover:bg-dopa-red/25 disabled:opacity-40"
             >
               <Trash2 size={13} /> Supprimer
+            </button>
+            <button
+              onClick={handleExport}
+              disabled={bulkBusy || selected.size === 0}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-dopa-green/15 text-dopa-green rounded-lg text-[12px] font-semibold hover:bg-dopa-green/25 disabled:opacity-40"
+            >
+              <Download size={13} /> Exporter CSV
             </button>
           </div>
         </div>
