@@ -21,6 +21,8 @@ export default function MonthView({ currentDate, events, calendars, onEventClick
     return d;
   }, []);
 
+  const nowTime = useMemo(() => new Date().getTime(), []);
+
   const weeks = useMemo(() => {
     const ms = startOfMonth(currentDate);
     const gridStart = startOfWeek(ms);
@@ -73,6 +75,8 @@ export default function MonthView({ currentDate, events, calendars, onEventClick
               const dayEvents = getEventsForDay(day);
               const visible = dayEvents.slice(0, MAX_VISIBLE_EVENTS);
               const more = dayEvents.length - MAX_VISIBLE_EVENTS;
+              
+              const isPastDay = day.getTime() < today.getTime();
 
               return (
                 <div
@@ -104,10 +108,17 @@ export default function MonthView({ currentDate, events, calendars, onEventClick
                   <div className="flex-1 min-h-0 px-1 pb-0.5 space-y-px overflow-hidden">
                     {visible.map((ev) => {
                       const color = getEventColor(ev, calendars);
+                      let isPast = false;
+                      if (isAllDay(ev)) {
+                        isPast = isPastDay;
+                      } else {
+                        isPast = getEventEnd(ev).getTime() < nowTime;
+                      }
+                      
                       return (
                         <button
                           key={ev.id}
-                          className="cal-event w-full text-left rounded-[4px] px-1.5 py-0.5 text-[10.5px] font-semibold truncate transition-all hover:brightness-110"
+                          className={`cal-event w-full text-left rounded-[4px] px-1.5 py-0.5 text-[10.5px] font-semibold truncate transition-all ${isPast ? "opacity-50 saturate-50" : "hover:brightness-110"}`}
                           style={{
                             background: isAllDay(ev) ? color : `color-mix(in srgb, ${color} 15%, transparent)`,
                             color: isAllDay(ev) ? "white" : color,

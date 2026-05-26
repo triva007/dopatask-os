@@ -312,6 +312,10 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                   const color = getEventColor(ev, calendars);
                   const projectId = useAppStore.getState().googleTaskProjects[ev.id];
                   const project = projectId ? useAppStore.getState().projects.find(p => p.id === projectId) : null;
+                  
+                  // For tasks (all-day), consider them past if the day is before today
+                  const isPast = day.getTime() < today.getTime();
+
                   return (
                     <button
                       key={`task-top-${ev.id}`}
@@ -320,7 +324,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                         onEventClick(ev, { top: rect.top, left: rect.right });
                       }}
                       onContextMenu={(e) => handleContextMenu(ev, e)}
-                      className="flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90 border"
+                      className={`flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all border ${isPast ? "opacity-50 saturate-50" : "hover:opacity-90"}`}
                       style={{ background: "var(--card-bg)", color: "var(--text-primary)", borderColor: color }}
                     >
                       {project ? (
@@ -348,6 +352,10 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                 const color = getEventColor(ev, calendars);
                 const projectId = useAppStore.getState().googleEventProjects[ev.id];
                 const project = projectId ? useAppStore.getState().projects.find(p => p.id === projectId) : null;
+                
+                // For all-day events, consider them past if the day is before today
+                const isPast = day.getTime() < today.getTime();
+
                 return (
                   <button
                     key={ev.id}
@@ -356,7 +364,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                       onEventClick(ev, { top: rect.top, left: rect.right });
                     }}
                     onContextMenu={(e) => handleContextMenu(ev, e)}
-                    className="cal-event flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all hover:opacity-90"
+                    className={`cal-event flex items-center gap-1.5 text-left px-1.5 py-0.5 rounded-[4px] text-[11px] font-semibold truncate max-w-full transition-all ${isPast ? "opacity-50 saturate-50" : "hover:opacity-90"}`}
                     style={{ background: `${color}30`, color: color }}
                   >
                     {project && <span className="text-[10px] shrink-0">{project.emoji}</span>}
@@ -505,11 +513,13 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                     height = Math.max(MIN_EVENT_HEIGHT, resizeEvent!.startHeight + (resizeEvent!.currentY - resizeEvent!.startY));
                   }
                   
+                  const isPast = getEventEnd(l.ev).getTime() < new Date().getTime();
+                  
                   return (
                     <div
                       key={l.ev.id}
                       data-event-id={l.ev.id}
-                      className="cal-event absolute rounded-md text-left transition-all hover:brightness-110 group"
+                      className={`cal-event absolute rounded-md text-left transition-all group ${isPast && !isDragging && !isResizing ? "opacity-[0.45] saturate-50" : "hover:brightness-110"}`}
                       style={{
                         top: top,
                         height: height,
@@ -519,7 +529,7 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                         border: isTask ? `1px solid var(--border-primary)` : `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
                         borderLeft: `3px solid ${color}`,
                         zIndex: isDragging || isResizing ? 50 : 10,
-                        opacity: dragEvent?.ev.id === l.ev.id && !isDragging ? 0.4 : 1, // original ghost
+                        opacity: dragEvent?.ev.id === l.ev.id && !isDragging ? 0.4 : undefined, // allow class opacity to work
                         boxShadow: isDragging ? "0 8px 24px rgba(0,0,0,0.15)" : "none",
                         pointerEvents: isDragging || isResizing ? "none" : "auto",
                       }}
