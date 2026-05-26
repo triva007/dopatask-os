@@ -16,7 +16,7 @@ import WeekView from "./views/WeekView";
 import MonthView from "./views/MonthView";
 import AgendaView from "./views/AgendaView";
 import EventPopover from "./EventPopover";
-import EventModal from "./EventModal";
+import EventDrawer from "./EventDrawer";
 import { useAppStore } from "@/store/useAppStore";
 
 const HIDDEN_CAL_KEY = "dopatask-hidden-calendars";
@@ -44,6 +44,7 @@ export default function CalendarApp() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createDefaultDate, setCreateDefaultDate] = useState<Date | null>(null);
   const [createDefaultEndDate, setCreateDefaultEndDate] = useState<Date | null>(null);
+  const [isLeftSidebarOpen, setIsLeftSidebarOpen] = useState(true);
   const initialFetchDone = useRef(false);
 
   const {
@@ -452,20 +453,29 @@ export default function CalendarApp() {
         onNext={() => navigate(1)}
         onToday={goToday}
         onCreate={() => { setCreateDefaultDate(new Date()); setCreateDefaultEndDate(null); setShowCreateModal(true); }}
+        isSidebarOpen={isLeftSidebarOpen}
+        onToggleSidebar={() => setIsLeftSidebarOpen(prev => !prev)}
       />
 
       {/* Body */}
       <div className="flex-1 min-h-0 flex overflow-hidden">
-        {/* Sidebar */}
-        <CalendarSidebar
-          currentDate={currentDate}
-          calendars={calendars}
-          hiddenCalendarIds={hiddenCalendarIds}
-          onSelectDate={(d) => { setCurrentDate(d); setView("day"); }}
-          onToggleCalendar={handleToggleCalendar}
-          googleTasks={googleTasks}
-          googleLists={googleTaskLists}
-        />
+        {/* Sidebar container with animation */}
+        <div 
+          className="shrink-0 overflow-hidden transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)]"
+          style={{ width: isLeftSidebarOpen ? "240px" : "0px", borderRight: isLeftSidebarOpen ? "1px solid var(--border-primary)" : "none" }}
+        >
+          <div className="w-[240px] h-full">
+            <CalendarSidebar
+              currentDate={currentDate}
+              calendars={calendars}
+              hiddenCalendarIds={hiddenCalendarIds}
+              onSelectDate={(d) => { setCurrentDate(d); setView("day"); }}
+              onToggleCalendar={handleToggleCalendar}
+              googleTasks={googleTasks}
+              googleLists={googleTaskLists}
+            />
+          </div>
+        </div>
 
         {/* Calendar view */}
         <div className="flex-1 min-w-0 overflow-hidden" style={{ background: "var(--surface-1)" }}>
@@ -548,23 +558,24 @@ export default function CalendarApp() {
         )}
       </AnimatePresence>
 
-      {/* Edit modal */}
+      {/* Edit Drawer */}
       <AnimatePresence>
         {modalEvent && (
-          <EventModal
+          <EventDrawer
             event={modalEvent}
             calendars={calendars}
             taskLists={googleTaskLists}
             onSave={handleUpdate as any}
+            onDelete={handleDelete}
             onClose={() => setModalEvent(null)}
           />
         )}
       </AnimatePresence>
 
-      {/* Create modal */}
+      {/* Create Drawer */}
       <AnimatePresence>
         {showCreateModal && (
-          <EventModal
+          <EventDrawer
             defaultDate={createDefaultDate || undefined}
             defaultEndDate={createDefaultEndDate || (createDefaultDate ? new Date(createDefaultDate.getTime() + 60 * 60 * 1000) : undefined)}
             calendars={calendars}

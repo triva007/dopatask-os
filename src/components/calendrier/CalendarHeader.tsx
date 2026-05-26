@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus } from "lucide-react";
+import { ChevronLeft, ChevronRight, Plus, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 import type { CalendarView } from "./useCalendarEvents";
 
 interface CalendarHeaderProps {
@@ -11,11 +11,13 @@ interface CalendarHeaderProps {
   onNext: () => void;
   onToday: () => void;
   onCreate: () => void;
+  isSidebarOpen?: boolean;
+  onToggleSidebar?: () => void;
 }
 
 const VIEW_LABELS: Record<CalendarView, string> = {
   day: "Jour",
-  "4day": "4 jours",
+  "4day": "4 Jours",
   week: "Semaine",
   month: "Mois",
   agenda: "Agenda",
@@ -25,13 +27,11 @@ function getTitle(date: Date, view: CalendarView): string {
   const opts: Intl.DateTimeFormatOptions = {};
   switch (view) {
     case "day":
-      return date.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long", year: "numeric" });
-    case "4day":
       return date.toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    case "4day":
+      return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
     case "week":
-      opts.month = "long";
-      opts.year = "numeric";
-      return date.toLocaleDateString("fr-FR", opts);
+      return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
     case "month":
       return date.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
     case "agenda":
@@ -39,65 +39,80 @@ function getTitle(date: Date, view: CalendarView): string {
   }
 }
 
-export default function CalendarHeader({ currentDate, view, onViewChange, onPrev, onNext, onToday, onCreate }: CalendarHeaderProps) {
+export default function CalendarHeader({ currentDate, view, onViewChange, onPrev, onNext, onToday, onCreate, isSidebarOpen = true, onToggleSidebar }: CalendarHeaderProps) {
+  const title = getTitle(currentDate, view);
+  
   return (
-    <div className="shrink-0 flex items-center gap-3 px-5 py-3 border-b" style={{ borderColor: "var(--border-primary)" }}>
-      {/* Create button */}
-      <button
-        onClick={onCreate}
-        className="flex items-center gap-2 px-4 py-2.5 rounded-2xl text-[13px] font-semibold transition-all hover:shadow-md"
-        style={{
-          background: "var(--card-bg)",
-          border: "1px solid var(--border-secondary)",
-          color: "var(--text-primary)",
-          boxShadow: "var(--card-shadow)",
-        }}
-      >
-        <Plus size={18} style={{ color: "var(--accent-blue)" }} />
-        Creer
-      </button>
+    <div className="shrink-0 flex items-center justify-between px-4 py-2 border-b bg-[var(--surface-0)] z-20 relative" style={{ borderColor: "var(--border-primary)" }}>
+      {/* Left section */}
+      <div className="flex items-center gap-3">
+        {onToggleSidebar && (
+          <button
+            onClick={onToggleSidebar}
+            className="p-1.5 rounded-md hover:bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all"
+            title={isSidebarOpen ? "Fermer le panneau latéral" : "Ouvrir le panneau latéral"}
+          >
+            {isSidebarOpen ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+          </button>
+        )}
+        
+        <button
+          onClick={onToday}
+          className="px-3 py-1.5 rounded-md text-[13px] font-medium transition-all text-[var(--text-primary)] hover:bg-[var(--surface-2)] border border-[var(--border-primary)]"
+          title="Aujourd'hui (T)"
+        >
+          Aujourd&apos;hui
+        </button>
 
-      {/* Nav */}
-      <button
-        onClick={onToday}
-        className="px-3 py-1.5 rounded-xl text-[12.5px] font-medium border transition-all hover:bg-[var(--surface-3)]"
-        style={{ borderColor: "var(--border-secondary)", color: "var(--text-primary)" }}
-      >
-        Aujourd&apos;hui
-      </button>
-      <div className="flex items-center gap-1">
-        <button onClick={onPrev} className="p-1.5 rounded-lg hover:bg-[var(--surface-3)] text-[var(--text-secondary)] transition-all">
-          <ChevronLeft size={16} />
-        </button>
-        <button onClick={onNext} className="p-1.5 rounded-lg hover:bg-[var(--surface-3)] text-[var(--text-secondary)] transition-all">
-          <ChevronRight size={16} />
-        </button>
+        <div className="flex items-center">
+          <button onClick={onPrev} className="p-1.5 rounded-md hover:bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all" title="Précédent">
+            <ChevronLeft size={16} />
+          </button>
+          <button onClick={onNext} className="p-1.5 rounded-md hover:bg-[var(--surface-2)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-all" title="Suivant">
+            <ChevronRight size={16} />
+          </button>
+        </div>
+
+        <h1 className="text-[18px] font-semibold text-[var(--text-primary)] capitalize tracking-tight ml-2">
+          {title}
+        </h1>
       </div>
 
-      {/* Title */}
-      <h1 className="text-[17px] font-semibold text-[var(--text-primary)] capitalize tracking-tight flex-1">
-        {getTitle(currentDate, view)}
-      </h1>
+      {/* Right section */}
+      <div className="flex items-center gap-3">
+        
+        {/* View selector (Segmented control) */}
+        <div
+          className="flex items-center rounded-md p-0.5"
+          style={{ background: "var(--surface-1)", border: "1px solid var(--border-primary)" }}
+        >
+          {(["day", "4day", "week", "month", "agenda"] as CalendarView[]).map((v) => (
+            <button
+              key={v}
+              onClick={() => onViewChange(v)}
+              className={
+                "px-3 py-1 text-[12px] font-medium transition-all rounded-sm " +
+                (v === view
+                  ? "bg-[var(--surface-0)] text-[var(--text-primary)] shadow-sm"
+                  : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]")
+              }
+            >
+              {VIEW_LABELS[v]}
+            </button>
+          ))}
+        </div>
 
-      {/* View selector */}
-      <div
-        className="flex items-center rounded-xl overflow-hidden border"
-        style={{ borderColor: "var(--border-secondary)", background: "var(--surface-2)" }}
-      >
-        {(["day", "4day", "week", "month", "agenda"] as CalendarView[]).map((v) => (
-          <button
-            key={v}
-            onClick={() => onViewChange(v)}
-            className={
-              "px-3 py-1.5 text-[11.5px] font-medium transition-all " +
-              (v === view
-                ? "bg-[var(--accent-blue)] text-white"
-                : "text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-3)]")
-            }
-          >
-            {VIEW_LABELS[v]}
-          </button>
-        ))}
+        {/* Create button */}
+        <button
+          onClick={onCreate}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] font-semibold text-white transition-all shadow-sm hover:opacity-90 ml-1"
+          style={{ background: "var(--accent-blue)" }}
+          title="Créer un événement (C)"
+        >
+          <Plus size={16} />
+          Créer
+        </button>
+
       </div>
     </div>
   );

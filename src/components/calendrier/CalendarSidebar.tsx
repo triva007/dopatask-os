@@ -83,11 +83,11 @@ export default function CalendarSidebar({
 
   return (
     <div
-      className="shrink-0 w-[220px] h-full flex flex-col border-r overflow-y-auto"
-      style={{ borderColor: "var(--border-primary)", background: "var(--surface-0)" }}
+      className="w-full h-full flex flex-col overflow-y-auto custom-scrollbar"
+      style={{ background: "var(--surface-0)" }}
     >
       {/* Mini calendar */}
-      <div className="px-3 pt-4 pb-3">
+      <div className="px-3 pt-3 pb-2">
         <MiniCalendar currentDate={currentDate} onSelectDate={onSelectDate} />
       </div>
 
@@ -96,20 +96,20 @@ export default function CalendarSidebar({
 
       {/* Calendar list */}
       <div className="px-3 pt-3 pb-3">
-        <h3 className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)] mb-2 px-1">
+        <h3 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-tertiary)] mb-2 px-1">
           Mes calendriers
         </h3>
-        <div className="space-y-0.5">
+        <div className="space-y-px">
           {calendars.map((cal) => {
             const hidden = hiddenCalendarIds.has(cal.id);
             return (
               <button
                 key={cal.id}
                 onClick={() => onToggleCalendar(cal.id)}
-                className="flex items-center gap-2 w-full px-2 py-1.5 rounded-lg hover:bg-[var(--surface-3)] transition-all text-left group"
+                className="flex items-center gap-2.5 w-full px-2 py-1.5 rounded-lg hover:bg-[var(--surface-2)] transition-all text-left group"
               >
                 <span
-                  className="w-3 h-3 rounded shrink-0 transition-all"
+                  className="w-3 h-3 rounded-full shrink-0 transition-all shadow-sm"
                   style={{
                     background: hidden ? "transparent" : cal.backgroundColor,
                     border: hidden ? `2px solid var(--text-ghost)` : `2px solid ${cal.backgroundColor}`,
@@ -117,17 +117,17 @@ export default function CalendarSidebar({
                 />
                 <span
                   className={
-                    "flex-1 text-[12px] truncate " +
+                    "flex-1 text-[12px] truncate font-medium " +
                     (hidden ? "text-[var(--text-tertiary)] line-through" : "text-[var(--text-primary)]")
                   }
                 >
                   {cal.summary}
                 </span>
-                <span className="opacity-0 group-hover:opacity-100 transition-all">
+                <span className="opacity-0 group-hover:opacity-100 transition-opacity">
                   {hidden ? (
-                    <EyeOff size={11} className="text-[var(--text-tertiary)]" />
+                    <EyeOff size={12} className="text-[var(--text-tertiary)]" />
                   ) : (
-                    <Eye size={11} className="text-[var(--text-tertiary)]" />
+                    <Eye size={12} className="text-[var(--text-tertiary)]" />
                   )}
                 </span>
               </button>
@@ -143,15 +143,14 @@ export default function CalendarSidebar({
       <div className="px-3 pt-3 pb-4 flex-1 min-h-0 flex flex-col">
         <button
           onClick={() => setTasksOpen(!tasksOpen)}
-          className="flex items-center gap-1.5 mb-2 px-1 text-left w-full group"
+          className="flex items-center gap-1.5 mb-2 px-1 text-left w-full group hover:text-[var(--text-primary)] transition-colors"
         >
           {tasksOpen ? (
-            <ChevronDown size={11} className="text-[var(--text-tertiary)]" />
+            <ChevronDown size={12} className="text-[var(--text-tertiary)]" />
           ) : (
-            <ChevronRight size={11} className="text-[var(--text-tertiary)]" />
+            <ChevronRight size={12} className="text-[var(--text-tertiary)]" />
           )}
-          <ListChecks size={12} className="text-[var(--accent-purple)]" />
-          <h3 className="text-[10px] uppercase tracking-wider font-semibold text-[var(--text-tertiary)] flex-1">
+          <h3 className="text-[10px] uppercase tracking-widest font-semibold text-[var(--text-tertiary)] flex-1 group-hover:text-[var(--text-secondary)] transition-colors">
             Tâches
           </h3>
           <span className="text-[10px] tabular-nums text-[var(--text-ghost)] font-semibold">
@@ -162,7 +161,7 @@ export default function CalendarSidebar({
         {tasksOpen && (
           <>
             {/* Tasks list */}
-            <div className="flex-1 min-h-0 overflow-y-auto space-y-0.5">
+            <div className="flex-1 min-h-0 overflow-y-auto space-y-px custom-scrollbar">
               {activeTasks.length === 0 ? (
                 <p className="text-[11px] text-[var(--text-ghost)] italic px-1 py-3 text-center">
                   Aucune tâche
@@ -180,15 +179,15 @@ export default function CalendarSidebar({
                         e.dataTransfer.setData("text/plain", task.text);
                         e.dataTransfer.effectAllowed = "copy";
                       }}
-                      className="group flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg hover:bg-[var(--surface-3)] cursor-grab active:cursor-grabbing transition-all border border-transparent hover:border-[var(--border-primary)]"
+                      className="group flex items-center gap-1.5 px-1.5 py-1.5 rounded-lg hover:bg-[var(--surface-2)] cursor-grab active:cursor-grabbing transition-all border border-transparent hover:border-[var(--border-primary)]"
                       title={`Glisse sur le calendrier pour bloquer du temps\n${task.text}`}
                     >
-                      <GripVertical size={10} className="text-[var(--text-ghost)] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <GripVertical size={12} className="text-[var(--text-ghost)] shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" />
                       <span
                         className="w-1.5 h-1.5 rounded-full shrink-0"
                         style={{ background: priorityColor }}
                       />
-                      <span className="text-[11px] text-[var(--text-primary)] truncate flex-1 leading-tight">
+                      <span className="text-[11.5px] font-medium text-[var(--text-primary)] truncate flex-1 leading-tight">
                         {emoji}{task.text}
                       </span>
                     </div>
@@ -199,8 +198,8 @@ export default function CalendarSidebar({
 
             {/* Help text */}
             {activeTasks.length > 0 && (
-              <p className="text-[9px] text-[var(--text-ghost)] text-center mt-2 px-1 leading-relaxed">
-                Glisse une tâche sur la grille horaire pour créer un time block
+              <p className="text-[10px] text-[var(--text-tertiary)] text-center mt-3 px-1 leading-relaxed">
+                Glisse une tâche sur la grille horaire pour créer un block
               </p>
             )}
           </>

@@ -48,8 +48,8 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
   if (anchorRect) {
     const viewHeight = window.innerHeight;
     const viewWidth = window.innerWidth;
-    const popoverWidth = 320;
-    const popoverHeight = 280;
+    const popoverWidth = 340;
+    const popoverHeight = 300;
 
     let top = anchorRect.top;
     let left = anchorRect.left + 8;
@@ -76,33 +76,42 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
         exit={{ opacity: 0, scale: 0.95 }}
         transition={{ duration: 0.12 }}
         style={style}
-        className="w-[320px] rounded-2xl border overflow-hidden"
+        className="w-[340px] rounded-[16px] overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div style={{ background: "var(--card-bg)", borderColor: "var(--card-border)", boxShadow: "var(--shadow-elevated)" }} className="rounded-2xl border overflow-hidden">
+        <div 
+          style={{ 
+            background: "color-mix(in srgb, var(--surface-0) 85%, transparent)", 
+            backdropFilter: "blur(20px)",
+            WebkitBackdropFilter: "blur(20px)",
+            borderColor: "var(--border-primary)", 
+            boxShadow: "0 12px 32px rgba(0,0,0,0.2)" 
+          }} 
+          className="rounded-[16px] border overflow-hidden"
+        >
           {/* Color bar */}
-          <div className="h-1.5" style={{ background: color }} />
+          <div className="h-1.5 w-full" style={{ background: color }} />
 
-          <div className="p-4">
+          <div className="p-4 pt-5">
             {/* Header */}
-            <div className="flex items-start justify-between gap-2 mb-3">
-              <div className="flex items-start gap-2.5 flex-1 min-w-0">
-                <span className="w-3 h-3 rounded mt-1 shrink-0" style={{ background: color }} />
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div className="flex items-start gap-3 flex-1 min-w-0">
+                <span className="w-3.5 h-3.5 rounded mt-1.5 shrink-0 shadow-sm" style={{ background: color }} />
                 <div className="min-w-0">
-                  <h3 className="text-[15px] font-semibold text-[var(--text-primary)] leading-snug break-words">
+                  <h3 className="text-[18px] font-bold text-[var(--text-primary)] leading-snug break-words">
                     {event.summary || "(sans titre)"}
                   </h3>
-                  <p className="text-[11px] text-[var(--text-tertiary)] mt-0.5">{calName}</p>
+                  <p className="text-[11.5px] font-medium text-[var(--text-tertiary)] mt-1">{calName}</p>
                 </div>
               </div>
-              <button onClick={onClose} className="p-1 rounded-lg hover:bg-[var(--surface-3)] text-[var(--text-tertiary)] transition-all shrink-0">
-                <X size={14} />
+              <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-[var(--surface-2)] text-[var(--text-tertiary)] hover:text-[var(--text-primary)] transition-all shrink-0">
+                <X size={16} />
               </button>
             </div>
 
             {/* Time */}
-            <div className="flex items-center gap-2 text-[12.5px] text-[var(--text-secondary)] mb-2">
-              <Clock size={13} className="text-[var(--text-tertiary)] shrink-0" />
+            <div className="flex items-center gap-3 text-[13px] text-[var(--text-secondary)] font-medium mb-3">
+              <Clock size={15} className="text-[var(--text-tertiary)] shrink-0" />
               {allDay ? (
                 <span>Toute la journee — {start.toLocaleDateString("fr-FR", { weekday: "long", day: "numeric", month: "long" })}</span>
               ) : (
@@ -114,15 +123,15 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
 
             {/* Location */}
             {event.location && (
-              <div className="flex items-start gap-2 text-[12.5px] text-[var(--text-secondary)] mb-2">
-                <MapPin size={13} className="text-[var(--text-tertiary)] mt-0.5 shrink-0" />
+              <div className="flex items-start gap-3 text-[13px] text-[var(--text-secondary)] font-medium mb-3">
+                <MapPin size={15} className="text-[var(--text-tertiary)] mt-0.5 shrink-0" />
                 <span className="leading-snug break-words">{event.location}</span>
               </div>
             )}
 
             {/* Google Calendar Link */}
             {event.htmlLink && event.type !== "task" && (
-              <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="inline-block text-[11.5px] text-[var(--accent-blue)] hover:underline mt-1 mb-2 font-medium">
+              <a href={event.htmlLink} target="_blank" rel="noopener noreferrer" className="inline-flex items-center text-[12px] text-[var(--accent-blue)] hover:underline mt-1 mb-3 font-semibold">
                 Ouvrir dans Google Agenda ↗
               </a>
             )}
@@ -138,8 +147,8 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
               const project = (state.projects || []).find(p => p.id === projectId);
               if (!project) return null;
               return (
-                <div className="mb-2">
-                  <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-[var(--surface-1)]/50 rounded-md text-[11px] font-medium text-[var(--text-secondary)] border border-[var(--border-primary)]/50">
+                <div className="mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-[var(--surface-1)]/80 rounded-md text-[11.5px] font-semibold text-[var(--text-primary)] border border-[var(--border-primary)]/50">
                     {project.emoji} {project.name}
                   </span>
                 </div>
@@ -148,7 +157,7 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
 
             {/* Description preview */}
             {event.description && (
-              <div className="mt-3 bg-[var(--surface-2)] rounded-xl p-3 border" style={{ borderColor: "var(--border-secondary)" }}>
+              <div className="mt-4 bg-[var(--surface-1)]/50 rounded-xl p-3 border" style={{ borderColor: "var(--border-primary)" }}>
                 <p className="text-[12px] text-[var(--text-secondary)] whitespace-pre-wrap max-h-[140px] overflow-y-auto leading-relaxed custom-scrollbar">
                   {event.description}
                 </p>
@@ -156,18 +165,19 @@ export default function EventPopover({ event, calendars, anchorRect, onClose, on
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-2 mt-4 pt-3 border-t" style={{ borderColor: "var(--border-primary)" }}>
+            <div className="flex items-center gap-2 mt-5 pt-4 border-t" style={{ borderColor: "var(--border-primary)" }}>
               <button
                 onClick={onEdit}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium text-[var(--text-primary)] hover:bg-[var(--surface-3)] transition-all"
+                className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-[12.5px] font-semibold text-[var(--text-primary)] bg-[var(--surface-1)] border border-[var(--border-primary)] hover:bg-[var(--surface-2)] transition-all shadow-sm"
               >
-                <Edit3 size={12} /> Modifier
+                <Edit3 size={14} /> Modifier
               </button>
               <button
                 onClick={() => { if (confirm("Supprimer cet evenement ?")) onDelete(); }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[12px] font-medium text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] transition-all"
+                className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-[12.5px] font-semibold text-[var(--accent-red)] hover:bg-[var(--accent-red-light)] transition-all"
+                title="Supprimer"
               >
-                <Trash2 size={12} /> Supprimer
+                <Trash2 size={14} />
               </button>
             </div>
           </div>

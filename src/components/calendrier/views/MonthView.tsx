@@ -55,9 +55,9 @@ export default function MonthView({ currentDate, events, calendars, onEventClick
   return (
     <div className="flex flex-col h-full overflow-hidden">
       {/* Day headers */}
-      <div className="shrink-0 grid grid-cols-7 border-b" style={{ borderColor: "var(--border-primary)" }}>
+      <div className="shrink-0 grid grid-cols-7 border-b bg-[var(--surface-0)]" style={{ borderColor: "var(--border-primary)" }}>
         {["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"].map((d) => (
-          <div key={d} className="text-center py-2 text-[10.5px] uppercase tracking-wider font-medium text-[var(--text-tertiary)]">
+          <div key={d} className="text-center py-2 text-[10px] uppercase tracking-widest font-semibold text-[var(--text-tertiary)]">
             {d}
           </div>
         ))}
@@ -107,9 +107,9 @@ export default function MonthView({ currentDate, events, calendars, onEventClick
                       return (
                         <button
                           key={ev.id}
-                          className="cal-event w-full text-left rounded px-1 py-px text-[10px] font-medium truncate transition-all hover:opacity-80"
+                          className="cal-event w-full text-left rounded-[4px] px-1.5 py-0.5 text-[10.5px] font-semibold truncate transition-all hover:brightness-110"
                           style={{
-                            background: isAllDay(ev) ? color : "transparent",
+                            background: isAllDay(ev) ? color : `color-mix(in srgb, ${color} 15%, transparent)`,
                             color: isAllDay(ev) ? "white" : color,
                             borderLeft: isAllDay(ev) ? "none" : `3px solid ${color}`,
                           }}

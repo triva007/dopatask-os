@@ -370,16 +370,16 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
       )}
 
       {isMultiDay && (
-        <div className="shrink-0 flex border-b" style={{ borderColor: "var(--border-primary)" }}>
+        <div className="shrink-0 flex border-b bg-[var(--surface-0)]" style={{ borderColor: "var(--border-primary)" }}>
           <div className="shrink-0 w-[52px]" />
           {days.map((day, i) => {
             const isToday = isSameDay(day, today);
             return (
-              <div key={i} className="flex-1 min-w-0 text-center py-2 border-l" style={{ borderColor: "var(--border-primary)" }}>
-                <div className="text-[10px] uppercase tracking-wider text-[var(--text-tertiary)] font-medium">
+              <div key={i} className="flex-1 min-w-0 text-center py-2.5 border-l" style={{ borderColor: "var(--border-primary)" }}>
+                <div className="text-[10px] uppercase tracking-widest text-[var(--text-tertiary)] font-semibold mb-1">
                   {day.toLocaleDateString("fr-FR", { weekday: "short" })}
                 </div>
-                <div className={"text-[20px] font-semibold leading-tight mt-0.5 " + (isToday ? "text-white bg-[var(--accent-blue)] w-9 h-9 rounded-full flex items-center justify-center mx-auto" : "text-[var(--text-primary)]")}>
+                <div className={"text-[22px] font-medium leading-none mx-auto flex items-center justify-center " + (isToday ? "text-white bg-[var(--accent-blue)] w-9 h-9 rounded-full shadow-sm" : "text-[var(--text-primary)]")}>
                   {day.getDate()}
                 </div>
               </div>
@@ -432,22 +432,23 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                 }}
               >
                 {HOURS.map((h) => (
-                  <div key={h} className="absolute left-0 right-0 border-t pointer-events-none" style={{ top: h * HOUR_HEIGHT, borderColor: "var(--border-primary)" }} />
+                  <div key={h} className="absolute left-0 right-0 border-t pointer-events-none transition-opacity" style={{ top: h * HOUR_HEIGHT, borderColor: "var(--border-primary)", opacity: 0.6 }} />
                 ))}
                 {HOURS.map((h) => (
-                  <div key={`half-${h}`} className="absolute left-0 right-0 border-t pointer-events-none" style={{ top: h * HOUR_HEIGHT + HOUR_HEIGHT / 2, borderColor: "var(--border-primary)", opacity: 0.4 }} />
+                  <div key={`half-${h}`} className="absolute left-0 right-0 border-t pointer-events-none transition-opacity" style={{ top: h * HOUR_HEIGHT + HOUR_HEIGHT / 2, borderColor: "var(--border-primary)", opacity: 0.2 }} />
                 ))}
 
-                {/* Bloc Sleep */}
-                <div className="absolute left-0 right-0 pointer-events-none z-10" style={{ top: 23 * HOUR_HEIGHT, height: HOUR_HEIGHT, background: "rgba(253, 224, 71, 0.3)" }}>
-                  <span className="absolute top-1 left-1.5 text-[10px] font-bold text-yellow-600/70">SLEEP</span>
+                {/* Bloc Sleep subtil */}
+                <div className="absolute left-0 right-0 pointer-events-none z-10 opacity-30" style={{ top: 23 * HOUR_HEIGHT, height: HOUR_HEIGHT, backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 10px, var(--border-primary) 10px, var(--border-primary) 11px)" }}>
+                  <span className="absolute top-1 left-1.5 text-[10px] font-medium text-[var(--text-tertiary)]">Repos</span>
                 </div>
-                <div className="absolute left-0 right-0 pointer-events-none z-10" style={{ top: 0, height: 7.5 * HOUR_HEIGHT, background: "rgba(253, 224, 71, 0.3)" }} />
+                <div className="absolute left-0 right-0 pointer-events-none z-10 opacity-30" style={{ top: 0, height: 7.5 * HOUR_HEIGHT, backgroundImage: "repeating-linear-gradient(45deg, transparent, transparent 10px, var(--border-primary) 10px, var(--border-primary) 11px)" }} />
+                
                 {isToday && (
-                  <div className="absolute left-0 right-0 z-20 pointer-events-none" style={{ top: nowY }}>
+                  <div className="absolute left-0 right-0 z-[60] pointer-events-none" style={{ top: nowY }}>
                     <div className="flex items-center">
-                      <div className="w-2.5 h-2.5 rounded-full -ml-1.5" style={{ background: "var(--accent-red)" }} />
-                      <div className="flex-1 h-[2px]" style={{ background: "var(--accent-red)" }} />
+                      <div className="w-2.5 h-2.5 rounded-full -ml-[5px] shadow-[0_0_8px_var(--accent-red)]" style={{ background: "var(--accent-red)" }} />
+                      <div className="flex-1 h-[1.5px]" style={{ background: "var(--accent-red)", opacity: 0.8 }} />
                     </div>
                   </div>
                 )}
@@ -508,17 +509,18 @@ export default function TimeGrid({ days, events, calendars, onEventClick, onSlot
                     <div
                       key={l.ev.id}
                       data-event-id={l.ev.id}
-                      className="cal-event absolute rounded-[4px] text-left transition-all hover:opacity-90 group"
+                      className="cal-event absolute rounded-md text-left transition-all hover:brightness-110 group"
                       style={{
                         top: top,
                         height: height,
-                        left: isDragging ? `calc(${l.col * colWidth}% + 1px + ${dragHorizontalOffset}px)` : `calc(${l.col * colWidth}% + 1px)`,
-                        width: `calc(${colWidth}% - 2px)`,
-                        background: isTask ? `var(--card-bg)` : `${color}25`,
-                        border: isTask ? `1px solid var(--card-border)` : `1px solid ${color}40`,
+                        left: isDragging ? `calc(${l.col * colWidth}% + 2px + ${dragHorizontalOffset}px)` : `calc(${l.col * colWidth}% + 2px)`,
+                        width: `calc(${colWidth}% - 4px)`,
+                        background: isTask ? `var(--card-bg)` : `color-mix(in srgb, ${color} 15%, transparent)`,
+                        border: isTask ? `1px solid var(--border-primary)` : `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
                         borderLeft: `3px solid ${color}`,
                         zIndex: isDragging || isResizing ? 50 : 10,
-                        opacity: isDragging ? 0.8 : 1,
+                        opacity: dragEvent?.ev.id === l.ev.id && !isDragging ? 0.4 : 1, // original ghost
+                        boxShadow: isDragging ? "0 8px 24px rgba(0,0,0,0.15)" : "none",
                         pointerEvents: isDragging || isResizing ? "none" : "auto",
                       }}
                     >
