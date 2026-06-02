@@ -220,14 +220,28 @@ export const useCrmStore = create<CrmState>()(
     // 3. Si RDV → créer auto une tâche maquette dans DopaTask
     if (resultat === "RDV") {
       try {
-        useAppStore.getState().addTask(
+        const taskId = useAppStore.getState().addTask(
           `Maquette pour ${prospect.entreprise}`,
-          "today",
+          "todo",
           undefined,
           undefined,
           undefined,
           prospectId
         );
+
+        const rdvDateStr = patch.date_rdv || prospect.date_rdv;
+        if (taskId && rdvDateStr) {
+          const rdvDateObj = new Date(rdvDateStr);
+          rdvDateObj.setDate(rdvDateObj.getDate() - 1);
+          const dayBeforeRdv = rdvDateObj.toISOString().slice(0, 10);
+          
+          const description = `Bonjour PRENOM, \npetit rappel pour notre rendez-vous demain a X h. Je vous enverrai le lien de la visio un peu avant. \n\nÀ demain ! \nAaron`;
+          
+          useAppStore.getState().updateTask(taskId, {
+            dueDate: dayBeforeRdv,
+            description: description,
+          });
+        }
       } catch (e) {
         console.warn("addTask failed", e);
       }

@@ -124,6 +124,9 @@ interface AppState {
   // TDAH — Auto-promotion & récurrence
   promoteOverdueTasks: () => number;
   completeRecurring: (id: string) => void;
+  // Sport
+  completedSportSessions: string[];
+  toggleSportSession: (eventId: string) => void;
 }
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36);

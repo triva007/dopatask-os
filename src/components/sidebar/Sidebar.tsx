@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Target, Settings,
   FolderKanban, Eye, BookOpen, Inbox, Phone,
-  Calendar, StickyNote,
+  Calendar, StickyNote, Activity,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -35,6 +35,7 @@ const NAV_AGENCE: NavItem[] = [
 const NAV_VIE: NavItem[] = [
   { href: "/projets",    label: "Projets",      Icon: FolderKanban },
   { href: "/objectifs",  label: "Objectifs",    Icon: Target       },
+  { href: "/sport",      label: "Sport",        Icon: Activity     },
   { href: "/vision",   label: "Vision",    Icon: Eye      },
   { href: "/journal",  label: "Journal",   Icon: BookOpen },
 ];
