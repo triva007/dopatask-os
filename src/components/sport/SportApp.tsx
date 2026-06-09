@@ -6,7 +6,7 @@ import { Activity, CheckCircle2, Circle, Flame, Timer, Trophy, CalendarDays } fr
 import { useCalendarEvents, addDays, startOfDay, getEventStart, CalendarEvent } from "@/components/calendrier/useCalendarEvents";
 import { useAppStore } from "@/store/useAppStore";
 
-const SPORT_KEYWORDS = ["sport", "muscu", "course", "gym", "séance", "seance", "workout", "training", "vélo", "velo", "swim", "natation", "fitness", "crossfit", "run"];
+// Filter only user's personal fitness/bodybuilding sessions which start with "séance muscu"
 
 export default function SportApp() {
   const { calendars, events, fetchCalendars, fetchEvents, loading, connected } = useCalendarEvents();
@@ -32,9 +32,8 @@ export default function SportApp() {
 
   const sportEvents = useMemo(() => {
     return events.filter(ev => {
-      const summary = (ev.summary || "").toLowerCase();
-      const desc = (ev.description || "").toLowerCase();
-      return SPORT_KEYWORDS.some(kw => summary.includes(kw) || desc.includes(kw));
+      const summary = (ev.summary || "").trim().toLowerCase();
+      return summary.startsWith("séance muscu") || summary.startsWith("seance muscu");
     }).sort((a, b) => getEventStart(b).getTime() - getEventStart(a).getTime());
   }, [events]);
 
