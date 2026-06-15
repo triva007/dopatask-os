@@ -16,6 +16,7 @@ import {
 import { useCrmStore } from "@/store/useCrmStore";
 import { STATUT_LABEL, STATUT_COLORS, STATUTS_ORDRE } from "@/lib/crmLabels";
 import type { Prospect, StatutProspect } from "@/lib/crmTypes";
+import { formatWebsiteUrl } from "@/lib/crmLogic";
 
 const QUICK_FILTERS: { label: string; filter: (p: Prospect) => boolean; accent: string }[] = [
   {
@@ -256,7 +257,7 @@ export default function MobileProspectList() {
                             icon={<Globe size={12} />}
                             label="Site web"
                             value={p.site_url.replace(/^https?:\/\//, "").slice(0, 30)}
-                            href={p.site_url}
+                            href={formatWebsiteUrl(p.site_url)}
                             external
                           />
                         )}

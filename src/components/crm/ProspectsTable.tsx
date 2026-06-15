@@ -12,6 +12,7 @@ import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI } from "@/lib/crmLabels";
 import type { StatutProspect } from "@/lib/crmTypes";
 import StatutBadge from "./StatutBadge";
 import ImportCsvModal from "./ImportCsvModal";
+import { formatWebsiteUrl } from "@/lib/crmLogic";
 
 type SortKey = "entreprise" | "statut" | "date_relance" | "created_at" | "last_activity" | "call_count";
 
@@ -556,7 +557,7 @@ const niches = useMemo(() => {
                           </a>
                         )}
                         {p.site_url && (
-                          <a href={p.site_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
+                          <a href={formatWebsiteUrl(p.site_url)} target="_blank" rel="noreferrer" className="inline-flex items-center gap-0.5 text-[10px] text-dopa-cyan hover:underline">
                             <ExternalLink size={9} /> Site
                           </a>
                         )}

@@ -248,3 +248,15 @@ export const THERMO_PALIERS = [500, 1000, 1500, 2000, 3000];
 export function countAttempts(calls: Call[], prospectId: string): number {
   return calls.filter((c) => c.prospect_id === prospectId).length;
 }
+
+// Assure que l'URL du site web a un protocole (http:// ou https://) pour éviter les liens relatifs.
+export function formatWebsiteUrl(url: string | null | undefined): string {
+  if (!url) return "";
+  const trimmed = url.trim();
+  if (!trimmed) return "";
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+  return `https://${trimmed}`;
+}
+

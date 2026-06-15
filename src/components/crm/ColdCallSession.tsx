@@ -10,7 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
 import type { Prospect, ResultatAppel } from "@/lib/crmTypes";
-import { isToday } from "@/lib/crmLogic";
+import { isToday, formatWebsiteUrl } from "@/lib/crmLogic";
 
 type Outcome = {
   key: ResultatAppel;
@@ -476,7 +476,7 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
                   </a>
                 )}
                 {current.site_url && (
-                  <a href={current.site_url} target="_blank" rel="noreferrer"
+                  <a href={formatWebsiteUrl(current.site_url)} target="_blank" rel="noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl glass-card hover:border-dopa-cyan/40 text-t-secondary hover:text-dopa-cyan transition-colors">
                     <ExternalLink size={13} /> Site web
                   </a>

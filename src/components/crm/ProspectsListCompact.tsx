@@ -14,6 +14,7 @@ import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
 import { STATUTS_ORDRE, STATUT_LABEL, STATUT_EMOJI, STATUT_COLORS } from "@/lib/crmLabels";
 import type { StatutProspect, Prospect } from "@/lib/crmTypes";
+import { formatWebsiteUrl } from "@/lib/crmLogic";
 import ImportCsvModal from "./ImportCsvModal";
 import { exportCsv } from "@/utils/exportCsv";
 
@@ -808,7 +809,7 @@ function CardsView({
                 )}
                 {p.site_url && (
                   <a
-                    href={p.site_url}
+                    href={formatWebsiteUrl(p.site_url)}
                     target="_blank"
                     rel="noreferrer"
                     onClick={(e) => e.stopPropagation()}
