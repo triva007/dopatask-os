@@ -294,7 +294,7 @@ export default function MobileCrmDashboard() {
 
       {/* ── CTA — Lancer appels ── */}
       <Link
-        href="/crm"
+        href="/m/crm/session"
         className="flex items-center justify-between p-4 rounded-2xl group transition-all active:scale-[0.98]"
         style={{
           background: restantAppels > 0 ? "var(--accent-blue-light)" : "var(--accent-green-light)",
@@ -324,7 +324,7 @@ export default function MobileCrmDashboard() {
                 color: `color-mix(in srgb, var(--accent-${restantAppels > 0 ? "blue" : "green"}) 70%, var(--text-secondary))`,
               }}
             >
-              Ouvrir le mode focus sur PC
+              Mode Focus (Optimisé Mobile)
             </p>
           </div>
         </div>
