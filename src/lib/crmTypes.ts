@@ -11,7 +11,8 @@ export type StatutProspect =
   | "MAQUETTE_PRETE"
   | "R1_EFFECTUE"
   | "VENDU"
-  | "PERDU";
+  | "PERDU"
+  | "MESSAGE_VOCAL_WHATSAPP";
 
 export type ResultatAppel =
   | "REPONDEUR"
@@ -19,7 +20,8 @@ export type ResultatAppel =
   | "REFUS"
   | "EXISTE_PAS"
   | "PAS_MA_CIBLE"
-  | "RDV";
+  | "RDV"
+  | "MESSAGE_VOCAL_WHATSAPP";
 
 export type Prospect = {
   id: string;

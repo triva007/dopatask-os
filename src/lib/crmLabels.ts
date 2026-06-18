@@ -15,6 +15,7 @@ export const STATUT_LABEL: Record<StatutProspect, string> = {
   R1_EFFECTUE:    "R1 Effectué (En réflexion)",
   VENDU:          "VENDU",
   PERDU:          "PERDU",
+  MESSAGE_VOCAL_WHATSAPP: "WhatsApp Envoyé",
 };
 
 export const STATUT_EMOJI: Record<StatutProspect, string> = {
@@ -28,6 +29,7 @@ export const STATUT_EMOJI: Record<StatutProspect, string> = {
   R1_EFFECTUE:    "🟢",
   VENDU:          "✅",
   PERDU:          "❌",
+  MESSAGE_VOCAL_WHATSAPP: "💬",
 };
 
 // Couleurs adaptées fond sombre DopaTask (versions saturées du sheet).
@@ -42,11 +44,13 @@ export const STATUT_COLORS: Record<StatutProspect, { bg: string; text: string; b
   R1_EFFECTUE:    { bg: "#312e81", text: "#a5b4fc", border: "#4338ca" },
   VENDU:          { bg: "#064e3b", text: "#34d399", border: "#059669" },
   PERDU:          { bg: "#1c1917", text: "#78716c", border: "#292524" },
+  MESSAGE_VOCAL_WHATSAPP: { bg: "#14532d", text: "#4ade80", border: "#166534" },
 };
 
 export const STATUTS_ORDRE: StatutProspect[] = [
   "A_APPELER",
   "REPONDEUR",
+  "MESSAGE_VOCAL_WHATSAPP",
   "RDV_BOOKE",
   "MAQUETTE_PRETE",
   "R1_EFFECTUE",
@@ -79,6 +83,7 @@ export const RESULTAT_LABEL: Record<ResultatAppel, string> = {
   EXISTE_PAS:        "N'existe pas",
   PAS_MA_CIBLE:      "Pas ma cible",
   RDV:               "RDV pris",
+  MESSAGE_VOCAL_WHATSAPP: "Vocal WhatsApp",
 };
 
 export const RESULTAT_EMOJI: Record<ResultatAppel, string> = {
@@ -88,4 +93,5 @@ export const RESULTAT_EMOJI: Record<ResultatAppel, string> = {
   EXISTE_PAS:        "⚪",
   PAS_MA_CIBLE:      "🚫",
   RDV:               "📅",
+  MESSAGE_VOCAL_WHATSAPP: "💬",
 };

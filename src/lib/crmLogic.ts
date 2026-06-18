@@ -180,6 +180,10 @@ export function buildFeedbackLine(params: {
       const prefix = match ? `(Appel n°${callCount}) ` : "";
       return `${prefix}N'existe plus le ${dateStr}`;
     }
+    case "MESSAGE_VOCAL_WHATSAPP": {
+      if (match) callCount += 1;
+      return `(Appel n°${callCount}) Message vocal WhatsApp le ${dateStr}`;
+    }
     case "PAS_MA_CIBLE": {
       const prefix = match ? `(Appel n°${callCount}) ` : "";
       return `${prefix}Pas ma cible le ${dateStr}`;
@@ -211,6 +215,8 @@ export function statutFromResultat(
       return "EXISTE_PAS";
     case "PAS_MA_CIBLE":
       return "PAS_MA_CIBLE";
+    case "MESSAGE_VOCAL_WHATSAPP":
+      return "MESSAGE_VOCAL_WHATSAPP";
     case "REPONDEUR":
     case "RAPPEL_PLUS_TARD":
       // Les deux = pas répondu, on met en attente de relance
