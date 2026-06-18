@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
-  CheckCircle2, Target, Trophy, Copy, ExternalLink, Clock, Ban, Edit3, FileText
+  CheckCircle2, Target, Trophy, Copy, ExternalLink, Clock, Ban, Edit3, FileText, MessageSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
@@ -23,7 +23,7 @@ type Outcome = {
 const OUTCOMES: Outcome[] = [
   { key: "RDV",             label: "RDV",           color: "#10b981", textColor: "#10b981", icon: Calendar },
   { key: "REPONDEUR",       label: "Rép.",          color: "#f97316", textColor: "#f97316", icon: PhoneOff },
-  { key: "RAPPEL_PLUS_TARD",label: "Rappel",        color: "#8b5cf6", textColor: "#8b5cf6", icon: Clock },
+  { key: "MESSAGE_VOCAL_WHATSAPP", label: "WhatsApp", color: "#8b5cf6", textColor: "#8b5cf6", icon: MessageSquare },
   { key: "REFUS",           label: "Refus",         color: "#ef4444", textColor: "#ef4444", icon: X },
   { key: "EXISTE_PAS",      label: "Faux No",       color: "#64748b", textColor: "#94a3b8", icon: X },
   { key: "PAS_MA_CIBLE",    label: "Hors Cib",      color: "#eab308", textColor: "#eab308", icon: Ban },
@@ -429,12 +429,11 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
                     }}
                     placeholder="Notes rapides..."
                     className="w-full bg-surface-0 border border-surface-3 rounded-xl px-3 py-2 text-[13px] min-h-[80px]"
-                  />
-                </div>
+                 </div>
               </motion.div>
             )}
 
-            {/* Sub-modes for Log (RDV / Rappel) inline */}
+            {/* Sub-modes for Log (RDV) inline */}
             {rdvMode && !rdvConfirmedEmail && (
               <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl bg-surface-1 border-2 border-[var(--accent-green)]/40 mt-2">
                 <p className="text-[14px] font-bold mb-3 text-t-primary">Planifier RDV</p>
@@ -454,17 +453,6 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
                 <p className="text-[14px] font-bold mb-3 text-t-primary">✅ RDV Booké ! Email auto :</p>
                 <textarea readOnly value={rdvConfirmedEmail} className="w-full h-32 bg-surface-0 border border-surface-3 rounded-xl px-3 py-2 text-[11px] font-mono mb-3 text-t-secondary" />
                 <button onClick={() => { setRdvMode(false); next(); }} className="w-full py-3 rounded-xl text-[#fff] font-bold text-[14px]" style={{ background: "var(--accent-green)" }}>Fermer & Suivant</button>
-              </motion.div>
-            )}
-
-            {rappelMode && (
-              <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="p-5 rounded-2xl bg-surface-1 border-2 border-[var(--accent-purple)]/40 mt-2">
-                <p className="text-[14px] font-bold mb-3 text-t-primary">Rappeler le :</p>
-                <input type="date" value={rappelDate} min={localDateOffset(1)} onChange={e => setRappelDate(e.target.value)} className="w-full bg-surface-0 border border-surface-3 rounded-xl px-3 py-2.5 text-[14px] mb-3" />
-                <div className="flex gap-2">
-                  <button onClick={() => setRappelMode(false)} className="px-4 py-2.5 rounded-xl bg-surface-2 text-t-primary font-bold text-[13px]">Annuler</button>
-                  <button onClick={() => handleLog("RAPPEL_PLUS_TARD", rappelDate)} disabled={!!submitting} className="flex-1 py-2.5 rounded-xl text-[#fff] font-bold text-[14px]" style={{ background: "var(--accent-purple)" }}>{submitting ? "..." : "Confirmer"}</button>
-                </div>
               </motion.div>
             )}
           </motion.div>
@@ -488,12 +476,11 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
           <div className="flex-1 flex gap-2 overflow-x-auto snap-x hide-scrollbar">
             {OUTCOMES.map(o => {
               const isRdv = o.key === "RDV";
-              const isRappel = o.key === "RAPPEL_PLUS_TARD";
               const Icon = o.icon;
               return (
                 <button
                   key={o.key}
-                  onClick={isRappel ? () => setRappelMode(true) : isRdv ? () => setRdvMode(true) : () => handleLog(o.key)}
+                  onClick={isRdv ? () => setRdvMode(true) : () => handleLog(o.key)}
                   className="snap-start shrink-0 min-w-[72px] flex flex-col items-center justify-center gap-1.5 py-3 rounded-2xl active:scale-95 transition-all border border-surface-3"
                   style={{ background: `${o.color}15`, color: o.textColor }}
                 >
@@ -504,6 +491,7 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
             })}
           </div>
         </div>
+      </div>    </div>
       </div>
 
       {/* CSS for hiding scrollbar globally or just locally */}

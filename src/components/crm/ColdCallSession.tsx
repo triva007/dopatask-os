@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState, useRef } from "react";
 import {
   Phone, PhoneOff, X, Calendar, SkipForward, ArrowLeft,
   CheckCircle2, Target, Trophy, Copy, ExternalLink, Clock, Ban, FileText, ChevronDown, ChevronUp,
-  Edit3
+  Edit3, MessageSquare
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCrmStore } from "@/store/useCrmStore";
@@ -25,7 +25,7 @@ type Outcome = {
 const OUTCOMES: Outcome[] = [
   { key: "RDV",             label: "RDV Booké",          shortcut: "1", color: "#10b981", textColor: "#10b981", icon: Calendar, desc: "Il a dit oui. GG."           },
   { key: "REPONDEUR",       label: "Répondeur",           shortcut: "2", color: "#f97316", textColor: "#f97316", icon: PhoneOff, desc: "Pas répondu, à relancer"     },
-  { key: "RAPPEL_PLUS_TARD",label: "Rappeler plus tard",  shortcut: "3", color: "#8b5cf6", textColor: "#8b5cf6", icon: Clock,    desc: "Fixer une date de rappel"    },
+  { key: "MESSAGE_VOCAL_WHATSAPP", label: "Message Vocal WhatsApp Envoyé", shortcut: "3", color: "#8b5cf6", textColor: "#8b5cf6", icon: MessageSquare, desc: "WhatsApp vocal" },
   { key: "REFUS",           label: "Refus",               shortcut: "4", color: "#ef4444", textColor: "#ef4444", icon: X,        desc: "Pas intéressé. Next."        },
   { key: "EXISTE_PAS",      label: "N'existe pas",        shortcut: "5", color: "#64748b", textColor: "#94a3b8", icon: X,        desc: "Numéro mort / faux"          },
   { key: "PAS_MA_CIBLE",    label: "Pas ma cible",        shortcut: "6", color: "#eab308", textColor: "#eab308", icon: Ban,      desc: "Erreur de sourcing"          },
@@ -269,9 +269,7 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
       const outcome = OUTCOMES.find((o) => o.shortcut === e.key);
       if (outcome) {
         e.preventDefault();
-        if (outcome.key === "RAPPEL_PLUS_TARD") {
-          setRappelMode(true);
-        } else if (outcome.key === "RDV") {
+        if (outcome.key === "RDV") {
           setRdvMode(true);
         } else {
           handleLog(outcome.key);
@@ -553,7 +551,6 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
               {OUTCOMES.map((o) => {
                 const Icon     = o.icon;
                 const isLoading = submitting === o.key;
-                const isRappel  = o.key === "RAPPEL_PLUS_TARD";
                 const isRdv     = o.key === "RDV";
 
                 if (rdvConfirmedEmail && !isRdv) return null;
@@ -626,45 +623,10 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
                       />
                       <div className="flex gap-2">
                         <button
-                          onClick={handleRdvSubmit}
-                          disabled={!!submitting || !rdvDay || !rdvHour}
-                          className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold disabled:opacity-50 transition-colors"
-                          style={{ background: o.color, color: "#fff" }}
-                        >
-                          {isLoading ? "..." : "Confirmer"}
-                        </button>
-                      </div>
-                    </motion.div>
-                  );
-                }
-
-                /* Bouton "Rappeler plus tard" → mode date picker si actif */
-                if (isRappel && rappelMode) {
-                  return (
-                    <motion.div
-                      key={o.key}
-                      initial={{ scale: 0.97 }}
-                      animate={{ scale: 1 }}
-                      className="col-span-2 md:col-span-1 px-4 py-4 rounded-xl border-2 text-left"
-                      style={{ background: `${o.color}18`, borderColor: `${o.color}88` }}
-                    >
-                      <p className="text-[12px] font-semibold mb-2" style={{ color: o.textColor }}>
-                        📅 Rappeler le :
-                      </p>
-                      <input
-                        type="date"
-                        value={rappelDate}
-                        min={localDateOffset(1)}
-                        onChange={(e) => setRappelDate(e.target.value)}
-                        className="w-full bg-surface-0 border border-surface-3 rounded-lg px-3 py-2 text-[13px] mb-3 focus:outline-none focus:border-dopa-violet"
-                        autoFocus
-                      />
-                      <div className="flex gap-2">
-                        <button
-                          onClick={() => handleLog("RAPPEL_PLUS_TARD", rappelDate)}
-                          disabled={!!submitting || !rappelDate}
-                          className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold disabled:opacity-50 transition-colors"
-                          style={{ background: o.color, color: "#fff" }}
+                           onClick={handleRdvSubmit}
+                           disabled={!!submitting || !rdvDay || !rdvHour}
+                           className="flex-1 py-2 rounded-lg text-[12.5px] font-semibold disabled:opacity-50 transition-colors"
+                           style={{ background: o.color, color: "#fff" }}
                         >
                           {isLoading ? "..." : "Confirmer"}
                         </button>
@@ -676,7 +638,7 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
                 return (
                   <button
                     key={o.key}
-                    onClick={isRappel ? () => setRappelMode(true) : isRdv ? () => setRdvMode(true) : () => handleLog(o.key)}
+                    onClick={isRdv ? () => setRdvMode(true) : () => handleLog(o.key)}
                     disabled={!!submitting}
                     className="flex flex-col items-center justify-center p-5 rounded-2xl glass-card-3d hover:brightness-110 active:scale-[0.97] transition-all group relative overflow-hidden"
                     style={{ background: `${o.color}10`, borderColor: `${o.color}40` }}
