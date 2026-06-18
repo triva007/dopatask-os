@@ -8,7 +8,7 @@ import {
   ArrowLeft, Phone, MapPin, Save, Check,
   Loader2, DollarSign, PhoneOff, Ban, Calendar, Frown,
   ChevronLeft, ChevronRight, Sparkles, RotateCcw, X, Clock,
-  ListChecks, Plus, CheckCircle2, Circle, Trash2, FolderKanban, Edit3,
+  ListChecks, Plus, CheckCircle2, Circle, Trash2, FolderKanban, Edit3, MessageSquare
 } from "lucide-react";
 import { useCrmStore } from "@/store/useCrmStore";
 import { useAppStore } from "@/store/useAppStore";
@@ -501,7 +501,7 @@ export default function ProspectDetail({ id, onClose, onNavigate }: Props) {
           <div className="grid grid-cols-5 gap-1.5">
             <ResultBtn icon={<Calendar size={18} />}  label="RDV Booké"       color="blue"   onClick={() => onAction("RDV")}           disabled={acting} />
             <ResultBtn icon={<PhoneOff size={18} />}  label="Répondeur"       color="orange" onClick={() => onAction("REPONDEUR")}     disabled={acting} />
-            <ResultBtn icon={<Clock size={18} />}     label="Rappel + tard"   color="purple" onClick={() => { setRappelDate(new Date(Date.now() + 3 * 86400000).toISOString().slice(0, 10)); setRappelMode(true); }} disabled={acting} />
+            <ResultBtn icon={<MessageSquare size={18} />} label="WhatsApp" color="purple" onClick={() => onAction("MESSAGE_VOCAL_WHATSAPP")} disabled={acting} />
             <ResultBtn icon={<Frown size={18} />}     label="Refus"           color="red"    onClick={() => onAction("REFUS")}          disabled={acting} />
             <ResultBtn icon={<Ban size={18} />}       label="Pas ma cible"   color="gray"   onClick={() => onAction("PAS_MA_CIBLE")}   disabled={acting} />
           </div>
@@ -1058,6 +1058,7 @@ const RESULTAT_ICON: Record<ResultatAppel, string> = {
   EXISTE_PAS:       "⚪",
   PAS_MA_CIBLE:     "🚫",
   RDV:              "📅",
+  MESSAGE_VOCAL_WHATSAPP: "💬",
 };
 
 const RESULTAT_TEXT: Record<ResultatAppel, string> = {
@@ -1067,6 +1068,7 @@ const RESULTAT_TEXT: Record<ResultatAppel, string> = {
   EXISTE_PAS:       "N'existe pas",
   PAS_MA_CIBLE:     "Pas ma cible",
   RDV:              "RDV pris",
+  MESSAGE_VOCAL_WHATSAPP: "WhatsApp Envoyé",
 };
 
 type BtnColor = "blue" | "orange" | "red" | "gray" | "green" | "purple";
