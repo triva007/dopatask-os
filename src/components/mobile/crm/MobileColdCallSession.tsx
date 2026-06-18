@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useEffect, useMemo, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -429,7 +430,8 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
                     }}
                     placeholder="Notes rapides..."
                     className="w-full bg-surface-0 border border-surface-3 rounded-xl px-3 py-2 text-[13px] min-h-[80px]"
-                 </div>
+                  />
+                </div>
               </motion.div>
             )}
 
@@ -491,7 +493,6 @@ Au programme : je vous montre la maquette que j'ai préparée pour votre nouveau
             })}
           </div>
         </div>
-      </div>    </div>
       </div>
 
       {/* CSS for hiding scrollbar globally or just locally */}
