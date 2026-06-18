@@ -23,7 +23,7 @@ import StatutBadge from "./StatutBadge";
 
 // Statuts affiches dans le pipeline kanban (on cache les terminaux)
 const PIPELINE_STATUTS: StatutProspect[] = [
-  "A_APPELER", "REPONDEUR", "RDV_BOOKE", "MAQUETTE_PRETE", "R1_EFFECTUE", "VENDU",
+  "A_APPELER", "REPONDEUR", "MESSAGE_VOCAL_WHATSAPP", "RDV_BOOKE", "MAQUETTE_PRETE", "R1_EFFECTUE", "VENDU",
 ];
 
 export default function CrmHub() {
@@ -100,6 +100,7 @@ export default function CrmHub() {
     const map: Record<StatutProspect, typeof prospects> = {
       A_APPELER: [], REPONDEUR: [], REFUS: [], EXISTE_PAS: [],
       PAS_MA_CIBLE: [], RDV_BOOKE: [], MAQUETTE_PRETE: [], R1_EFFECTUE: [], VENDU: [], PERDU: [],
+      MESSAGE_VOCAL_WHATSAPP: [],
     };
     for (const p of actifs) map[p.statut].push(p);
     return map;

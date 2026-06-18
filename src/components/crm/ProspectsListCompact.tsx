@@ -30,7 +30,7 @@ type Props = {
 };
 
 const PIPELINE_STATUTS: StatutProspect[] = [
-  "A_APPELER", "REPONDEUR", "RDV_BOOKE", "MAQUETTE_PRETE", "R1_EFFECTUE", "VENDU",
+  "A_APPELER", "REPONDEUR", "MESSAGE_VOCAL_WHATSAPP", "RDV_BOOKE", "MAQUETTE_PRETE", "R1_EFFECTUE", "VENDU",
 ];
 
 // Ordre de priorité d'action pour le tri "priorité"
@@ -39,12 +39,13 @@ const PRIORITY_ORDER: Record<StatutProspect, number> = {
   MAQUETTE_PRETE: 1,
   R1_EFFECTUE: 2,
   REPONDEUR: 3,
-  A_APPELER: 4,
-  VENDU: 5,
-  REFUS: 6,
-  PAS_MA_CIBLE: 7,
-  EXISTE_PAS: 8,
-  PERDU: 9,
+  MESSAGE_VOCAL_WHATSAPP: 4,
+  A_APPELER: 5,
+  VENDU: 6,
+  REFUS: 7,
+  PAS_MA_CIBLE: 8,
+  EXISTE_PAS: 9,
+  PERDU: 10,
 };
 
 export default function ProspectsListCompact({
@@ -1056,6 +1057,7 @@ function groupByStatut(arr: Prospect[]): Record<StatutProspect, Prospect[]> {
   const map: Record<StatutProspect, Prospect[]> = {
     A_APPELER: [], REPONDEUR: [], REFUS: [], EXISTE_PAS: [],
     RDV_BOOKE: [], MAQUETTE_PRETE: [], R1_EFFECTUE: [], VENDU: [], PERDU: [],
+    PAS_MA_CIBLE: [], MESSAGE_VOCAL_WHATSAPP: [],
   };
   for (const p of arr) map[p.statut].push(p);
   return map;

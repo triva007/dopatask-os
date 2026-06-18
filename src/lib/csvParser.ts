@@ -13,7 +13,7 @@ export function normalizeStatut(raw: unknown): StatutProspect | null {
   const v = s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   // Formes canoniques (exact match enum)
-  if (["a_appeler","repondeur","refus","existe_pas","rdv_booke","maquette_prete","r1_effectue","vendu","perdu"].includes(v)) {
+  if (["a_appeler","repondeur","refus","existe_pas","rdv_booke","maquette_prete","r1_effectue","vendu","perdu","pas_ma_cible","message_vocal_whatsapp"].includes(v)) {
     return v.toUpperCase() as StatutProspect;
   }
 
@@ -26,6 +26,8 @@ export function normalizeStatut(raw: unknown): StatutProspect | null {
   if (v.includes("refus") || v.includes("pas interess") || v.includes("non merci") || v === "no") return "REFUS";
   if (v.includes("existe pas") || v.includes("n'existe") || v.includes("numero invalide") || v.includes("faux numero")) return "EXISTE_PAS";
   if (v.includes("repondeur") || v.includes("messagerie") || v.includes("a relancer") || v.includes("relancer") || v.includes("rappeler plus tard")) return "REPONDEUR";
+  if (v.includes("whatsapp") || v.includes("vocal whatsapp") || v.includes("message whatsapp")) return "MESSAGE_VOCAL_WHATSAPP";
+  if (v.includes("pas ma cible") || v.includes("pas_ma_cible") || v.includes("pas cible")) return "PAS_MA_CIBLE";
   if (v.includes("appeler") || v.includes("a_faire") || v.includes("a faire") || v.includes("todo") || v === "nouveau" || v === "new") return "A_APPELER";
   return null;
 }

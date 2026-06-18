@@ -30,6 +30,11 @@ const QUICK_FILTERS: { label: string; filter: (p: Prospect) => boolean; accent: 
     accent: "var(--accent-orange)",
   },
   {
+    label: "WhatsApp",
+    filter: (p) => !p.archived && p.statut === "MESSAGE_VOCAL_WHATSAPP",
+    accent: "var(--accent-green)",
+  },
+  {
     label: "RDV",
     filter: (p) =>
       !p.archived &&

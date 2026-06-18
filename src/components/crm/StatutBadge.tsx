@@ -16,6 +16,7 @@ export default function StatutBadge({ statut, compact = false }: { statut: Statu
     R1_EFFECTUE:    "var(--accent-purple)",
     VENDU:          "var(--accent-green)",
     PERDU:          "var(--text-tertiary)",
+    MESSAGE_VOCAL_WHATSAPP: "var(--accent-green)",
   };
   const accent = accentMap[statut];
   return (
