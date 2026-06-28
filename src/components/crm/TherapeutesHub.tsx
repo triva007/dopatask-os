@@ -1,7 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState, type CSSProperties, type ReactNode } from "react";
-import { Search, Plus, X, Trash2, LayoutGrid, Table2 } from "lucide-react";
+import Link from "next/link";
+import {
+  Search, Plus, X, Trash2, LayoutGrid, Table2,
+  LayoutDashboard, KanbanSquare, Shuffle,
+  CalendarClock, Flame, RotateCcw, Target, TrendingUp,
+} from "lucide-react";
 import {
   DndContext, DragOverlay, closestCenter,
   PointerSensor, useSensor, useSensors,
@@ -42,6 +47,11 @@ const COL_BY: Record<Statut, { label: string; emoji: string; color: string }> = 
 );
 
 const KEY = "triva_crm_therapeutes_v1";
+const OBJECTIF_VENTES = 3;
+const OBJECTIF_CA = 6000;
+
+const APP_BG =
+  "radial-gradient(1100px 520px at 78% -8%, rgba(168,147,240,0.10), transparent 60%), radial-gradient(820px 460px at -5% 108%, rgba(134,184,204,0.07), transparent 55%), var(--surface-0)";
 
 const SANS_REPONSE = [
   "Christelle Collins (psycho-hypno)", "Pascal Chartrain", "Aneta Olszewska",
@@ -76,6 +86,7 @@ export default function TherapeutesHub() {
   const [ready, setReady] = useState(false);
   const [q, setQ] = useState("");
   const [edit, setEdit] = useState<Lead | null>(null);
+  const [tab, setTab] = useState<"dash" | "pipeline">("dash");
   const [view, setView] = useState<"kanban" | "table">("kanban");
   const [activeId, setActiveId] = useState<string | null>(null);
 
@@ -102,9 +113,6 @@ export default function TherapeutesHub() {
     return leads.filter((l) => `${l.nom} ${l.spe} ${l.ville} ${l.notes}`.toLowerCase().includes(s));
   }, [leads, q]);
 
-  const count = (k: Statut) => leads.filter((l) => l.statut === k).length;
-  const sum = (key: "caContracte" | "caCollecte") => leads.reduce((t, l) => t + (l[key] || 0), 0);
-
   const onSave = (l: Lead) => {
     setLeads((p) => (p.some((x) => x.id === l.id) ? p.map((x) => (x.id === l.id ? l : x)) : [l, ...p]));
     setEdit(null);
@@ -114,15 +122,6 @@ export default function TherapeutesHub() {
     setEdit(null);
   };
   const moveTo = (id: string, statut: Statut) => setLeads((p) => p.map((l) => (l.id === id ? { ...l, statut } : l)));
-
-  const stats: { label: string; value: string | number; color: string }[] = [
-    { label: "RDV à venir", value: count("rdv_booke"), color: "#818CF8" },
-    { label: "À closer", value: count("chaud"), color: "#F3B87A" },
-    { label: "RDV faits", value: count("rdv_fait"), color: "#A893F0" },
-    { label: "Clients", value: count("client"), color: "#86D4A1" },
-    { label: "CA contracté", value: eur(sum("caContracte")), color: "#86B8CC" },
-    { label: "CA collecté", value: eur(sum("caCollecte")), color: "#86D4A1" },
-  ];
 
   const newLead = (): Lead => ({ id: `n${Date.now()}`, nom: "", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", notes: "", source: "Post FB", caContracte: 0, caCollecte: 0 });
 
@@ -135,57 +134,207 @@ export default function TherapeutesHub() {
   };
 
   return (
-    <div className="h-full overflow-auto">
-      <div className="max-w-[1700px] mx-auto px-10 py-8 space-y-6">
-        <div className="flex items-start justify-between flex-wrap gap-4">
-          <div>
-            <h1 className="text-[26px] font-bold tracking-tight">CRM Thérapeutes</h1>
-            <p className="text-[12.5px] text-t-tertiary mt-1">Pipeline Facebook · {leads.length} contacts · objectif 2 ventes</p>
-          </div>
-          <button
-            onClick={() => setEdit(newLead())}
-            className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[13px] font-semibold transition-all"
-            style={{ background: "var(--accent-purple-light)", color: "var(--accent-purple)" }}
-          >
-            <Plus size={14} /> Ajouter un lead
-          </button>
-        </div>
+    <div className="flex flex-col h-full" style={{ background: APP_BG }}>
+      <Header tab={tab} setTab={setTab} onAdd={() => setEdit(newLead())} total={leads.length} />
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-          {stats.map((s) => (
-            <div key={s.label} className="rounded-2xl glass-card p-5" style={{ background: `linear-gradient(135deg, ${s.color}15 0%, var(--surface-1) 100%)` }}>
-              <p className="text-[11px] uppercase tracking-widest font-bold mb-2" style={{ color: s.color }}>{s.label}</p>
-              <p className="text-[22px] font-black tabular-nums tracking-tight" style={{ color: s.color }}>{s.value}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <div className="relative flex-1 min-w-[200px] max-w-md">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-t-tertiary" />
-            <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un lead…" className="w-full pl-9 pr-3 py-2.5 rounded-lg text-[13px] outline-none" style={inputStyle} />
-          </div>
-          <div className="inline-flex rounded-lg p-0.5 gap-0.5" style={{ background: "var(--surface-2)", border: "1px solid var(--border-primary)" }}>
-            <ViewBtn active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid size={14} />} label="Kanban" />
-            <ViewBtn active={view === "table"} onClick={() => setView("table")} icon={<Table2 size={14} />} label="Tableau" />
-          </div>
-        </div>
-
-        {view === "kanban" ? (
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-            <div className="flex gap-4 overflow-x-auto pb-6 items-start">
-              {COLS.map((col) => (
-                <DroppableColumn key={col.key} col={col} items={filtered.filter((l) => l.statut === col.key)} onOpen={setEdit} />
-              ))}
-            </div>
-            <DragOverlay>{activeLead ? <CardInner lead={activeLead} color={COL_BY[activeLead.statut].color} dragging /> : null}</DragOverlay>
-          </DndContext>
+      <div className="flex-1 overflow-auto">
+        {tab === "dash" ? (
+          <Dashboard leads={leads} onOpen={setEdit} />
         ) : (
-          <TableView leads={filtered} onOpen={setEdit} />
+          <div className="max-w-[1700px] mx-auto px-8 py-6 space-y-5">
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="relative flex-1 min-w-[200px] max-w-md">
+                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-t-tertiary" />
+                <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Rechercher un lead…" className="w-full pl-9 pr-3 py-2.5 rounded-lg text-[13px] outline-none" style={inputStyle} />
+              </div>
+              <div className="inline-flex rounded-lg p-0.5 gap-0.5" style={{ background: "var(--surface-2)", border: "1px solid var(--border-primary)" }}>
+                <ViewBtn active={view === "kanban"} onClick={() => setView("kanban")} icon={<LayoutGrid size={14} />} label="Kanban" />
+                <ViewBtn active={view === "table"} onClick={() => setView("table")} icon={<Table2 size={14} />} label="Tableau" />
+              </div>
+            </div>
+
+            {view === "kanban" ? (
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+                <div className="flex gap-4 overflow-x-auto pb-6 items-start">
+                  {COLS.map((col) => (
+                    <DroppableColumn key={col.key} col={col} items={filtered.filter((l) => l.statut === col.key)} onOpen={setEdit} />
+                  ))}
+                </div>
+                <DragOverlay>{activeLead ? <CardInner lead={activeLead} color={COL_BY[activeLead.statut].color} dragging /> : null}</DragOverlay>
+              </DndContext>
+            ) : (
+              <TableView leads={filtered} onOpen={setEdit} />
+            )}
+          </div>
         )}
       </div>
 
       {edit && <EditModal lead={edit} onSave={onSave} onDelete={onDelete} onClose={() => setEdit(null)} />}
+    </div>
+  );
+}
+
+function Header({ tab, setTab, onAdd, total }: { tab: "dash" | "pipeline"; setTab: (t: "dash" | "pipeline") => void; onAdd: () => void; total: number }) {
+  return (
+    <header className="shrink-0 border-b px-6 py-3 flex items-center gap-4" style={{ borderColor: "var(--border-primary)", background: "var(--surface-0)" }}>
+      <div className="flex items-center gap-3">
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center shadow-lg" style={{ background: "linear-gradient(135deg, var(--accent-purple), var(--accent-blue))" }}>
+          <span className="text-[16px] font-black text-white">T</span>
+        </div>
+        <div>
+          <p className="text-[15px] font-bold leading-none text-t-primary">CRM Triva</p>
+          <p className="text-[10.5px] text-t-tertiary mt-1">Pipeline thérapeutes · {total} contacts</p>
+        </div>
+      </div>
+
+      <div className="mx-auto inline-flex rounded-xl p-1 gap-1" style={{ background: "var(--surface-2)", border: "1px solid var(--border-primary)" }}>
+        <TabBtn active={tab === "dash"} onClick={() => setTab("dash")} icon={<LayoutDashboard size={15} />} label="Tableau de bord" />
+        <TabBtn active={tab === "pipeline"} onClick={() => setTab("pipeline")} icon={<KanbanSquare size={15} />} label="Vision globale" />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button onClick={onAdd} className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-[13px] font-semibold" style={{ background: "var(--accent-purple)", color: "#fff" }}>
+          <Plus size={15} /> Ajouter
+        </button>
+        <Link href="/start" className="inline-flex items-center gap-2 px-3 py-2 rounded-lg text-[12.5px] font-semibold text-t-secondary transition-colors hover:text-t-primary" style={{ background: "var(--surface-2)", border: "1px solid var(--border-primary)" }}>
+          <Shuffle size={14} /> Changer de mode
+        </Link>
+      </div>
+    </header>
+  );
+}
+
+function TabBtn({ active, onClick, icon, label }: { active: boolean; onClick: () => void; icon: ReactNode; label: string }) {
+  return (
+    <button onClick={onClick} className="inline-flex items-center gap-2 px-4 py-1.5 rounded-lg text-[13px] font-semibold transition-all" style={active ? { background: "var(--accent-purple)", color: "#fff" } : { color: "var(--text-secondary)" }}>
+      {icon} {label}
+    </button>
+  );
+}
+
+function Dashboard({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void }) {
+  const count = (k: Statut) => leads.filter((l) => l.statut === k).length;
+  const sum = (key: "caContracte" | "caCollecte") => leads.reduce((t, l) => t + (l[key] || 0), 0);
+  const collecte = sum("caCollecte");
+  const contracte = sum("caContracte");
+  const clients = count("client");
+  const perdus = count("perdu");
+  const taux = clients + perdus > 0 ? Math.round((clients / (clients + perdus)) * 100) : 0;
+  const rdv = leads.filter((l) => l.statut === "rdv_booke");
+  const chaud = leads.filter((l) => l.statut === "chaud");
+  const relance = leads.filter((l) => l.statut === "contacte");
+  const maxCount = Math.max(1, ...COLS.map((c) => count(c.key)));
+
+  const kpis = [
+    { label: "CA collecté", value: eur(collecte), color: "#86D4A1", icon: <TrendingUp size={16} />, sub: "encaissé" },
+    { label: "CA contracté", value: eur(contracte), color: "#86B8CC", icon: <Target size={16} />, sub: "signé, en attente" },
+    { label: "Clients signés", value: clients, color: "#A893F0", icon: <Flame size={16} />, sub: `${leads.length} contacts au total` },
+    { label: "Taux de close", value: `${taux}%`, color: "#F3B87A", icon: <TrendingUp size={16} />, sub: `${clients} gagnés · ${perdus} perdus` },
+  ];
+
+  return (
+    <div className="max-w-[1500px] mx-auto px-8 py-7 space-y-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {kpis.map((k) => <KpiCard key={k.label} {...k} />)}
+      </div>
+
+      <div className="rounded-2xl glass-card p-6">
+        <div className="flex items-center gap-2 mb-4">
+          <Target size={16} style={{ color: "var(--accent-purple)" }} />
+          <h2 className="text-[14px] font-bold text-t-primary">Objectif du mois</h2>
+        </div>
+        <div className="grid md:grid-cols-2 gap-6">
+          <Progress label="Ventes" value={clients} max={OBJECTIF_VENTES} color="#A893F0" display={`${clients} / ${OBJECTIF_VENTES}`} />
+          <Progress label="CA collecté" value={collecte} max={OBJECTIF_CA} color="#86D4A1" display={`${eur(collecte)} / ${eur(OBJECTIF_CA)}`} />
+        </div>
+      </div>
+
+      <div className="grid lg:grid-cols-3 gap-5">
+        <div className="lg:col-span-2 rounded-2xl glass-card p-6">
+          <div className="flex items-center gap-2 mb-5">
+            <KanbanSquare size={16} style={{ color: "var(--accent-blue)" }} />
+            <h2 className="text-[14px] font-bold text-t-primary">Pipeline — vue d'ensemble</h2>
+          </div>
+          <div className="space-y-2.5">
+            {COLS.map((c) => {
+              const n = count(c.key);
+              return (
+                <div key={c.key} className="flex items-center gap-3">
+                  <div className="w-[160px] shrink-0 flex items-center gap-1.5 text-[12px] font-semibold" style={{ color: c.color }}>
+                    <span>{c.emoji}</span><span className="truncate">{c.label.split(" · ")[0]}</span>
+                  </div>
+                  <div className="flex-1 h-[26px] rounded-lg overflow-hidden" style={{ background: "var(--surface-2)" }}>
+                    <div className="h-full rounded-lg flex items-center justify-end px-2 transition-all" style={{ width: `${Math.max(7, (n / maxCount) * 100)}%`, background: `linear-gradient(90deg, ${c.color}40, ${c.color})` }}>
+                      <span className="text-[11px] font-black text-white/90 tabular-nums">{n}</span>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="rounded-2xl glass-card p-6 space-y-5">
+          <ActionList title="RDV à venir" icon={<CalendarClock size={14} />} color="#818CF8" items={rdv} field="rdv" onOpen={onOpen} empty="Aucun RDV calé" />
+          <ActionList title="À closer (chaud)" icon={<Flame size={14} />} color="#F3B87A" items={chaud} field="note" onOpen={onOpen} empty="Personne en chaud" />
+          <ActionList title="À relancer" icon={<RotateCcw size={14} />} color="#86B8CC" items={relance} field="spe" onOpen={onOpen} empty="Rien à relancer" max={5} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function KpiCard({ label, value, color, icon, sub }: { label: string; value: string | number; color: string; icon: ReactNode; sub?: string }) {
+  return (
+    <div className="rounded-2xl glass-card p-5 relative overflow-hidden" style={{ background: `linear-gradient(135deg, ${color}18 0%, var(--surface-1) 70%)` }}>
+      <div className="flex items-center justify-between mb-3">
+        <span className="text-[11px] uppercase tracking-widest font-bold" style={{ color }}>{label}</span>
+        <span style={{ color }}>{icon}</span>
+      </div>
+      <p className="text-[28px] font-black tabular-nums tracking-tight leading-none" style={{ color }}>{value}</p>
+      {sub && <p className="text-[11px] text-t-tertiary mt-2">{sub}</p>}
+    </div>
+  );
+}
+
+function Progress({ label, value, max, color, display }: { label: string; value: number; max: number; color: string; display: string }) {
+  const pct = Math.min(100, Math.round((value / Math.max(1, max)) * 100));
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-[12px] font-semibold text-t-secondary">{label}</span>
+        <span className="text-[12px] font-bold tabular-nums" style={{ color }}>{display}</span>
+      </div>
+      <div className="h-2.5 rounded-full overflow-hidden" style={{ background: "var(--surface-3)" }}>
+        <div className="h-full rounded-full transition-all" style={{ width: `${pct}%`, background: color }} />
+      </div>
+    </div>
+  );
+}
+
+function ActionList({ title, icon, color, items, field, onOpen, empty, max = 6 }: { title: string; icon: ReactNode; color: string; items: Lead[]; field: "rdv" | "note" | "spe"; onOpen: (l: Lead) => void; empty: string; max?: number }) {
+  return (
+    <div>
+      <div className="flex items-center gap-2 mb-2.5">
+        <span style={{ color }}>{icon}</span>
+        <h3 className="text-[12px] font-bold uppercase tracking-wider" style={{ color }}>{title}</h3>
+        <span className="ml-auto text-[11px] font-bold tabular-nums px-1.5 rounded" style={{ color, background: `${color}1f` }}>{items.length}</span>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-[11.5px] text-t-tertiary italic">{empty}</p>
+      ) : (
+        <div className="space-y-1.5">
+          {items.slice(0, max).map((l) => (
+            <button key={l.id} onClick={() => onOpen(l)} className="w-full text-left rounded-lg px-3 py-2 transition-all hover:brightness-125" style={{ background: "var(--surface-2)", border: "1px solid var(--border-primary)" }}>
+              <p className="text-[12.5px] font-semibold text-t-primary leading-tight truncate">{l.nom}</p>
+              {field === "rdv" && l.rdv && <p className="text-[11px] mt-0.5" style={{ color }}>{l.rdv}</p>}
+              {field === "note" && l.notes && <p className="text-[11px] text-t-tertiary mt-0.5 line-clamp-1">{l.notes}</p>}
+              {field === "spe" && l.spe && <p className="text-[11px] text-t-tertiary mt-0.5 truncate">{l.spe}</p>}
+            </button>
+          ))}
+          {items.length > max && <p className="text-[11px] text-t-tertiary pl-1">+{items.length - max} autres</p>}
+        </div>
+      )}
     </div>
   );
 }
@@ -209,7 +358,7 @@ function DroppableColumn({ col, items, onOpen }: { col: { key: Statut; label: st
         </div>
         <span className="text-[12px] font-bold bg-black/20 px-1.5 rounded" style={{ color: col.color }}>{items.length}</span>
       </div>
-      <div className="flex-1 space-y-2 overflow-y-auto max-h-[460px] pr-0.5">
+      <div className="flex-1 space-y-2 overflow-y-auto max-h-[calc(100vh-260px)] pr-0.5">
         {items.length === 0 && <p className="text-[11px] text-t-tertiary italic text-center mt-3">Glisse un lead ici</p>}
         {items.map((l) => <DraggableCard key={l.id} lead={l} color={col.color} onOpen={onOpen} />)}
       </div>
