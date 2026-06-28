@@ -5,7 +5,10 @@ import { useRouter } from "next/navigation";
 import { LayoutDashboard, HeartHandshake } from "lucide-react";
 
 function remember(mode: string) {
-  try { localStorage.setItem("aaron_os_mode", mode); } catch (_e) {}
+  try {
+    sessionStorage.setItem("aaron_mode_session", "1");
+    localStorage.setItem("aaron_os_mode", mode);
+  } catch (_e) {}
 }
 
 export default function ModeChooser() {
