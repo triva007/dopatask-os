@@ -47,6 +47,7 @@ const COL_BY: Record<Statut, { label: string; emoji: string; color: string }> = 
 );
 
 const KEY = "triva_crm_therapeutes_v1";
+const MIGR_CATHERINE = "triva_crm_migr_catherine_v1";
 const OBJECTIF_VENTES = 3;
 const OBJECTIF_CA = 6000;
 
@@ -61,7 +62,22 @@ const SANS_REPONSE = [
   "Jéssica Perera Martínez",
 ];
 
+const CATHERINE: Lead = {
+  id: "catherine",
+  nom: "Catherine Arnaud",
+  spe: "Cliente — refonte de site + SEO",
+  ville: "Bord des Vosges",
+  statut: "client",
+  rdv: "Onboarding fait (sam.)",
+  contact: "WhatsApp",
+  notes: "✅ Closée 940 € (acompte 50/50, hébergement offert). Virement de l'acompte à venir cette semaine (son compagnon lui a fait le virement, elle attend de l'avoir). Onboarding fait samedi : accès Wix débloqué (Google Authenticator) ; domaine expire 2027 ; forfait pris en 2 ans qui finit 2026 → couper le renouvellement auto avant l'échéance. Fiche Google = Régis admin → le faire ajouter aaron@triva-media.com. Questionnaire envoyé par WhatsApp → RELANCER. Garder ses textes / images, optimiser le SEO.",
+  source: "Inbound",
+  caContracte: 940,
+  caCollecte: 0,
+};
+
 const SEED: Lead[] = [
+  CATHERINE,
   { id: "t1", nom: "Nancy Mas (Nancy Massaoudi)", spe: "Thérapeute · bilingue FR/NL", ville: "Denderleeuw (BE)", statut: "rdv_booke", rdv: "Lundi", contact: "", source: "Post FB", notes: "A réagi avec un coeur. Ne pas relancer.", caContracte: 0, caCollecte: 0 },
   { id: "t2", nom: "Anne Laure Frelon", spe: "Thérapeute", ville: "", statut: "rdv_booke", rdv: "Lundi 13h30", contact: "", source: "Post FB", notes: "RDV confirmé. A accepté que c'est payant / qu'il faut investir.", caContracte: 0, caCollecte: 0 },
   { id: "t3", nom: "Mélanie Baerel", spe: "Thérapeute (Douceur éternelle)", ville: "", statut: "rdv_booke", rdv: "Mardi (visio)", contact: "", source: "Post FB", notes: "Déjà amie FB. Envoyer le lien visio 5 min avant.", caContracte: 0, caCollecte: 0 },
@@ -93,13 +109,22 @@ export default function TherapeutesHub() {
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
 
   useEffect(() => {
+    let arr: Lead[];
     try {
       const raw = localStorage.getItem(KEY);
-      const arr = raw ? (JSON.parse(raw) as Lead[]) : SEED;
-      setLeads(arr.map((l) => ({ caContracte: 0, caCollecte: 0, ...l })));
+      arr = raw ? (JSON.parse(raw) as Lead[]) : SEED;
     } catch {
-      setLeads(SEED);
+      arr = SEED;
     }
+    arr = arr.map((l) => ({ caContracte: 0, caCollecte: 0, ...l }));
+    // Migration unique : injecter Catherine (cliente closée) une seule fois, même si le CRM existait déjà
+    try {
+      if (!localStorage.getItem(MIGR_CATHERINE)) {
+        if (!arr.some((l) => l.id === "catherine")) arr = [CATHERINE, ...arr];
+        localStorage.setItem(MIGR_CATHERINE, "1");
+      }
+    } catch {}
+    setLeads(arr);
     setReady(true);
   }, []);
 
