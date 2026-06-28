@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import {
   LayoutDashboard, ListChecks, Target, Settings,
   FolderKanban, Eye, BookOpen, Inbox, Phone,
-  Calendar, StickyNote, Activity,
+  Calendar, StickyNote, Activity, HeartHandshake, FileText,
   type LucideIcon,
 } from "lucide-react";
 import { useAppStore } from "@/store/useAppStore";
@@ -29,7 +29,9 @@ const NAV_PRIMARY: NavItem[] = [
 ];
 
 const NAV_AGENCE: NavItem[] = [
-  { href: "/crm",        label: "CRM",       Icon: Phone, badge: "prospects_to_call" },
+  { href: "/crm",             label: "CRM",         Icon: Phone, badge: "prospects_to_call" },
+  { href: "/crm/therapeutes", label: "Thérapeutes", Icon: HeartHandshake },
+  { href: "/crm/scripts",     label: "Scripts",     Icon: FileText },
 ];
 
 const NAV_VIE: NavItem[] = [

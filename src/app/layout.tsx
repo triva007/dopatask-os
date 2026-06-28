@@ -10,6 +10,9 @@ const AppShell = dynamic(() => import("@/components/AppShell"), {
 const ThemeProvider = dynamic(() => import("@/components/ThemeProvider"), {
   ssr: false,
 });
+const ModeGate = dynamic(() => import("@/components/ModeGate"), {
+  ssr: false,
+});
 
 import { Inter } from "next/font/google";
 
@@ -54,6 +57,7 @@ export default function RootLayout({
       </head>
       <body className={`${inter.variable} font-sans antialiased bg-background text-t-primary h-screen overflow-hidden`}>
         <ThemeProvider>
+          <ModeGate />
           <AppShell>{children}</AppShell>
         </ThemeProvider>
         <Analytics />
