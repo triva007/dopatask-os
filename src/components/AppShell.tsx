@@ -40,6 +40,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const isLandingPage = pathname === "/landing" || pathname.startsWith("/landing/");
   const isMobileRoute = pathname.startsWith("/m");
+  // CRM Triva = application plein écran dédiée (pas de sidebar DopaTask)
+  const isCrmRoute = pathname.startsWith("/crm/therapeutes");
 
   useEffect(() => {
     setProfileId(getActiveProfileId());
@@ -47,13 +49,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // ── Auto-redirect mobile devices to /m/crm ──
   useEffect(() => {
-    if (isLandingPage || isMobileRoute) return;
+    if (isLandingPage || isMobileRoute || isCrmRoute) return;
     // Don't redirect if user opted for desktop mode
     if (localStorage.getItem("dopatask_force_desktop") === "1") return;
     if (isMobileDevice()) {
       router.replace("/m/dashboard");
     }
-  }, [pathname, isLandingPage, isMobileRoute, router]);
+  }, [pathname, isLandingPage, isMobileRoute, isCrmRoute, router]);
 
   // Keyboard shortcuts
   useEffect(() => {
@@ -84,8 +86,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     return <AuthScreen onLogin={() => window.location.reload()} />;
   }
 
-  // ── Mobile routes: skip Sidebar, Spotlight, etc. ──
-  if (isMobileRoute) {
+  // ── Mobile routes + CRM Triva : plein écran, pas de Sidebar/Spotlight ──
+  if (isMobileRoute || isCrmRoute) {
     return <>{children}</>;
   }
 
@@ -111,4 +113,3 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     </>
   );
 }
-
