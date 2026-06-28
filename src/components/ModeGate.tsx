@@ -9,8 +9,8 @@ export default function ModeGate() {
 
   useEffect(() => {
     try {
-      const mode = localStorage.getItem("aaron_os_mode");
-      if (!mode && pathname === "/") router.replace("/start");
+      const chosen = sessionStorage.getItem("aaron_mode_session");
+      if (!chosen && pathname === "/") router.replace("/start");
     } catch (_e) {}
   }, [pathname, router]);
 
