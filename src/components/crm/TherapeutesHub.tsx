@@ -29,6 +29,7 @@ type Lead = {
   source: string;
   caContracte: number;
   caCollecte: number;
+  rdvFait?: boolean;
 };
 
 const COLS: { key: Statut; label: string; emoji: string; color: string }[] = [
@@ -48,6 +49,7 @@ const COL_BY: Record<Statut, { label: string; emoji: string; color: string }> = 
 
 const KEY = "triva_crm_therapeutes_v1";
 const MIGR_CATHERINE = "triva_crm_migr_catherine_v1";
+const MIGR_RDVFAIT = "triva_crm_migr_rdvfait_v1";
 const OBJECTIF_VENTES = 3;
 const OBJECTIF_CA = 6000;
 
@@ -74,6 +76,7 @@ const CATHERINE: Lead = {
   source: "Inbound",
   caContracte: 940,
   caCollecte: 0,
+  rdvFait: true,
 };
 
 const SEED: Lead[] = [
@@ -82,11 +85,11 @@ const SEED: Lead[] = [
   { id: "t2", nom: "Anne Laure Frelon", spe: "Thérapeute", ville: "", statut: "rdv_booke", rdv: "Lundi 13h30", contact: "", source: "Post FB", notes: "RDV confirmé. A accepté que c'est payant / qu'il faut investir.", caContracte: 0, caCollecte: 0 },
   { id: "t3", nom: "Mélanie Baerel", spe: "Thérapeute (Douceur éternelle)", ville: "", statut: "rdv_booke", rdv: "Mardi (visio)", contact: "", source: "Post FB", notes: "Déjà amie FB. Envoyer le lien visio 5 min avant.", caContracte: 0, caCollecte: 0 },
   { id: "t4", nom: "Katie Serenity", spe: "Thérapeute", ville: "", statut: "chaud", rdv: "", contact: "", source: "Post FB", notes: "Signaux d'achat (a demandé le prix + le paiement échelonné). 980 euros donné. RELANCER pour caler le créneau.", caContracte: 0, caCollecte: 0 },
-  { id: "t5", nom: "Nathalie Varlet", spe: "Physiothérapeute (fasciathérapie, cranio-sacral)", ville: "Ibiza", statut: "rdv_fait", rdv: "Vendredi 16h (passé)", contact: "WhatsApp +33 6 78 70 62 99 · nathalievarlet.com", source: "Post FB", notes: "RDV passé, issue à confirmer. Hors niche (physio).", caContracte: 0, caCollecte: 0 },
-  { id: "t6", nom: "Rania (Ourania Phénix)", spe: "Thérapie Guérir avec Amour + coaching", ville: "En ligne", statut: "perdu", rdv: "RDV fait", contact: "", source: "Post FB / DM", notes: "Tiède sur le site, veut juste la fiche Google. Haut de gamme mais abandonné pour l'instant.", caContracte: 0, caCollecte: 0 },
-  { id: "t7", nom: "Mélanie Éclairer L'essentiel", spe: "Thérapeute", ville: "En ligne", statut: "perdu", rdv: "Call fait", contact: "", source: "Post FB", notes: "Non pertinent : 100% en ligne + a déjà un prestataire pour son site.", caContracte: 0, caCollecte: 0 },
+  { id: "t5", nom: "Nathalie Varlet", spe: "Physiothérapeute (fasciathérapie, cranio-sacral)", ville: "Ibiza", statut: "rdv_fait", rdv: "Vendredi 16h (passé)", contact: "WhatsApp +33 6 78 70 62 99 · nathalievarlet.com", source: "Post FB", notes: "RDV passé, issue à confirmer. Hors niche (physio).", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t6", nom: "Rania (Ourania Phénix)", spe: "Thérapie Guérir avec Amour + coaching", ville: "En ligne", statut: "perdu", rdv: "RDV fait", contact: "", source: "Post FB / DM", notes: "Tiède sur le site, veut juste la fiche Google. Haut de gamme mais abandonné pour l'instant.", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t7", nom: "Mélanie Éclairer L'essentiel", spe: "Thérapeute", ville: "En ligne", statut: "perdu", rdv: "Call fait", contact: "", source: "Post FB", notes: "Non pertinent : 100% en ligne + a déjà un prestataire pour son site.", caContracte: 0, caCollecte: 0, rdvFait: true },
   { id: "t8", nom: "Anne Kételair", spe: "Thérapeute", ville: "", statut: "perdu", rdv: "RDV lundi annulé", contact: "", source: "Post FB", notes: "Avait un RDV lundi, l'a annulé (ce ne sera pas nécessaire).", caContracte: 0, caCollecte: 0 },
-  { id: "t9", nom: "Daphné Simon", spe: "Massage / hypnose (hors niche)", ville: "", statut: "perdu", rdv: "", contact: "", source: "Post FB", notes: "Pas le budget. Non-acheteuse.", caContracte: 0, caCollecte: 0 },
+  { id: "t9", nom: "Daphné Simon", spe: "Massage / hypnose (hors niche)", ville: "", statut: "perdu", rdv: "Call fait (26 min)", contact: "", source: "Post FB", notes: "Pas le budget. Non-acheteuse.", caContracte: 0, caCollecte: 0, rdvFait: true },
   { id: "t10", nom: "Nathy Ohm", spe: "Massage énergétique / Lahochi / sonothérapie", ville: "Forcalquier", statut: "perdu", rdv: "", contact: "", source: "Post FB", notes: "Hors niche coeur. Abandonné.", caContracte: 0, caCollecte: 0 },
   { id: "t11", nom: "Fabienne Buale", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", source: "Post FB", notes: "Demande d'ami envoyée. À DM quand elle accepte.", caContracte: 0, caCollecte: 0 },
   { id: "t12", nom: "Celine Bentz", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", source: "Post FB", notes: "À contacter.", caContracte: 0, caCollecte: 0 },
@@ -124,6 +127,14 @@ export default function TherapeutesHub() {
         localStorage.setItem(MIGR_CATHERINE, "1");
       }
     } catch {}
+    // Migration unique : marquer les RDV réellement faits (pour le taux de close)
+    try {
+      if (!localStorage.getItem(MIGR_RDVFAIT)) {
+        const done = new Set(["catherine", "t5", "t6", "t7", "t9"]);
+        arr = arr.map((l) => (done.has(l.id) ? { ...l, rdvFait: true } : l));
+        localStorage.setItem(MIGR_RDVFAIT, "1");
+      }
+    } catch {}
     setLeads(arr);
     setReady(true);
   }, []);
@@ -148,7 +159,7 @@ export default function TherapeutesHub() {
   };
   const moveTo = (id: string, statut: Statut) => setLeads((p) => p.map((l) => (l.id === id ? { ...l, statut } : l)));
 
-  const newLead = (): Lead => ({ id: `n${Date.now()}`, nom: "", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", notes: "", source: "Post FB", caContracte: 0, caCollecte: 0 });
+  const newLead = (): Lead => ({ id: `n${Date.now()}`, nom: "", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", notes: "", source: "Post FB", caContracte: 0, caCollecte: 0, rdvFait: false });
 
   const activeLead = activeId ? leads.find((l) => l.id === activeId) || null : null;
   const handleDragStart = (e: DragStartEvent) => setActiveId(String(e.active.id));
@@ -243,8 +254,9 @@ function Dashboard({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void
   const collecte = sum("caCollecte");
   const contracte = sum("caContracte");
   const clients = count("client");
-  const perdus = count("perdu");
-  const taux = clients + perdus > 0 ? Math.round((clients / (clients + perdus)) * 100) : 0;
+  // Taux de close = clients signés ÷ RDV réellement faits (case "RDV fait" ou déjà client / au stade RDV fait)
+  const rdvFaits = leads.filter((l) => l.rdvFait || l.statut === "client" || l.statut === "rdv_fait").length;
+  const taux = rdvFaits > 0 ? Math.round((clients / rdvFaits) * 100) : 0;
   const rdv = leads.filter((l) => l.statut === "rdv_booke");
   const chaud = leads.filter((l) => l.statut === "chaud");
   const relance = leads.filter((l) => l.statut === "contacte");
@@ -254,7 +266,7 @@ function Dashboard({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void
     { label: "CA collecté", value: eur(collecte), color: "#86D4A1", icon: <TrendingUp size={16} />, sub: "encaissé" },
     { label: "CA contracté", value: eur(contracte), color: "#86B8CC", icon: <Target size={16} />, sub: "signé, en attente" },
     { label: "Clients signés", value: clients, color: "#A893F0", icon: <Flame size={16} />, sub: `${leads.length} contacts au total` },
-    { label: "Taux de close", value: `${taux}%`, color: "#F3B87A", icon: <TrendingUp size={16} />, sub: `${clients} gagnés · ${perdus} perdus` },
+    { label: "Taux de close", value: `${taux}%`, color: "#F3B87A", icon: <TrendingUp size={16} />, sub: `${clients} signé(s) · ${rdvFaits} RDV faits` },
   ];
 
   return (
@@ -497,6 +509,10 @@ function EditModal({ lead, onSave, onDelete, onClose }: { lead: Lead; onSave: (l
             </Field>
             <Field label="RDV (date / heure)"><input value={f.rdv} onChange={(e) => patch({ rdv: e.target.value })} className={inputCls} style={inputStyle} placeholder="ex. Mardi 14h (visio)" /></Field>
           </div>
+          <label className="flex items-center gap-2.5 cursor-pointer select-none rounded-lg px-3 py-2.5" style={{ background: "var(--surface-1)", border: "1px solid var(--border-primary)" }}>
+            <input type="checkbox" checked={!!f.rdvFait} onChange={(e) => patch({ rdvFait: e.target.checked })} className="w-4 h-4" style={{ accentColor: "var(--accent-purple)" }} />
+            <span className="text-[12.5px] text-t-secondary">RDV réellement fait <span className="text-t-tertiary">(compte dans le taux de close)</span></span>
+          </label>
           <div className="flex gap-3">
             <Field label="CA contracté (€)"><input type="number" value={f.caContracte} onChange={(e) => patch({ caContracte: Number(e.target.value) || 0 })} className={inputCls} style={inputStyle} /></Field>
             <Field label="CA collecté (€)"><input type="number" value={f.caCollecte} onChange={(e) => patch({ caCollecte: Number(e.target.value) || 0 })} className={inputCls} style={inputStyle} /></Field>
