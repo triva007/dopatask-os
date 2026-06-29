@@ -50,6 +50,7 @@ const COL_BY: Record<Statut, { label: string; emoji: string; color: string }> = 
 const KEY = "triva_crm_therapeutes_v1";
 const MIGR_CATHERINE = "triva_crm_migr_catherine_v1";
 const MIGR_RDVFAIT = "triva_crm_migr_rdvfait_v1";
+const MIGR_NATHALIE = "triva_crm_migr_nathalie_v1";
 const OBJECTIF_VENTES = 3;
 const OBJECTIF_CA = 6000;
 
@@ -85,7 +86,7 @@ const SEED: Lead[] = [
   { id: "t2", nom: "Anne Laure Frelon", spe: "Thérapeute", ville: "", statut: "rdv_booke", rdv: "Lundi 13h30", contact: "", source: "Post FB", notes: "RDV confirmé. A accepté que c'est payant / qu'il faut investir.", caContracte: 0, caCollecte: 0 },
   { id: "t3", nom: "Mélanie Baerel", spe: "Thérapeute (Douceur éternelle)", ville: "", statut: "rdv_booke", rdv: "Mardi (visio)", contact: "", source: "Post FB", notes: "Déjà amie FB. Envoyer le lien visio 5 min avant.", caContracte: 0, caCollecte: 0 },
   { id: "t4", nom: "Katie Serenity", spe: "Thérapeute", ville: "", statut: "chaud", rdv: "", contact: "", source: "Post FB", notes: "Signaux d'achat (a demandé le prix + le paiement échelonné). 980 euros donné. RELANCER pour caler le créneau.", caContracte: 0, caCollecte: 0 },
-  { id: "t5", nom: "Nathalie Varlet", spe: "Physiothérapeute (fasciathérapie, cranio-sacral)", ville: "Ibiza", statut: "rdv_fait", rdv: "Vendredi 16h (passé)", contact: "WhatsApp +33 6 78 70 62 99 · nathalievarlet.com", source: "Post FB", notes: "RDV passé, issue à confirmer. Hors niche (physio).", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t5", nom: "Nathalie Varlet", spe: "Physiothérapeute (fasciathérapie, cranio-sacral)", ville: "Ibiza", statut: "chaud", rdv: "RDV manqué · reprise lundi 29/06", contact: "WhatsApp +33 6 78 70 62 99 · nathalievarlet.com", source: "Post FB", notes: "Inbound chaud (Ibiza). RDV vendredi MANQUÉ (jamais calé) → reprise proposée lundi. Hors niche (physio).", caContracte: 0, caCollecte: 0 },
   { id: "t6", nom: "Rania (Ourania Phénix)", spe: "Thérapie Guérir avec Amour + coaching", ville: "En ligne", statut: "perdu", rdv: "RDV fait", contact: "", source: "Post FB / DM", notes: "Tiède sur le site, veut juste la fiche Google. Haut de gamme mais abandonné pour l'instant.", caContracte: 0, caCollecte: 0, rdvFait: true },
   { id: "t7", nom: "Mélanie Éclairer L'essentiel", spe: "Thérapeute", ville: "En ligne", statut: "perdu", rdv: "Call fait", contact: "", source: "Post FB", notes: "Non pertinent : 100% en ligne + a déjà un prestataire pour son site.", caContracte: 0, caCollecte: 0, rdvFait: true },
   { id: "t8", nom: "Anne Kételair", spe: "Thérapeute", ville: "", statut: "perdu", rdv: "RDV lundi annulé", contact: "", source: "Post FB", notes: "Avait un RDV lundi, l'a annulé (ce ne sera pas nécessaire).", caContracte: 0, caCollecte: 0 },
@@ -130,9 +131,16 @@ export default function TherapeutesHub() {
     // Migration unique : marquer les RDV réellement faits (pour le taux de close)
     try {
       if (!localStorage.getItem(MIGR_RDVFAIT)) {
-        const done = new Set(["catherine", "t5", "t6", "t7", "t9"]);
+        const done = new Set(["catherine", "t6", "t7", "t9"]);
         arr = arr.map((l) => (done.has(l.id) ? { ...l, rdvFait: true } : l));
         localStorage.setItem(MIGR_RDVFAIT, "1");
+      }
+    } catch {}
+    // Correctif unique : Nathalie = RDV manqué (pas un RDV fait) → lead chaud à recaler
+    try {
+      if (!localStorage.getItem(MIGR_NATHALIE)) {
+        arr = arr.map((l) => (l.id === "t5" ? { ...l, rdvFait: false, statut: "chaud", rdv: "RDV manqué · reprise lundi 29/06" } : l));
+        localStorage.setItem(MIGR_NATHALIE, "1");
       }
     } catch {}
     setLeads(arr);
@@ -254,8 +262,8 @@ function Dashboard({ leads, onOpen }: { leads: Lead[]; onOpen: (l: Lead) => void
   const collecte = sum("caCollecte");
   const contracte = sum("caContracte");
   const clients = count("client");
-  // Taux de close = clients signés ÷ RDV réellement faits (case "RDV fait" ou déjà client / au stade RDV fait)
-  const rdvFaits = leads.filter((l) => l.rdvFait || l.statut === "client" || l.statut === "rdv_fait").length;
+  // Taux de close = clients signés ÷ RDV réellement faits (case "RDV fait" cochée, ou déjà client)
+  const rdvFaits = leads.filter((l) => l.rdvFait || l.statut === "client").length;
   const taux = rdvFaits > 0 ? Math.round((clients / rdvFaits) * 100) : 0;
   const rdv = leads.filter((l) => l.statut === "rdv_booke");
   const chaud = leads.filter((l) => l.statut === "chaud");
