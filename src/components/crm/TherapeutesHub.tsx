@@ -51,6 +51,8 @@ const KEY = "triva_crm_therapeutes_v1";
 const MIGR_CATHERINE = "triva_crm_migr_catherine_v1";
 const MIGR_RDVFAIT = "triva_crm_migr_rdvfait_v1";
 const MIGR_NATHALIE = "triva_crm_migr_nathalie_v1";
+const SYNC_KEY = "triva_crm_sync_version";
+const SYNC_VERSION = 2;
 const OBJECTIF_VENTES = 3;
 const OBJECTIF_CA = 6000;
 
@@ -59,10 +61,10 @@ const APP_BG =
 
 const SANS_REPONSE = [
   "Christelle Collins (psycho-hypno)", "Pascal Chartrain", "Aneta Olszewska",
-  "Pascale Gély Labadie", "Fanni Aquatherapy", "Audrey Boussagol", "Valerie Nelisse",
-  "Sandrine Samson", "Débora Primi", "Lisa Tedone", "Frédérique Saumurot",
-  "Fanny Alzingre", "Sophie Mauchaussé", "Lili Larose", "Christine Janssens",
-  "Jéssica Perera Martínez",
+  "Pascale Gely Labadie", "Fanni Aquatherapy", "Audrey Boussagol", "Valerie Nelisse",
+  "Sandrine Samson", "Debora Primi", "Lisa Tedone", "Frederique Saumurot",
+  "Fanny Alzingre", "Sophie Mauchausse", "Lili Larose", "Christine Janssens",
+  "Jessica Perera Martinez",
 ];
 
 const CATHERINE: Lead = {
@@ -71,9 +73,9 @@ const CATHERINE: Lead = {
   spe: "Cliente — refonte de site + SEO",
   ville: "Bord des Vosges",
   statut: "client",
-  rdv: "Onboarding fait (sam.)",
+  rdv: "Onboarding fait",
   contact: "WhatsApp",
-  notes: "✅ Closée 940 € (acompte 50/50, hébergement offert). Virement de l'acompte à venir cette semaine (son compagnon lui a fait le virement, elle attend de l'avoir). Onboarding fait samedi : accès Wix débloqué (Google Authenticator) ; domaine expire 2027 ; forfait pris en 2 ans qui finit 2026 → couper le renouvellement auto avant l'échéance. Fiche Google = Régis admin → le faire ajouter aaron@triva-media.com. Questionnaire envoyé par WhatsApp → RELANCER. Garder ses textes / images, optimiser le SEO.",
+  notes: "Closee 940 EUR (acompte 50/50, hebergement offert). Garder ses textes/images, optimiser le SEO. Questionnaire a relancer.",
   source: "Inbound",
   caContracte: 940,
   caCollecte: 0,
@@ -82,19 +84,22 @@ const CATHERINE: Lead = {
 
 const SEED: Lead[] = [
   CATHERINE,
-  { id: "t1", nom: "Nancy Mas (Nancy Massaoudi)", spe: "Thérapeute · bilingue FR/NL", ville: "Denderleeuw (BE)", statut: "rdv_booke", rdv: "Lundi", contact: "", source: "Post FB", notes: "A réagi avec un coeur. Ne pas relancer.", caContracte: 0, caCollecte: 0 },
-  { id: "t2", nom: "Anne Laure Frelon", spe: "Thérapeute", ville: "", statut: "rdv_booke", rdv: "Lundi 13h30", contact: "", source: "Post FB", notes: "RDV confirmé. A accepté que c'est payant / qu'il faut investir.", caContracte: 0, caCollecte: 0 },
-  { id: "t3", nom: "Mélanie Baerel", spe: "Thérapeute (Douceur éternelle)", ville: "", statut: "rdv_booke", rdv: "Mardi (visio)", contact: "", source: "Post FB", notes: "Déjà amie FB. Envoyer le lien visio 5 min avant.", caContracte: 0, caCollecte: 0 },
-  { id: "t4", nom: "Katie Serenity", spe: "Thérapeute", ville: "", statut: "chaud", rdv: "", contact: "", source: "Post FB", notes: "Signaux d'achat (a demandé le prix + le paiement échelonné). 980 euros donné. RELANCER pour caler le créneau.", caContracte: 0, caCollecte: 0 },
-  { id: "t5", nom: "Nathalie Varlet", spe: "Physiothérapeute (fasciathérapie, cranio-sacral)", ville: "Ibiza", statut: "chaud", rdv: "RDV manqué · reprise lundi 29/06", contact: "WhatsApp +33 6 78 70 62 99 · nathalievarlet.com", source: "Post FB", notes: "Inbound chaud (Ibiza). RDV vendredi MANQUÉ (jamais calé) → reprise proposée lundi. Hors niche (physio).", caContracte: 0, caCollecte: 0 },
-  { id: "t6", nom: "Rania (Ourania Phénix)", spe: "Thérapie Guérir avec Amour + coaching", ville: "En ligne", statut: "perdu", rdv: "RDV fait", contact: "", source: "Post FB / DM", notes: "Tiède sur le site, veut juste la fiche Google. Haut de gamme mais abandonné pour l'instant.", caContracte: 0, caCollecte: 0, rdvFait: true },
-  { id: "t7", nom: "Mélanie Éclairer L'essentiel", spe: "Thérapeute", ville: "En ligne", statut: "perdu", rdv: "Call fait", contact: "", source: "Post FB", notes: "Non pertinent : 100% en ligne + a déjà un prestataire pour son site.", caContracte: 0, caCollecte: 0, rdvFait: true },
-  { id: "t8", nom: "Anne Kételair", spe: "Thérapeute", ville: "", statut: "perdu", rdv: "RDV lundi annulé", contact: "", source: "Post FB", notes: "Avait un RDV lundi, l'a annulé (ce ne sera pas nécessaire).", caContracte: 0, caCollecte: 0 },
-  { id: "t9", nom: "Daphné Simon", spe: "Massage / hypnose (hors niche)", ville: "", statut: "perdu", rdv: "Call fait (26 min)", contact: "", source: "Post FB", notes: "Pas le budget. Non-acheteuse.", caContracte: 0, caCollecte: 0, rdvFait: true },
-  { id: "t10", nom: "Nathy Ohm", spe: "Massage énergétique / Lahochi / sonothérapie", ville: "Forcalquier", statut: "perdu", rdv: "", contact: "", source: "Post FB", notes: "Hors niche coeur. Abandonné.", caContracte: 0, caCollecte: 0 },
-  { id: "t11", nom: "Fabienne Buale", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", source: "Post FB", notes: "Demande d'ami envoyée. À DM quand elle accepte.", caContracte: 0, caCollecte: 0 },
-  { id: "t12", nom: "Celine Bentz", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", source: "Post FB", notes: "À contacter.", caContracte: 0, caCollecte: 0 },
-  ...SANS_REPONSE.map((n, i): Lead => ({ id: "c" + i, nom: n, spe: "", ville: "", statut: "contacte", rdv: "", contact: "", source: "Post FB", notes: "DM envoyé, pas de réponse.", caContracte: 0, caCollecte: 0 })),
+  { id: "t1", nom: "Nancy Mas (Nancy Massaoudi)", spe: "Coach therapeutique · couple, hypno, EMDR, sexo · bilingue FR/NL", ville: "Denderleeuw (BE)", statut: "rdv_booke", rdv: "Mardi 14h (visio)", contact: "nancymtherapy.be", source: "Post FB", notes: "Bilingue FR/NL = 2 marches (gros atout). A reagi coeur au recalage. A deja un site, visible sur son nom. Objectif : closer 980 EUR.", caContracte: 0, caCollecte: 0 },
+  { id: "t2", nom: "Anne Laure Frelon", spe: "Energetique, cartomancie, massages (NON-FIT Google)", ville: "Blere", statut: "rdv_booke", rdv: "Mardi 17h (R2 maquette)", contact: "", source: "Post FB", notes: "Hors-niche Google (personne ne cherche cartomancie). R1 fait. R2 = montrer maquette + closer SITE REASSURANCE 490 EUR, sans promesse Google.", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t3", nom: "Melanie Baerel", spe: "Therapeute (Douceur eternelle)", ville: "", statut: "rdv_booke", rdv: "Mardi 9h30 (visio)", contact: "", source: "Post FB", notes: "Deja amie FB. A demande le prix 2x. Lien visio 5 min avant.", caContracte: 0, caCollecte: 0 },
+  { id: "t4", nom: "Katie Serenity", spe: "Therapeute", ville: "", statut: "chaud", rdv: "", contact: "", source: "Post FB", notes: "Signaux d'achat forts (prix + paiement echelonne, 980 EUR donne). Creneaux proposes, pas de reponse -> RELANCER pour caler (mer/jeu).", caContracte: 0, caCollecte: 0 },
+  { id: "t5", nom: "Nathalie Varlet", spe: "Fasciatherapie, cranio-sacral, constellation systemique", ville: "Ibiza", statut: "rdv_booke", rdv: "AUJOURD'HUI 18h30 (visio)", contact: "WhatsApp +33 6 78 70 62 99 · nathalievarlet.com", source: "Post FB", notes: "A deja site + fiche Google. Borderline -> qualifier marche Ibiza francophone (petit) ; basculer la constellation systemique EN LIGNE (national).", caContracte: 0, caCollecte: 0 },
+  { id: "t6", nom: "Rania (Ourania Phenix)", spe: "Therapie Guerir avec Amour + coaching", ville: "En ligne", statut: "perdu", rdv: "RDV fait", contact: "", source: "Post FB / DM", notes: "Veut juste la fiche Google, pas prete pour un site -> pas rentable, abandonne.", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t7", nom: "Melanie Eclairer L'essentiel", spe: "Therapeute", ville: "En ligne", statut: "perdu", rdv: "Call fait", contact: "", source: "Post FB", notes: "Non pertinent : 100% en ligne + a deja un prestataire.", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t8", nom: "Anne Ketelair", spe: "Therapeute", ville: "", statut: "perdu", rdv: "RDV annule", contact: "", source: "Post FB", notes: "A annule / decline.", caContracte: 0, caCollecte: 0 },
+  { id: "t9", nom: "Daphne Simon", spe: "Massage / hypnose (hors niche)", ville: "", statut: "perdu", rdv: "Call fait", contact: "", source: "Post FB", notes: "Pas le budget. Non-acheteuse.", caContracte: 0, caCollecte: 0, rdvFait: true },
+  { id: "t10", nom: "Nathy Ohm", spe: "Massage energetique / Lahochi / sonotherapie", ville: "Forcalquier", statut: "perdu", rdv: "", contact: "", source: "Post FB", notes: "Hors niche. Abandonne.", caContracte: 0, caCollecte: 0 },
+  { id: "t13", nom: "Karine Laurent", spe: "Coach de vie / developpement personnel", ville: "Caen", statut: "rdv_booke", rdv: "Mardi 10h30", contact: "karinelaurent.com", source: "Post FB", notes: "Borderline (positionnement vague 'alignement'). Site pas optimise (titre = 'Site internet'). Qualifier l'angle live ; sinon site reassurance ~500 EUR.", caContracte: 0, caCollecte: 0 },
+  { id: "t14", nom: "Alicia Cestas (Sheherazade)", spe: "", ville: "Cestas (Bordeaux)", statut: "contacte", rdv: "", contact: "", source: "Post FB", notes: "A commente le post. Demande d'ami + DM envoyes, en attente. Qualifier la spe a sa reponse.", caContracte: 0, caCollecte: 0 },
+  { id: "t15", nom: "Feriel Khelif Louati", spe: "", ville: "", statut: "contacte", rdv: "", contact: "", source: "Post FB", notes: "A commente (sceptique : 'je l'ai fait, pas de suite, quel interet pour vous ?'). Reponse publique + DM (court appel) envoyes. Vu, pas de reponse.", caContracte: 0, caCollecte: 0 },
+  { id: "t11", nom: "Fabienne Buale", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", source: "Post FB", notes: "Demande d'ami envoyee. A DM quand elle accepte.", caContracte: 0, caCollecte: 0 },
+  { id: "t12", nom: "Celine Bentz", spe: "", ville: "", statut: "a_contacter", rdv: "", contact: "", source: "Post FB", notes: "A contacter.", caContracte: 0, caCollecte: 0 },
+  ...SANS_REPONSE.map((n, i): Lead => ({ id: "c" + i, nom: n, spe: "", ville: "", statut: "contacte", rdv: "", contact: "", source: "Post FB", notes: "DM envoye, pas de reponse -> recuperer par demande d'ami (5/jour).", caContracte: 0, caCollecte: 0 })),
 ];
 
 const eur = (n: number) => `${(n || 0).toLocaleString("fr-FR")} €`;
@@ -141,6 +146,19 @@ export default function TherapeutesHub() {
       if (!localStorage.getItem(MIGR_NATHALIE)) {
         arr = arr.map((l) => (l.id === "t5" ? { ...l, rdvFait: false, statut: "chaud", rdv: "RDV manqué · reprise lundi 29/06" } : l));
         localStorage.setItem(MIGR_NATHALIE, "1");
+      }
+    } catch {}
+    // Sync auto : applique les updates du CRM (geres par Claude) sans ecraser tes ajouts manuels ni ton CA
+    try {
+      const sv = parseInt(localStorage.getItem(SYNC_KEY) || "0", 10);
+      if (sv < SYNC_VERSION) {
+        const byId = new Map(arr.map((l) => [l.id, l] as const));
+        for (const seed of SEED) {
+          const ex = byId.get(seed.id);
+          byId.set(seed.id, ex ? { ...seed, caContracte: ex.caContracte || seed.caContracte, caCollecte: ex.caCollecte || seed.caCollecte } : seed);
+        }
+        arr = Array.from(byId.values());
+        localStorage.setItem(SYNC_KEY, String(SYNC_VERSION));
       }
     } catch {}
     setLeads(arr);
